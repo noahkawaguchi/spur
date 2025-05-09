@@ -1,4 +1,6 @@
 [workspace]
 members = ["spur-api", "spur-cli", "spur-shared"]
+resolver = "3"
 
 [workspace.dependencies]
+anyhow = "1.0.98"
