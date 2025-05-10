@@ -5,10 +5,18 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use spur_shared::dto::{ErrorResponse, SignupRequest};
+use spur_shared::{
+    dto::{ErrorResponse, SignupRequest},
+    validator::validate_signup_request,
+};
 use sqlx::PgPool;
 
 pub async fn signup(State(pool): State<PgPool>, Json(payload): Json<SignupRequest>) -> Response {
+    // Validate request fields
+    if let Err(e) = validate_signup_request(&payload) {
+        return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: e })).into_response();
+    }
+
     let hash = "we24gs4"; // TODO
 
     let new_user = NewUser {
