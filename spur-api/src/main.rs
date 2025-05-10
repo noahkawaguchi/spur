@@ -1,15 +1,19 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use axum::{Router, routing::get};
+use dotenvy::dotenv;
+use std::env;
 use tokio::net::TcpListener;
-
-const ADDRESS: &str = "127.0.0.1:3000";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let app = Router::new().route("/", get(hello_world));
-    let listener = TcpListener::bind(ADDRESS).await?;
+    dotenv()?;
+    let database_url = env::var("DATABASE_URL").context("failed to load DATABASE_URL")?;
+    let backend_addr = env::var("BACKEND_ADDR").context("failed to load BACKEND_ADDR")?;
 
-    println!("Listening on http://{}...", ADDRESS);
+    let app = Router::new().route("/", get(hello_world));
+    let listener = TcpListener::bind(&backend_addr).await?;
+
+    println!("Listening on http://{}...", &backend_addr);
     axum::serve(listener, app).await?;
 
     Ok(())
