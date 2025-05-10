@@ -8,7 +8,6 @@ pub struct NewUser<'a> {
     pub password_hash: &'a str,
 }
 
-#[derive(Debug)]
 pub struct User {
     id: i32,
     name: String,

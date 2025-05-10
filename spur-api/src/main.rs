@@ -1,9 +1,13 @@
+mod handlers;
 mod models;
 
 use anyhow::{Context, Result};
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    routing::{get, post},
+};
 use dotenvy::dotenv;
-use models::user::NewUser;
+use handlers::signup;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
 use tokio::net::TcpListener;
@@ -19,19 +23,11 @@ async fn main() -> Result<()> {
         .connect(&database_url)
         .await?;
 
-    let alice = NewUser {
-        name: "Alice",
-        email: "alice@example.com",
-        username: "alice123",
-        password_hash: "xc414hb14bs",
-    };
+    let app = Router::new()
+        .route("/", get(hello_world))
+        .route("/signup", post(signup))
+        .with_state(pool);
 
-    models::user::insert_new(&pool, &alice).await?;
-    let got_alice = models::user::get_by_email(&pool, alice.email).await?;
-
-    println!("{got_alice:?}");
-
-    let app = Router::new().route("/", get(hello_world));
     let listener = TcpListener::bind(&backend_addr).await?;
 
     println!("Listening on http://{}...", &backend_addr);

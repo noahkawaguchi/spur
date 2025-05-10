@@ -1456,6 +1456,7 @@ dependencies = [
  "axum",
  "chrono",
  "dotenvy",
+ "spur-shared",
  "sqlx",
  "tokio",
 ]
@@ -1471,6 +1472,9 @@ dependencies = [
 [[package]]
 name = "spur-shared"
 version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "sqlx"
