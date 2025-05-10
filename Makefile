@@ -2,7 +2,7 @@
 
 # Initialize DB
 db-up:
-	docker compose up
+	docker compose up -d
 
 # Stop services and remove volumes (delete data)
 db-rm:

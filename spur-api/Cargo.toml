@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow.workspace = true
 axum = "0.8.4"
+chrono = "0.4.41"
 dotenvy.workspace = true
-sqlx = { version = "0.8.5", features = ["postgres", "runtime-tokio"] }
+sqlx = { version = "0.8.5", features = ["chrono", "postgres", "runtime-tokio"] }
 tokio = { version = "1.45.0", features = ["full"] }
