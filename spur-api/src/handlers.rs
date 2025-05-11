@@ -1,4 +1,4 @@
-use crate::models::user::{self, NewUser};
+use crate::services::auth_svc::{self, email_username_taken};
 use axum::{
     Json,
     extract::State,
@@ -12,26 +12,26 @@ use spur_shared::{
 use sqlx::PgPool;
 
 pub async fn signup(State(pool): State<PgPool>, Json(payload): Json<SignupRequest>) -> Response {
-    // Validate request fields
+    // Validate the request fields
     if let Err(e) = validate_signup_request(&payload) {
         return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: e })).into_response();
     }
 
-    let hash = "we24gs4"; // TODO
+    // Check for email and username uniqueness
+    if let Err(e) = email_username_taken(&pool, &payload).await {
+        return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: e })).into_response();
+    }
 
-    let new_user = NewUser {
-        name: &payload.name,
-        email: &payload.email,
-        username: &payload.username,
-        password_hash: hash,
-    };
-
-    match user::insert_new(&pool, &new_user).await {
+    // Register the new user
+    match auth_svc::signup(&pool, &payload).await {
         Ok(()) => StatusCode::CREATED.into_response(),
-        Err(e) => (
-            StatusCode::NOT_IMPLEMENTED,
-            Json(ErrorResponse { error: format!("not implemented yet! {e}") }),
-        )
-            .into_response(),
+        Err(e) => {
+            eprintln!("{}", e); // TODO: use a logger
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse { error: String::from("failed to register") }),
+            )
+                .into_response()
+        }
     }
 }
