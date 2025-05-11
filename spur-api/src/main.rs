@@ -5,7 +5,10 @@ mod repositories;
 mod services;
 
 use anyhow::Result;
-use axum::{Router, routing::post};
+use axum::{
+    Router,
+    routing::{get, post},
+};
 use config::{AppConfig, AppState};
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
@@ -24,6 +27,7 @@ async fn main() -> Result<()> {
     let app = Router::new()
         .route("/signup", post(handlers::signup))
         .route("/login", post(handlers::login))
+        .route("/check", get(handlers::check))
         .with_state(state);
 
     let listener = TcpListener::bind(&config.backend_addr).await?;
