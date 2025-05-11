@@ -1,41 +1,35 @@
+mod config;
 mod handlers;
 mod models;
 mod repositories;
 mod services;
 
-use anyhow::{Context, Result};
-use axum::{
-    Router,
-    routing::{get, post},
-};
-use dotenvy::dotenv;
-use handlers::signup;
+use anyhow::Result;
+use axum::{Router, routing::post};
+use config::{AppConfig, AppState};
 use sqlx::postgres::PgPoolOptions;
-use std::env;
 use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenv()?;
-    let database_url = env::var("DATABASE_URL").context("failed to load DATABASE_URL")?;
-    let backend_addr = env::var("BACKEND_ADDR").context("failed to load BACKEND_ADDR")?;
+    let config = AppConfig::load()?;
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(&database_url)
+        .connect(&config.database_url)
         .await?;
 
+    let state = AppState { pool, jwt_secret: config.jwt_secret };
+
     let app = Router::new()
-        .route("/", get(hello_world))
-        .route("/signup", post(signup))
-        .with_state(pool);
+        .route("/signup", post(handlers::signup))
+        .route("/login", post(handlers::login))
+        .with_state(state);
 
-    let listener = TcpListener::bind(&backend_addr).await?;
+    let listener = TcpListener::bind(&config.backend_addr).await?;
 
-    println!("Listening on http://{}...", &backend_addr);
+    println!("Listening on http://{}...", &config.backend_addr);
     axum::serve(listener, app).await?;
 
     Ok(())
 }
-
-async fn hello_world() -> &'static str { "Hello, World!" }

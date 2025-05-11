@@ -9,6 +9,8 @@ axum = "0.8.4"
 bcrypt = "0.17.0"
 chrono = "0.4.41"
 dotenvy.workspace = true
+jsonwebtoken = "9.3.1"
+serde.workspace = true
 spur-shared = { path = "../spur-shared" }
 sqlx = { version = "0.8.5", features = ["chrono", "postgres", "runtime-tokio"] }
 tokio = { version = "1.45.0", features = ["full"] }

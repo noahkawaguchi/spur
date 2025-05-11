@@ -5,3 +5,4 @@ resolver = "3"
 [workspace.dependencies]
 anyhow = "1.0.98"
 dotenvy = "0.15.7"
+serde = { version = "1.0.219", features = ["derive"] }
