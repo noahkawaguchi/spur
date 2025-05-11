@@ -2,6 +2,18 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
+mod commands;
+
+use clap::Parser;
+use commands::{
+    Cli,
+    Commands::{Check, Login, Signup},
+};
+
 fn main() {
-    println!("Hello, world!");
+    match Cli::parse().command {
+        Signup => println!("signup used!"),
+        Login => println!("login used!"),
+        Check => println!("check used!"),
+    }
 }

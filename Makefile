@@ -1,4 +1,10 @@
-.PHONY: db-up db-rm migrate-add migrate-run
+.PHONY: api cli db-up db-rm migrate-add migrate-run
+
+api:
+	cargo run -p spur-api
+
+cli:
+	cargo run -p spur-cli -- $(ARGS)
 
 # Initialize DB
 db-up:
