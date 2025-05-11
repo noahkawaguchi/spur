@@ -1,8 +1,10 @@
 use crate::dto::{LoginRequest, SignupRequest};
 use email_address::EmailAddress;
 
-/// Confirms that `name` and `username` are non-empty, `email` is in a valid email address format,
-/// and `password` meets the following requirements:
+/// # Errors
+///
+/// Will return `Err` if `name` or `username` are empty, `email` is not in a valid email address format,
+/// or `password` does not meet the following requirements:
 ///
 /// - At least 10 characters
 /// - At most 72 bytes
@@ -23,8 +25,10 @@ pub fn validate_signup_request(req: &SignupRequest) -> Result<(), String> {
     validate_password(&req.password)
 }
 
-/// Confirms that `email` is in a valid email address format and `password` is non-empty. Does not
-/// check specific password requirements because a new password is not being created.
+/// # Errors
+///
+/// Will return `Err` if `email` is not in a valid email address format or if `password` is empty.
+/// Does not check specific password requirements because a new password is not being created.
 pub fn validate_login_request(req: &LoginRequest) -> Result<(), String> {
     if !EmailAddress::is_valid(&req.email) {
         return Err(String::from("not a valid email address"));

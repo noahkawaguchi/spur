@@ -1,3 +1,7 @@
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+
 mod config;
 mod handlers;
 mod models;
