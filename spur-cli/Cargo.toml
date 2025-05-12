@@ -11,6 +11,7 @@ path = "src/main.rs"
 anyhow.workspace = true
 clap = { version = "4.5.37", features = ["derive"] }
 colored = "3.0.0"
+dirs-next = "2.0.0"
 dotenvy.workspace = true
 email_address.workspace = true
 inquire = "0.7.5"

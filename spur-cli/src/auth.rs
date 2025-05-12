@@ -1,4 +1,4 @@
-use crate::{error_response, input_validators};
+use crate::{error_response, input_validators, token_store};
 use anyhow::Result;
 use colored::Colorize;
 use inquire::{Password, Text};
@@ -65,14 +65,9 @@ pub async fn login(backend_url: &Url) -> Result<()> {
         .await?;
 
     if response.status() == StatusCode::OK {
-        println!(
-            "{}",
-            format!(
-                "need to save this token: {}", // TODO
-                response.json::<LoginResponse>().await?.token,
-            )
-            .green()
-        );
+        println!("{}", "successfully logged in".green());
+        token_store::save(&response.json::<LoginResponse>().await?.token)?;
+        println!("{}", "successfully saved token".green());
     } else {
         error_response::handle(response).await;
     }

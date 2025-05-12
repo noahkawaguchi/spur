@@ -6,6 +6,7 @@ mod auth;
 mod commands;
 mod error_response;
 mod input_validators;
+mod token_store;
 
 use anyhow::{Context, Result};
 use clap::Parser;
