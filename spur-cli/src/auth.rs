@@ -1,5 +1,6 @@
 use crate::input_validators;
 use anyhow::Result;
+use colored::Colorize;
 use inquire::{Password, Text};
 use reqwest::{ClientBuilder, StatusCode};
 use spur_shared::dto::{ErrorResponse, SignupRequest};
@@ -33,12 +34,16 @@ pub async fn signup(backend_url: &Url) -> Result<()> {
         .await?;
 
     match response.status() {
-        StatusCode::CREATED => println!("successfully registered"),
+        StatusCode::CREATED => println!("{}", "successfully registered".green()),
         status => match response.json::<ErrorResponse>().await {
-            Ok(err_resp) => println!("{}", err_resp.error),
+            Ok(err_resp) => println!("{}", err_resp.error.red()),
             Err(_) => println!(
-                "unexpected response from the server with status {}",
-                status.canonical_reason().unwrap_or(status.as_str()),
+                "{} {}",
+                "unexpected response from the server with status".red(),
+                status
+                    .canonical_reason()
+                    .unwrap_or_else(|| status.as_str())
+                    .red(),
             ),
         },
     }
