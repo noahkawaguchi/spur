@@ -1,9 +1,9 @@
-use crate::input_validators;
+use crate::{error_response, input_validators};
 use anyhow::Result;
 use colored::Colorize;
 use inquire::{Password, Text};
 use reqwest::{ClientBuilder, StatusCode};
-use spur_shared::dto::{ErrorResponse, LoginRequest, LoginResponse, SignupRequest};
+use spur_shared::dto::{LoginRequest, LoginResponse, SignupRequest};
 use url::Url;
 
 pub async fn signup(backend_url: &Url) -> Result<()> {
@@ -33,19 +33,10 @@ pub async fn signup(backend_url: &Url) -> Result<()> {
         .send()
         .await?;
 
-    match response.status() {
-        StatusCode::CREATED => println!("{}", "successfully registered".green()),
-        status => match response.json::<ErrorResponse>().await {
-            Ok(err_resp) => println!("{}", err_resp.error.red()),
-            Err(_) => println!(
-                "{}",
-                format!(
-                    "unexpected response from the server with status {}",
-                    status.canonical_reason().unwrap_or_else(|| status.as_str()),
-                )
-                .red()
-            ),
-        },
+    if response.status() == StatusCode::CREATED {
+        println!("{}", "successfully registered".green());
+    } else {
+        error_response::handle(response).await;
     }
 
     Ok(())
@@ -73,26 +64,17 @@ pub async fn login(backend_url: &Url) -> Result<()> {
         .send()
         .await?;
 
-    match response.status() {
-        StatusCode::OK => println!(
+    if response.status() == StatusCode::OK {
+        println!(
             "{}",
             format!(
                 "need to save this token: {}", // TODO
                 response.json::<LoginResponse>().await?.token,
             )
             .green()
-        ),
-        status => match response.json::<ErrorResponse>().await {
-            Ok(err_resp) => println!("{}", err_resp.error.red()),
-            Err(_) => println!(
-                "{}",
-                format!(
-                    "unexpected response from the server with status {}",
-                    status.canonical_reason().unwrap_or_else(|| status.as_str()),
-                )
-                .red()
-            ),
-        },
+        );
+    } else {
+        error_response::handle(response).await;
     }
 
     Ok(())

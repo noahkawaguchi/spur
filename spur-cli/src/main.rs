@@ -4,6 +4,7 @@
 
 mod auth;
 mod commands;
+mod error_response;
 mod input_validators;
 
 use anyhow::{Context, Result};
