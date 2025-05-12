@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
 
     match Cli::parse().command {
         Signup => auth::signup(&backend_url).await?,
-        Login => println!("login used!"),
+        Login => auth::login(&backend_url).await?,
         Check => println!("check used!"),
     }
 

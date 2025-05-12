@@ -3,7 +3,7 @@ use anyhow::Result;
 use colored::Colorize;
 use inquire::{Password, Text};
 use reqwest::{ClientBuilder, StatusCode};
-use spur_shared::dto::{ErrorResponse, SignupRequest};
+use spur_shared::dto::{ErrorResponse, LoginRequest, LoginResponse, SignupRequest};
 use url::Url;
 
 pub async fn signup(backend_url: &Url) -> Result<()> {
@@ -38,12 +38,59 @@ pub async fn signup(backend_url: &Url) -> Result<()> {
         status => match response.json::<ErrorResponse>().await {
             Ok(err_resp) => println!("{}", err_resp.error.red()),
             Err(_) => println!(
-                "{} {}",
-                "unexpected response from the server with status".red(),
-                status
-                    .canonical_reason()
-                    .unwrap_or_else(|| status.as_str())
-                    .red(),
+                "{}",
+                format!(
+                    "unexpected response from the server with status {}",
+                    status.canonical_reason().unwrap_or_else(|| status.as_str()),
+                )
+                .red()
+            ),
+        },
+    }
+
+    Ok(())
+}
+
+pub async fn login(backend_url: &Url) -> Result<()> {
+    let email = Text::new("Email:")
+        .with_validator(input_validators::email)
+        .prompt()?;
+
+    // For logging into an existing account, only ask for the password once and don't check
+    // password requirements other than being non-empty
+    let password = Password::new("Password:")
+        .with_formatter(&|_| String::from("[hidden]"))
+        .with_validator(input_validators::nonempty)
+        .without_confirmation()
+        .prompt()?;
+
+    let body = LoginRequest { email, password };
+
+    let response = ClientBuilder::new()
+        .build()?
+        .post(backend_url.join("login")?)
+        .json(&body)
+        .send()
+        .await?;
+
+    match response.status() {
+        StatusCode::OK => println!(
+            "{}",
+            format!(
+                "need to save this token: {}", // TODO
+                response.json::<LoginResponse>().await?.token,
+            )
+            .green()
+        ),
+        status => match response.json::<ErrorResponse>().await {
+            Ok(err_resp) => println!("{}", err_resp.error.red()),
+            Err(_) => println!(
+                "{}",
+                format!(
+                    "unexpected response from the server with status {}",
+                    status.canonical_reason().unwrap_or_else(|| status.as_str()),
+                )
+                .red()
             ),
         },
     }
