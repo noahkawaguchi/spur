@@ -9,7 +9,7 @@ pub fn save(token: &str) -> Result<()> {
 
 /// Reads the saved token if it exists.
 pub fn load() -> Result<String> {
-    fs::read_to_string(get_file_path()?).context("failed to read the token from file".red())
+    fs::read_to_string(get_file_path()?).context("failed to read token from file".red())
 }
 
 /// Gets the path to the token file, e.g. `~/.spur/token.txt`, creating the `.spur` directory if it

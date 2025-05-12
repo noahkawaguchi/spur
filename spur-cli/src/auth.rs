@@ -1,5 +1,5 @@
 use crate::{error_response, input_validators, token_store};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use colored::Colorize;
 use inquire::{Password, Text};
 use reqwest::{ClientBuilder, StatusCode};
@@ -31,10 +31,11 @@ pub async fn signup(backend_url: &Url) -> Result<()> {
         .post(backend_url.join("signup")?)
         .json(&body)
         .send()
-        .await?;
+        .await
+        .context("request failed".red())?;
 
     if response.status() == StatusCode::CREATED {
-        println!("{}", "successfully registered".green());
+        println!("{}", "Successfully registered".green());
     } else {
         error_response::handle(response).await;
     }
@@ -62,12 +63,33 @@ pub async fn login(backend_url: &Url) -> Result<()> {
         .post(backend_url.join("login")?)
         .json(&body)
         .send()
-        .await?;
+        .await
+        .context("request failed".red())?;
 
     if response.status() == StatusCode::OK {
-        println!("{}", "successfully logged in".green());
+        println!("{}", "Successfully logged in".green());
         token_store::save(&response.json::<LoginResponse>().await?.token)?;
-        println!("{}", "successfully saved token".green());
+        println!("{}", "Successfully saved token".green());
+    } else {
+        error_response::handle(response).await;
+    }
+
+    Ok(())
+}
+
+pub async fn check(backend_url: &Url) -> Result<()> {
+    let token = token_store::load()?;
+
+    let response = ClientBuilder::new()
+        .build()?
+        .get(backend_url.join("check")?)
+        .bearer_auth(token)
+        .send()
+        .await
+        .context("request failed".red())?;
+
+    if response.status() == StatusCode::NO_CONTENT {
+        println!("{}", "Your token is valid".green());
     } else {
         error_response::handle(response).await;
     }
