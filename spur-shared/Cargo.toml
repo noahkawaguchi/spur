@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-email_address = "0.2.9"
+email_address.workspace = true
 serde.workspace = true

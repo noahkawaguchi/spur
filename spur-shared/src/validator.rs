@@ -41,7 +41,14 @@ pub fn validate_login_request(req: &LoginRequest) -> Result<(), String> {
     Ok(())
 }
 
-fn validate_password(password: &str) -> Result<(), String> {
+/// # Errors
+///
+/// Will return `Err` if `password` does not meet the following requirements:
+///
+/// - At least 10 characters
+/// - At most 72 bytes
+/// - At least one lowercase letter, uppercase letter, digit, and special character
+pub fn validate_password(password: &str) -> Result<(), String> {
     if password.chars().count() < 10 {
         return Err(String::from("password must be at least 10 characters"));
     }
