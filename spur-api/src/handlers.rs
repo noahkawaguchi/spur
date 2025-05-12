@@ -74,9 +74,12 @@ pub async fn login(
 pub async fn check(
     State(jwt): State<JwtConfig>,
     TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,
-) -> StatusCode {
+) -> ResponseResult<StatusCode> {
     match auth_svc::verify_jwt(bearer.token(), jwt.secret.as_ref()) {
-        Ok(_) => StatusCode::NO_CONTENT,
-        Err(_) => StatusCode::UNAUTHORIZED,
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
+        Err(_) => Err((
+            StatusCode::UNAUTHORIZED,
+            Json(ErrorResponse { error: String::from("expired or invalid token") }),
+        )),
     }
 }
