@@ -4,7 +4,7 @@ use std::env;
 
 pub struct AppConfig {
     pub database_url: String,
-    pub backend_addr: String,
+    pub bind_addr: String,
     pub jwt_secret: String,
 }
 
@@ -13,10 +13,10 @@ impl AppConfig {
         dotenvy::dotenv()?;
 
         let database_url = env::var("DATABASE_URL").context("failed to load DATABASE_URL")?;
-        let backend_addr = env::var("BACKEND_ADDR").context("failed to load BACKEND_ADDR")?;
+        let bind_addr = env::var("BIND_ADDR").context("failed to load BIND_ADDR")?;
         let jwt_secret = env::var("JWT_SECRET").context("failed to load JWT_SECRET")?;
 
-        Ok(Self { database_url, backend_addr, jwt_secret })
+        Ok(Self { database_url, bind_addr, jwt_secret })
     }
 }
 

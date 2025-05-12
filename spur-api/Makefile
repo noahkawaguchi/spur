@@ -1,10 +1,4 @@
-.PHONY: api cli db-up db-rm migrate-add migrate-run
-
-api:
-	cargo run -p spur-api
-
-cli:
-	cargo run -p spur-cli -- $(ARGS)
+.PHONY: db-up db-rm migrate-add migrate-run
 
 # Initialize DB
 db-up:
@@ -16,11 +10,11 @@ db-rm:
 
 # Create a new migration
 migrate-add:
-	sqlx migrate add $(word 2, $(MAKECMDGOALS)) --source spur-api/migrations
+	sqlx migrate add $(word 2, $(MAKECMDGOALS))
 
 # Run pending migrations
 migrate-run:
-	sqlx migrate run --source spur-api/migrations
+	sqlx migrate run
 
 # dummy rule to absorb arguments
 %:

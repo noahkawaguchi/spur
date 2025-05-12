@@ -34,9 +34,12 @@ async fn main() -> Result<()> {
         .route("/check", get(handlers::check))
         .with_state(state);
 
-    let listener = TcpListener::bind(&config.backend_addr).await?;
+    let listener = TcpListener::bind(&config.bind_addr).await?;
 
-    println!("Listening on http://{}...", &config.backend_addr);
+    if cfg!(debug_assertions) {
+        println!("Listening on http://{}...", &config.bind_addr);
+    }
+
     axum::serve(listener, app).await?;
 
     Ok(())
