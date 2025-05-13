@@ -2,7 +2,7 @@ use crate::{
     models::{NewUser, User},
     repositories::user_repo,
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
@@ -12,13 +12,18 @@ use sqlx::PgPool;
 #[derive(Serialize, Deserialize)]
 struct Claims {
     sub: String,
-    exp: usize,
+    exp: u64,
 }
 
 impl Claims {
     /// Initializes claims with an expiration 24 hours in the future.
-    fn new(id: i32) -> Self {
-        Self { sub: id.to_string(), exp: (Utc::now() + Duration::hours(24)).timestamp() as usize }
+    fn new(id: i32) -> Result<Self> {
+        let now = Utc::now();
+        let exp = (now + Duration::hours(24))
+            .timestamp()
+            .try_into()
+            .context(format!("unexpected pre-1970 system time: {now}"))?;
+        Ok(Self { sub: id.to_string(), exp })
     }
 }
 
@@ -66,12 +71,14 @@ pub async fn validate_credentials(pool: &PgPool, req: &LoginRequest) -> Result<U
 }
 
 /// Creates a JSON web token with the id as the subject.
-pub fn create_jwt(id: i32, secret: &[u8]) -> jsonwebtoken::errors::Result<String> {
-    jsonwebtoken::encode(
+pub fn create_jwt(id: i32, secret: &[u8]) -> Result<String> {
+    let token = jsonwebtoken::encode(
         &Header::default(),
-        &Claims::new(id),
+        &Claims::new(id)?,
         &EncodingKey::from_secret(secret),
-    )
+    )?;
+
+    Ok(token)
 }
 
 /// Validates a JSON web token and parses the user ID.
