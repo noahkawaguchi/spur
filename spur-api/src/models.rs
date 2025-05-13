@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use spur_shared::dto::SignupRequest;
 
-#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(Debug, Clone, PartialEq, Eq))]
 pub struct NewUser {
     pub name: String,
     pub email: String,
@@ -15,7 +15,7 @@ impl NewUser {
     }
 }
 
-#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(Debug, Clone, PartialEq, Eq))]
 pub struct User {
     pub id: i32,
     pub name: String,

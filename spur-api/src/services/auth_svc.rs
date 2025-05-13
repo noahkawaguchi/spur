@@ -68,11 +68,11 @@ impl<R: UserRepository> AuthService for AuthSvc<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Utc;
+    use mockall::predicate::*;
 
     mod email_username_available {
         use super::*;
-        use chrono::Utc;
-        use mockall::predicate::*;
 
         fn new_alice() -> User {
             User {
@@ -174,6 +174,146 @@ mod tests {
             assert_eq!(
                 auth_svc.email_username_available(&alice_request).await,
                 Ok(()),
+            );
+        }
+    }
+
+    mod register {
+        use super::*;
+
+        #[tokio::test]
+        async fn correctly_creates_new_user_from_request() {
+            let (name, email, username, password) = (
+                String::from("Alice New"),
+                String::from("alice@new.you"),
+                String::from("alice_new"),
+                String::from("top secret"),
+            );
+
+            let alice_request = SignupRequest {
+                name: name.clone(),
+                email: email.clone(),
+                username: username.clone(),
+                password: password.clone(),
+            };
+
+            let mut mock_repo = MockUserRepository::new();
+
+            mock_repo.expect_get_by_email().never();
+            mock_repo.expect_get_by_username().never();
+            mock_repo
+                .expect_insert_new()
+                .withf(move |user| {
+                    user.name == name
+                        && user.email == email
+                        && user.username == username
+                        && bcrypt::verify(&password, &user.password_hash)
+                            .expect("failed to verify password hash")
+                })
+                .once()
+                .return_once(|_| Ok(()));
+
+            let auth_svc = AuthSvc::new(mock_repo);
+
+            assert!(matches!(
+                auth_svc.register(alice_request).await,
+                anyhow::Result::Ok(()),
+            ));
+        }
+    }
+
+    mod validate_credentials {
+        use super::*;
+
+        #[tokio::test]
+        async fn errors_for_invalid_email() {
+            let login_request = LoginRequest {
+                email: String::from("bob@bob.bob"),
+                password: String::from("extremely secure"),
+            };
+
+            let mut mock_repo = MockUserRepository::new();
+            mock_repo.expect_insert_new().never();
+            mock_repo.expect_get_by_username().never();
+            mock_repo
+                .expect_get_by_email()
+                .with(eq(login_request.email.clone()))
+                .once()
+                .return_once(|_| Err(sqlx::Error::RowNotFound));
+
+            let auth_svc = AuthSvc::new(mock_repo);
+
+            assert_eq!(
+                auth_svc.validate_credentials(&login_request).await,
+                Err(String::from("invalid email")),
+            );
+        }
+
+        #[tokio::test]
+        async fn errors_for_invalid_password() {
+            let correct_bob = User {
+                id: 42,
+                name: String::from("Bob"),
+                email: String::from("bob@email.co.uk"),
+                username: String::from("bobby_bob"),
+                password_hash: bcrypt::hash("correct password", bcrypt::DEFAULT_COST)
+                    .expect("failed to hash password"),
+                created_at: Utc::now(),
+            };
+
+            let incorrect_request = LoginRequest {
+                email: correct_bob.email.clone(),
+                password: String::from("incorrect password"),
+            };
+
+            let mut mock_repo = MockUserRepository::new();
+            mock_repo.expect_insert_new().never();
+            mock_repo.expect_get_by_username().never();
+            mock_repo
+                .expect_get_by_email()
+                .with(eq(incorrect_request.email.clone()))
+                .once()
+                .return_once(|_| Ok(correct_bob));
+
+            let auth_svc = AuthSvc::new(mock_repo);
+
+            assert_eq!(
+                auth_svc.validate_credentials(&incorrect_request).await,
+                Err(String::from("invalid password")),
+            );
+        }
+
+        #[tokio::test]
+        async fn returns_user_for_valid_credentials() {
+            let password = String::from("correct password");
+
+            let correct_bob = User {
+                id: 42,
+                name: String::from("Bob"),
+                email: String::from("bob@email.co.uk"),
+                username: String::from("bobby_bob"),
+                password_hash: bcrypt::hash(&password, bcrypt::DEFAULT_COST)
+                    .expect("failed to hash password"),
+                created_at: Utc::now(),
+            };
+            let also_bob = correct_bob.clone();
+
+            let correct_request = LoginRequest { email: correct_bob.email.clone(), password };
+
+            let mut mock_repo = MockUserRepository::new();
+            mock_repo.expect_insert_new().never();
+            mock_repo.expect_get_by_username().never();
+            mock_repo
+                .expect_get_by_email()
+                .with(eq(correct_request.email.clone()))
+                .once()
+                .return_once(|_| Ok(also_bob));
+
+            let auth_svc = AuthSvc::new(mock_repo);
+
+            assert_eq!(
+                auth_svc.validate_credentials(&correct_request).await,
+                Ok(correct_bob),
             );
         }
     }
