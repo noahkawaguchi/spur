@@ -16,7 +16,7 @@ use std::sync::Arc;
 #[async_trait::async_trait]
 pub trait AuthService: Send + Sync {
     async fn email_username_available(&self, req: &SignupRequest) -> Result<(), String>;
-    async fn register(&self, req: &SignupRequest) -> Result<()>;
+    async fn register(&self, req: SignupRequest) -> Result<()>;
     async fn validate_credentials(&self, req: &LoginRequest) -> Result<User, String>;
 }
 
@@ -35,7 +35,7 @@ pub async fn signup(
     }
 
     // Register the new user
-    match auth_svc.register(&payload).await {
+    match auth_svc.register(payload).await {
         Ok(()) => Ok(StatusCode::CREATED),
         Err(e) => {
             eprintln!("{}", e.to_string().red()); // TODO: use a logger

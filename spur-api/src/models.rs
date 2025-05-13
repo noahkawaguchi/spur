@@ -1,21 +1,21 @@
 use chrono::{DateTime, Utc};
 use spur_shared::dto::SignupRequest;
 
-#[derive(Debug)]
-pub struct NewUser<'a> {
-    pub name: &'a str,
-    pub email: &'a str,
-    pub username: &'a str,
-    pub password_hash: &'a str,
+#[derive(Debug, Clone)]
+pub struct NewUser {
+    pub name: String,
+    pub email: String,
+    pub username: String,
+    pub password_hash: String,
 }
 
-impl<'a> NewUser<'a> {
-    pub fn from_request(req: &'a SignupRequest, password_hash: &'a str) -> Self {
-        Self { name: &req.name, email: &req.email, username: &req.username, password_hash }
+impl NewUser {
+    pub fn from_request(req: SignupRequest, password_hash: String) -> Self {
+        Self { name: req.name, email: req.email, username: req.username, password_hash }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct User {
     pub id: i32,
     pub name: String,
@@ -26,7 +26,7 @@ pub struct User {
 }
 
 #[cfg(test)]
-impl PartialEq<&NewUser<'_>> for User {
+impl PartialEq<&NewUser> for User {
     fn eq(&self, other: &&NewUser) -> bool {
         self.name == other.name
             && self.email == other.email

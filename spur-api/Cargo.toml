@@ -19,5 +19,6 @@ sqlx = { version = "0.8.5", features = ["chrono", "postgres", "runtime-tokio"] }
 tokio.workspace = true
 
 [dev-dependencies]
+mockall = "0.13.1"
 url.workspace = true
 uuid = { version = "1.16.0", features = ["v4"] }
