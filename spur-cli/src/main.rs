@@ -19,7 +19,11 @@ use url::Url;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenvy::dotenv()?;
+    // Expect a .env file in development only
+    if cfg!(debug_assertions) {
+        dotenvy::dotenv()?;
+    }
+
     let backend_url = env::var("BACKEND_URL").context("failed to load BACKEND_URL")?;
     let backend_url = Url::parse(&backend_url).context("failed to parse BACKEND_URL")?;
 

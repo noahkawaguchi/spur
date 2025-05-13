@@ -7,6 +7,7 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
+use colored::Colorize;
 use spur_shared::{
     dto::{ErrorResponse, LoginRequest, LoginResponse, SignupRequest},
     validator::{validate_login_request, validate_signup_request},
@@ -32,7 +33,7 @@ pub async fn signup(
     match auth_svc::register(&db.pool, &payload).await {
         Ok(()) => Ok(StatusCode::CREATED),
         Err(e) => {
-            eprintln!("{e}"); // TODO: use a logger
+            eprintln!("{}", e.to_string().red()); // TODO: use a logger
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse { error: String::from("failed to register") }),
@@ -62,7 +63,7 @@ pub async fn login(
     match auth_svc::create_jwt(user.id, state.jwt_secret.as_ref()) {
         Ok(token) => Ok((StatusCode::OK, Json(LoginResponse { token }))),
         Err(e) => {
-            eprintln!("{e}"); // TODO: use a logger
+            eprintln!("{}", e.to_string().red()); // TODO: use a logger
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse { error: String::from("failed to create JWT") }),

@@ -8,6 +8,9 @@ mod models;
 mod repositories;
 mod services;
 
+#[cfg(test)]
+mod test_utils;
+
 use anyhow::Result;
 use axum::{
     Router,

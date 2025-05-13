@@ -9,9 +9,14 @@ axum = "0.8.4"
 axum-extra = { version = "0.10.1", features = ["typed-header"] }
 bcrypt = "0.17.0"
 chrono = "0.4.41"
+colored.workspace = true
 dotenvy.workspace = true
 jsonwebtoken = "9.3.1"
 serde.workspace = true
 spur-shared = { path = "../spur-shared" }
 sqlx = { version = "0.8.5", features = ["chrono", "postgres", "runtime-tokio"] }
 tokio.workspace = true
+
+[dev-dependencies]
+url.workspace = true
+uuid = { version = "1.16.0", features = ["v4"] }
