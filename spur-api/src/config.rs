@@ -1,6 +1,7 @@
+use crate::handlers::auth_handlers::AuthService;
 use anyhow::{Context, Result};
 use axum::extract::FromRef;
-use std::env;
+use std::{env, sync::Arc};
 
 pub struct AppConfig {
     pub database_url: String,
@@ -23,24 +24,8 @@ impl AppConfig {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, FromRef)]
 pub struct AppState {
-    pub pool: sqlx::PgPool,
+    pub auth_svc: Arc<dyn AuthService>,
     pub jwt_secret: String,
-}
-
-pub struct DbConfig {
-    pub pool: sqlx::PgPool,
-}
-
-impl FromRef<AppState> for DbConfig {
-    fn from_ref(input: &AppState) -> Self { Self { pool: input.pool.clone() } }
-}
-
-pub struct JwtConfig {
-    pub secret: String,
-}
-
-impl FromRef<AppState> for JwtConfig {
-    fn from_ref(input: &AppState) -> Self { Self { secret: input.jwt_secret.clone() } }
 }

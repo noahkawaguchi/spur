@@ -17,7 +17,11 @@ use axum::{
     routing::{get, post},
 };
 use config::{AppConfig, AppState};
+use handlers::auth_handlers;
+use repositories::user_repo::UserRepo;
+use services::auth_svc::AuthSvc;
 use sqlx::postgres::PgPoolOptions;
+use std::sync::Arc;
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -29,12 +33,15 @@ async fn main() -> Result<()> {
         .connect(&config.database_url)
         .await?;
 
-    let state = AppState { pool, jwt_secret: config.jwt_secret };
+    let user_repo = UserRepo::new(pool);
+    let auth_svc = AuthSvc::new(user_repo);
+
+    let state = AppState { auth_svc: Arc::new(auth_svc), jwt_secret: config.jwt_secret };
 
     let app = Router::new()
-        .route("/signup", post(handlers::signup))
-        .route("/login", post(handlers::login))
-        .route("/check", get(handlers::check))
+        .route("/signup", post(auth_handlers::signup))
+        .route("/login", post(auth_handlers::login))
+        .route("/check", get(auth_handlers::check))
         .with_state(state);
 
     let listener = TcpListener::bind(&config.bind_addr).await?;

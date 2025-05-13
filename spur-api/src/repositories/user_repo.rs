@@ -1,34 +1,48 @@
-use crate::models::{NewUser, User};
-use sqlx::PgPool;
+use crate::{
+    models::{NewUser, User},
+    services::auth_svc::UserRepository,
+};
 
-pub async fn insert_new(pool: &PgPool, new_user: &NewUser<'_>) -> sqlx::Result<()> {
-    let _ = sqlx::query!(
-        "INSERT INTO users (name, email, username, password_hash) VALUES ($1, $2, $3, $4)",
-        new_user.name,
-        new_user.email,
-        new_user.username,
-        new_user.password_hash,
-    )
-    .execute(pool)
-    .await?;
-
-    Ok(())
+#[derive(Clone)]
+pub struct UserRepo {
+    pool: sqlx::PgPool,
 }
 
-pub async fn get_by_email(pool: &PgPool, email: &str) -> sqlx::Result<User> {
-    let user = sqlx::query_as!(User, "SELECT * FROM users WHERE email = $1", email)
-        .fetch_one(pool)
-        .await?;
-
-    Ok(user)
+impl UserRepo {
+    pub const fn new(pool: sqlx::PgPool) -> Self { Self { pool } }
 }
 
-pub async fn get_by_username(pool: &PgPool, username: &str) -> sqlx::Result<User> {
-    let user = sqlx::query_as!(User, "SELECT * FROM users WHERE username = $1", username)
-        .fetch_one(pool)
+#[async_trait::async_trait]
+impl UserRepository for UserRepo {
+    async fn insert_new(&self, new_user: &NewUser<'_>) -> sqlx::Result<()> {
+        let _ = sqlx::query!(
+            "INSERT INTO users (name, email, username, password_hash) VALUES ($1, $2, $3, $4)",
+            new_user.name,
+            new_user.email,
+            new_user.username,
+            new_user.password_hash,
+        )
+        .execute(&self.pool)
         .await?;
 
-    Ok(user)
+        Ok(())
+    }
+
+    async fn get_by_email(&self, email: &str) -> sqlx::Result<User> {
+        let user = sqlx::query_as!(User, "SELECT * FROM users WHERE email = $1", email)
+            .fetch_one(&self.pool)
+            .await?;
+
+        Ok(user)
+    }
+
+    async fn get_by_username(&self, username: &str) -> sqlx::Result<User> {
+        let user = sqlx::query_as!(User, "SELECT * FROM users WHERE username = $1", username)
+            .fetch_one(&self.pool)
+            .await?;
+
+        Ok(user)
+    }
 }
 
 #[cfg(test)]
@@ -64,17 +78,19 @@ mod tests {
     async fn inserts_and_gets_users() {
         with_test_pool(|pool| async move {
             let test_users = make_test_users();
+            let repo = UserRepo::new(pool);
 
             // Insert
             for user in &test_users {
-                insert_new(&pool, user)
+                repo.insert_new(user)
                     .await
                     .expect("failed to insert test user");
             }
 
             // Get by email
             for user in &test_users {
-                let got_by_email = get_by_email(&pool, user.email)
+                let got_by_email = repo
+                    .get_by_email(user.email)
                     .await
                     .expect("failed to get user by email");
 
@@ -83,7 +99,8 @@ mod tests {
 
             // Get by username
             for user in &test_users {
-                let got_by_username = get_by_username(&pool, user.username)
+                let got_by_username = repo
+                    .get_by_username(user.username)
                     .await
                     .expect("failed to get user by username");
 
@@ -96,13 +113,14 @@ mod tests {
     #[tokio::test]
     async fn sets_auto_generated_id_and_created_at() {
         with_test_pool(|pool| async move {
+            let repo = UserRepo::new(pool);
+
             for (i, user) in make_test_users().into_iter().enumerate() {
-                insert_new(&pool, &user)
-                    .await
-                    .expect("failed to insert user");
+                repo.insert_new(&user).await.expect("failed to insert user");
                 let created_time = Utc::now();
 
-                let got_user = get_by_email(&pool, user.email)
+                let got_user = repo
+                    .get_by_email(user.email)
                     .await
                     .expect("failed to get user");
 
@@ -120,6 +138,8 @@ mod tests {
     #[tokio::test]
     async fn rejects_duplicate_email() {
         with_test_pool(|pool| async move {
+            let repo = UserRepo::new(pool);
+
             let real_alice = NewUser {
                 name: "Alice",
                 email: "alice@example.com",
@@ -134,11 +154,11 @@ mod tests {
                 password_hash: "Ga45392*&$asd$",
             };
 
-            insert_new(&pool, &real_alice)
+            repo.insert_new(&real_alice)
                 .await
                 .expect("failed to insert real Alice");
 
-            let result = insert_new(&pool, &fake_alice).await;
+            let result = repo.insert_new(&fake_alice).await;
 
             assert!(matches!(result, Err(sqlx::Error::Database(_))));
         })
@@ -148,6 +168,8 @@ mod tests {
     #[tokio::test]
     async fn rejects_duplicate_username() {
         with_test_pool(|pool| async move {
+            let repo = UserRepo::new(pool);
+
             let real_bob = NewUser {
                 name: "Bob",
                 email: "bob@email.com",
@@ -162,11 +184,11 @@ mod tests {
                 password_hash: "$$%%wub2",
             };
 
-            insert_new(&pool, &real_bob)
+            repo.insert_new(&real_bob)
                 .await
                 .expect("failed to insert real Bob");
 
-            let result = insert_new(&pool, &fake_bob).await;
+            let result = repo.insert_new(&fake_bob).await;
 
             assert!(matches!(result, Err(sqlx::Error::Database(_))));
         })
@@ -176,6 +198,8 @@ mod tests {
     #[tokio::test]
     async fn rejects_empty_and_blank_fields() {
         with_test_pool(|pool| async move {
+            let repo = UserRepo::new(pool);
+
             let complete_user = NewUser {
                 name: "Carla",
                 email: "carla@mail.org",
@@ -195,7 +219,7 @@ mod tests {
             ];
 
             for user in incomplete_users {
-                let result = insert_new(&pool, &user).await;
+                let result = repo.insert_new(&user).await;
                 assert!(matches!(result, Err(sqlx::Error::Database(_))));
             }
         })
