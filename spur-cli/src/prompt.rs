@@ -1,5 +1,5 @@
 use crate::{auth::AuthPrompt, input_validators};
-use inquire::{Password, Text, error::InquireResult};
+use inquire::{Password, Text, error::InquireResult, validator::ValueRequiredValidator};
 use spur_shared::dto::{LoginRequest, SignupRequest};
 
 pub struct InteractiveAuthPrompt;
@@ -7,7 +7,7 @@ pub struct InteractiveAuthPrompt;
 impl AuthPrompt for InteractiveAuthPrompt {
     fn signup(&self) -> InquireResult<SignupRequest> {
         let name = Text::new("Name:")
-            .with_validator(input_validators::nonempty)
+            .with_validator(ValueRequiredValidator::new("Name cannot be empty"))
             .prompt()?;
 
         let email = Text::new("Email:")
@@ -15,7 +15,7 @@ impl AuthPrompt for InteractiveAuthPrompt {
             .prompt()?;
 
         let username = Text::new("Username:")
-            .with_validator(input_validators::nonempty)
+            .with_validator(ValueRequiredValidator::new("Username cannot be empty"))
             .prompt()?;
 
         let password = Password::new("Password:")
@@ -34,7 +34,7 @@ impl AuthPrompt for InteractiveAuthPrompt {
         // For logging into an existing account, only ask for the password once and don't check
         // password requirements other than being non-empty
         let password = Password::new("Password:")
-            .with_validator(input_validators::nonempty)
+            .with_validator(ValueRequiredValidator::new("Password cannot be empty"))
             .without_confirmation()
             .with_formatter(&|_| String::from("[hidden]"))
             .prompt()?;
