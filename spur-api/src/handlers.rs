@@ -1,9 +1,11 @@
 pub mod auth_handlers;
 
-type ResponseResult<T> = Result<
-    T,
-    (
-        axum::http::StatusCode,
-        axum::Json<spur_shared::dto::ErrorResponse>,
-    ),
->;
+use axum::{Json, http::StatusCode};
+use spur_shared::dto::ErrorResponse;
+
+type ResponseResult<T> = Result<T, (StatusCode, Json<ErrorResponse>)>;
+
+/// Creates a 400 BAD REQUEST response with the provided error message, wrapped in Err.
+const fn bad_request<T>(error: String) -> ResponseResult<T> {
+    Err((StatusCode::BAD_REQUEST, Json(ErrorResponse { error })))
+}

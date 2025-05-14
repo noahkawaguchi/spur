@@ -69,7 +69,7 @@ impl<R: UserRepository> AuthService for AuthSvc<R> {
 mod tests {
     use super::*;
     use chrono::Utc;
-    use mockall::predicate::*;
+    use mockall::predicate::eq;
 
     mod email_username_available {
         use super::*;
