@@ -1,7 +1,13 @@
+use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use std::{env, future};
 use url::Url;
 use uuid::Uuid;
+
+/// Finds whether two `DateTime`s are within 1000ms of each other.
+pub fn within_one_second(d1: DateTime<Utc>, d2: DateTime<Utc>) -> bool {
+    (d1 - d2).num_milliseconds().abs() < 1000
+}
 
 /// Creates an ephemeral test database, runs migrations on it, runs the test, and then drops the
 /// test database.

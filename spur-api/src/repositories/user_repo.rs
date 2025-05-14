@@ -48,7 +48,7 @@ impl UserRepository for UserRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::with_test_pool;
+    use crate::test_utils::{with_test_pool, within_one_second};
     use chrono::Utc;
 
     fn make_test_users() -> Vec<NewUser> {
@@ -125,7 +125,7 @@ mod tests {
                     .expect("failed to get user");
 
                 // created_at should be within one second of the approximate time created
-                assert!((got_user.created_at - created_time).num_seconds().abs() <= 1);
+                assert!(within_one_second(got_user.created_at, created_time));
 
                 // id should increment starting from 1
                 let expected_id: i32 = (i + 1).try_into().expect("failed to cast usize into i32");

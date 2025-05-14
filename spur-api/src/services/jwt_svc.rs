@@ -52,6 +52,7 @@ mod tests {
 
     mod claims {
         use super::*;
+        use crate::test_utils::within_one_second;
         use chrono::{DateTime, Days};
 
         #[test]
@@ -69,7 +70,7 @@ mod tests {
             )
             .expect("failed to create datetime");
 
-            assert!((exp - tomorrow).num_seconds().abs() <= 1);
+            assert!(within_one_second(exp, tomorrow));
             assert_eq!(claims.sub, id.to_string());
         }
     }
