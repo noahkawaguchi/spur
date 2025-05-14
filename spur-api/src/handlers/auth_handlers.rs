@@ -16,8 +16,11 @@ use std::sync::Arc;
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait AuthService: Send + Sync {
+    /// Checks if an account with the given email or username already exists in the database.
     async fn email_username_available(&self, req: &SignupRequest) -> Result<(), String>;
+    /// Hashes the password and creates a new user in the database.
     async fn register(&self, req: SignupRequest) -> Result<()>;
+    /// Checks `email` and `password` for a valid match in the database.
     async fn validate_credentials(&self, req: &LoginRequest) -> Result<User, String>;
 }
 

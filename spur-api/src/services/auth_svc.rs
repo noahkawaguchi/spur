@@ -24,7 +24,6 @@ impl<R: UserRepository> AuthSvc<R> {
 
 #[async_trait::async_trait]
 impl<R: UserRepository> AuthService for AuthSvc<R> {
-    /// Checks if an account with the given email or username already exists in the database.
     async fn email_username_available(&self, req: &SignupRequest) -> Result<(), String> {
         if self.repo.get_by_email(&req.email).await.is_ok() {
             return Err(String::from(
@@ -41,7 +40,6 @@ impl<R: UserRepository> AuthService for AuthSvc<R> {
         Ok(())
     }
 
-    /// Hashes the password and creates a new user in the database.
     async fn register(&self, req: SignupRequest) -> Result<()> {
         let hashed = bcrypt::hash(&req.password, bcrypt::DEFAULT_COST)?;
         let new_user = NewUser::from_request(req, hashed);
@@ -49,7 +47,6 @@ impl<R: UserRepository> AuthService for AuthSvc<R> {
         Ok(())
     }
 
-    /// Checks `email` and `password` for a valid match in the database.
     async fn validate_credentials(&self, req: &LoginRequest) -> Result<User, String> {
         // Check if the user exists
         let Ok(user) = self.repo.get_by_email(&req.email).await else {
