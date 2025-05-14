@@ -1,3 +1,5 @@
+#![allow(clippy::unnecessary_wraps)] // Because inquire expects a `Result` from validators
+
 use email_address::EmailAddress;
 use inquire::{
     CustomUserError,
@@ -5,7 +7,6 @@ use inquire::{
 };
 use spur_shared::validator::validate_password;
 
-#[allow(clippy::unnecessary_wraps)] // Because inquire expects a Result
 pub fn nonempty(input: &str) -> Result<Validation, CustomUserError> {
     if input.is_empty() {
         Ok(Validation::Invalid(ErrorMessage::Custom(String::from(
@@ -16,7 +17,6 @@ pub fn nonempty(input: &str) -> Result<Validation, CustomUserError> {
     }
 }
 
-#[allow(clippy::unnecessary_wraps)] // Because inquire expects a Result
 pub fn email(input: &str) -> Result<Validation, CustomUserError> {
     if EmailAddress::is_valid(input) {
         Ok(Validation::Valid)
@@ -27,7 +27,6 @@ pub fn email(input: &str) -> Result<Validation, CustomUserError> {
     }
 }
 
-#[allow(clippy::unnecessary_wraps)] // Because inquire expects a Result
 pub fn password(input: &str) -> Result<Validation, CustomUserError> {
     match validate_password(input) {
         Ok(()) => Ok(Validation::Valid),

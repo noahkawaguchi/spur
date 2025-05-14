@@ -1,98 +1,95 @@
-use crate::{error_response, input_validators, token_store};
-use anyhow::{Context, Result};
-use colored::Colorize;
-use inquire::{Password, Text};
+use crate::error_response;
+use anyhow::{Context, Result, anyhow};
+use inquire::error::InquireResult;
 use reqwest::{ClientBuilder, StatusCode};
 use spur_shared::dto::{LoginRequest, LoginResponse, SignupRequest};
 use url::Url;
 
-pub async fn signup(backend_url: &Url) -> Result<()> {
-    let name = Text::new("Name:")
-        .with_validator(input_validators::nonempty)
-        .prompt()?;
-
-    let email = Text::new("Email:")
-        .with_validator(input_validators::email)
-        .prompt()?;
-
-    let username = Text::new("Username:")
-        .with_validator(input_validators::nonempty)
-        .prompt()?;
-
-    let password = Password::new("Password:")
-        .with_formatter(&|_| String::from("[hidden]"))
-        .with_validator(input_validators::password)
-        .prompt()?;
-
-    let body = SignupRequest { name, email, username, password };
-
-    let response = ClientBuilder::new()
-        .build()?
-        .post(backend_url.join("signup")?)
-        .json(&body)
-        .send()
-        .await
-        .context("request failed".red())?;
-
-    if response.status() == StatusCode::CREATED {
-        println!("{}", "Successfully registered".green());
-    } else {
-        error_response::handle(response).await;
-    }
-
-    Ok(())
+pub trait AuthPrompt: Send + Sync {
+    /// Prompts the user for name, email, username, and password.
+    fn signup(&self) -> InquireResult<SignupRequest>;
+    /// Prompts the user for email and password.
+    fn login(&self) -> InquireResult<LoginRequest>;
 }
 
-pub async fn login(backend_url: &Url) -> Result<()> {
-    let email = Text::new("Email:")
-        .with_validator(input_validators::email)
-        .prompt()?;
-
-    // For logging into an existing account, only ask for the password once and don't check
-    // password requirements other than being non-empty
-    let password = Password::new("Password:")
-        .with_formatter(&|_| String::from("[hidden]"))
-        .with_validator(input_validators::nonempty)
-        .without_confirmation()
-        .prompt()?;
-
-    let body = LoginRequest { email, password };
-
-    let response = ClientBuilder::new()
-        .build()?
-        .post(backend_url.join("login")?)
-        .json(&body)
-        .send()
-        .await
-        .context("request failed".red())?;
-
-    if response.status() == StatusCode::OK {
-        println!("{}", "Successfully logged in".green());
-        token_store::save(&response.json::<LoginResponse>().await?.token)?;
-        println!("{}", "Successfully saved token".green());
-    } else {
-        error_response::handle(response).await;
-    }
-
-    Ok(())
+pub trait TokenStore: Send + Sync {
+    /// Saves the token to a text file.
+    fn save(&self, token: &str) -> Result<()>;
+    /// Reads the saved token if it exists.
+    fn load(&self) -> Result<String>;
 }
 
-pub async fn check(backend_url: &Url) -> Result<()> {
-    let token = token_store::load()?;
+pub struct AuthCmd<P, S>
+where
+    P: AuthPrompt,
+    S: TokenStore,
+{
+    pub prompt: P,
+    pub store: S,
+}
 
-    let response = ClientBuilder::new()
-        .build()?
-        .get(backend_url.join("check")?)
-        .bearer_auth(token)
-        .send()
-        .await
-        .context("request failed".red())?;
+impl<P, S> AuthCmd<P, S>
+where
+    P: AuthPrompt,
+    S: TokenStore,
+{
+    pub async fn signup(&self, backend_url: &Url) -> Result<String> {
+        let body = self.prompt.signup()?;
 
-    if response.status() == StatusCode::NO_CONTENT {
-        println!("{}", "Your token is valid".green());
-    } else {
-        error_response::handle(response).await;
+        let response = ClientBuilder::new()
+            .build()?
+            .post(backend_url.join("signup")?)
+            .json(&body)
+            .send()
+            .await
+            .context("request failed")?;
+
+        if response.status() == StatusCode::CREATED {
+            Ok(String::from("Successfully registered"))
+        } else {
+            Err(anyhow!(error_response::handle(response).await))
+        }
     }
 
-    Ok(())
+    pub async fn login(&self, backend_url: &Url) -> Result<String> {
+        let body = self.prompt.login()?;
+
+        let response = ClientBuilder::new()
+            .build()?
+            .post(backend_url.join("login")?)
+            .json(&body)
+            .send()
+            .await
+            .context("request failed")?;
+
+        if response.status() == StatusCode::OK {
+            match self
+                .store
+                .save(&response.json::<LoginResponse>().await?.token)
+            {
+                Ok(()) => Ok(String::from("Successfully logged in and saved token")),
+                Err(e) => Err(anyhow!(format!("Logged in but failed to save token: {e}"))),
+            }
+        } else {
+            Err(anyhow!(error_response::handle(response).await))
+        }
+    }
+
+    pub async fn check(&self, backend_url: &Url) -> Result<String> {
+        let token = self.store.load()?;
+
+        let response = ClientBuilder::new()
+            .build()?
+            .get(backend_url.join("check")?)
+            .bearer_auth(token)
+            .send()
+            .await
+            .context("request failed")?;
+
+        if response.status() == StatusCode::NO_CONTENT {
+            Ok(String::from("Your token is valid"))
+        } else {
+            Err(anyhow!(error_response::handle(response).await))
+        }
+    }
 }

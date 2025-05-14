@@ -1,26 +1,32 @@
-use anyhow::{Context, Result, anyhow};
-use colored::Colorize;
-use std::{fs, path::PathBuf};
+use crate::auth::TokenStore;
+use anyhow::{Context, Result};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
-/// Saves the token to a text file.
-pub fn save(token: &str) -> Result<()> {
-    fs::write(get_file_path()?, token).context("failed to write token to file".red())
+pub struct LocalTokenStore {
+    token_path: PathBuf,
 }
 
-/// Reads the saved token if it exists.
-pub fn load() -> Result<String> {
-    fs::read_to_string(get_file_path()?).context("failed to read token from file".red())
+impl LocalTokenStore {
+    /// Creates the .spur directory if it doesn't exist.
+    pub fn new(home_dir: &Path) -> Result<Self> {
+        let app_dir = home_dir.join(".spur");
+
+        fs::create_dir_all(&app_dir)
+            .with_context(|| format!("failed to create app directory at {app_dir:?}"))?;
+
+        Ok(Self { token_path: app_dir.join("token.txt") })
+    }
 }
 
-/// Gets the path to the token file, e.g. `~/.spur/token.txt`, creating the `.spur` directory if it
-/// doesn't exist.
-fn get_file_path() -> Result<PathBuf> {
-    let dir = dirs_next::home_dir()
-        .ok_or_else(|| anyhow!("could not find home directory".red()))?
-        .join(".spur");
+impl TokenStore for LocalTokenStore {
+    fn save(&self, token: &str) -> Result<()> {
+        fs::write(&self.token_path, token).context("failed to write token to file")
+    }
 
-    fs::create_dir_all(&dir)
-        .with_context(|| format!("failed to create directories for path {dir:?}").red())?;
-
-    Ok(dir.join("token.txt"))
+    fn load(&self) -> Result<String> {
+        fs::read_to_string(&self.token_path).context("failed to read token from file")
+    }
 }
