@@ -10,7 +10,7 @@ mod prompt;
 mod token_store;
 
 use anyhow::{Context, Result, anyhow};
-use auth::AuthCmd;
+use auth::AuthCommand;
 use clap::Parser;
 use colored::Colorize;
 use commands::{
@@ -33,12 +33,16 @@ async fn main() -> Result<()> {
     let backend_url = Url::parse(&backend_url_string).context("failed to parse BACKEND_URL")?;
 
     let home_dir = dirs_next::home_dir().ok_or_else(|| anyhow!("could not find home directory"))?;
-    let auth = AuthCmd { prompt: InteractiveAuthPrompt, store: LocalTokenStore::new(&home_dir)? };
+    let auth = AuthCommand {
+        prompt: InteractiveAuthPrompt,
+        store: LocalTokenStore::new(&home_dir)?,
+        backend_url: &backend_url,
+    };
 
     let result = match Cli::parse().command {
-        Signup => auth.signup(&backend_url).await,
-        Login => auth.login(&backend_url).await,
-        Check => auth.check(&backend_url).await,
+        Signup => auth.signup().await,
+        Login => auth.login().await,
+        Check => auth.check().await,
     };
 
     match result {

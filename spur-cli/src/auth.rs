@@ -19,26 +19,27 @@ pub trait TokenStore: Send + Sync {
     fn load(&self) -> Result<String>;
 }
 
-pub struct AuthCmd<P, S>
+pub struct AuthCommand<'a, P, S>
 where
     P: AuthPrompt,
     S: TokenStore,
 {
     pub prompt: P,
     pub store: S,
+    pub backend_url: &'a Url,
 }
 
-impl<P, S> AuthCmd<P, S>
+impl<P, S> AuthCommand<'_, P, S>
 where
     P: AuthPrompt,
     S: TokenStore,
 {
-    pub async fn signup(&self, backend_url: &Url) -> Result<String> {
+    pub async fn signup(&self) -> Result<String> {
         let body = self.prompt.signup()?;
 
         let response = ClientBuilder::new()
             .build()?
-            .post(backend_url.join("signup")?)
+            .post(self.backend_url.join("signup")?)
             .json(&body)
             .send()
             .await
@@ -51,12 +52,12 @@ where
         }
     }
 
-    pub async fn login(&self, backend_url: &Url) -> Result<String> {
+    pub async fn login(&self) -> Result<String> {
         let body = self.prompt.login()?;
 
         let response = ClientBuilder::new()
             .build()?
-            .post(backend_url.join("login")?)
+            .post(self.backend_url.join("login")?)
             .json(&body)
             .send()
             .await
@@ -75,12 +76,12 @@ where
         }
     }
 
-    pub async fn check(&self, backend_url: &Url) -> Result<String> {
+    pub async fn check(&self) -> Result<String> {
         let token = self.store.load()?;
 
         let response = ClientBuilder::new()
             .build()?
-            .get(backend_url.join("check")?)
+            .get(self.backend_url.join("check")?)
             .bearer_auth(token)
             .send()
             .await
