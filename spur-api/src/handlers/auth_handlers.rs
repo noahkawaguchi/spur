@@ -1,5 +1,5 @@
 use super::{ResponseResult, bad_request};
-use crate::{config::AppState, models::User, services::jwt_svc};
+use crate::{config::AppState, models::user::User, services::jwt_svc};
 use anyhow::Result;
 use axum::{Json, extract::State, http::StatusCode};
 use axum_extra::{

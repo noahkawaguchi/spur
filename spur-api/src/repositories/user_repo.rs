@@ -1,5 +1,5 @@
 use crate::{
-    models::{NewUser, User},
+    models::user::{NewUser, User},
     services::auth_svc::UserRepository,
 };
 

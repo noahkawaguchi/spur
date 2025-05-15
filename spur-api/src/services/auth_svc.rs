@@ -1,6 +1,6 @@
 use crate::{
     handlers::auth_handlers::AuthService,
-    models::{NewUser, User},
+    models::user::{NewUser, User},
 };
 use anyhow::Result;
 use spur_shared::dto::{LoginRequest, SignupRequest};
