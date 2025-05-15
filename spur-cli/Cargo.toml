@@ -16,6 +16,7 @@ dotenvy.workspace = true
 email_address.workspace = true
 inquire = "0.7.5"
 reqwest = { version = "0.12.15", features = ["json"] }
+serde.workspace = true
 spur-shared = { path = "../spur-shared" }
 tokio.workspace = true
 url.workspace = true

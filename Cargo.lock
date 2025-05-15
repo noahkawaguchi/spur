@@ -2339,6 +2339,7 @@ dependencies = [
  "email_address",
  "inquire",
  "reqwest",
+ "serde",
  "spur-shared",
  "tokio",
  "url",

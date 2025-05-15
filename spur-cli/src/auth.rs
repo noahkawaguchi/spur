@@ -1,9 +1,8 @@
-use crate::error_response;
-use anyhow::{Context, Result, anyhow};
+use crate::{error_response, request::ApiRequest};
+use anyhow::{Result, anyhow};
 use inquire::error::InquireResult;
-use reqwest::{ClientBuilder, StatusCode};
+use reqwest::StatusCode;
 use spur_shared::dto::{LoginRequest, LoginResponse, SignupRequest};
-use url::Url;
 
 pub trait AuthPrompt: Send + Sync {
     /// Prompts the user for name, email, username, and password.
@@ -19,31 +18,26 @@ pub trait TokenStore: Send + Sync {
     fn load(&self) -> Result<String>;
 }
 
-pub struct AuthCommand<'a, P, S>
+pub struct AuthCommand<P, S, R>
 where
     P: AuthPrompt,
     S: TokenStore,
+    R: ApiRequest,
 {
     pub prompt: P,
     pub store: S,
-    pub backend_url: &'a Url,
+    pub request: R,
 }
 
-impl<P, S> AuthCommand<'_, P, S>
+impl<P, S, R> AuthCommand<P, S, R>
 where
     P: AuthPrompt,
     S: TokenStore,
+    R: ApiRequest,
 {
     pub async fn signup(&self) -> Result<String> {
         let body = self.prompt.signup()?;
-
-        let response = ClientBuilder::new()
-            .build()?
-            .post(self.backend_url.join("signup")?)
-            .json(&body)
-            .send()
-            .await
-            .context("request failed")?;
+        let response = self.request.post("signup", body).await?;
 
         if response.status() == StatusCode::CREATED {
             Ok(String::from("Successfully registered"))
@@ -54,14 +48,7 @@ where
 
     pub async fn login(&self) -> Result<String> {
         let body = self.prompt.login()?;
-
-        let response = ClientBuilder::new()
-            .build()?
-            .post(self.backend_url.join("login")?)
-            .json(&body)
-            .send()
-            .await
-            .context("request failed")?;
+        let response = self.request.post("login", body).await?;
 
         if response.status() == StatusCode::OK {
             match self
@@ -78,14 +65,7 @@ where
 
     pub async fn check(&self) -> Result<String> {
         let token = self.store.load()?;
-
-        let response = ClientBuilder::new()
-            .build()?
-            .get(self.backend_url.join("check")?)
-            .bearer_auth(token)
-            .send()
-            .await
-            .context("request failed")?;
+        let response = self.request.get("check", &token).await?;
 
         if response.status() == StatusCode::NO_CONTENT {
             Ok(String::from("Your token is valid"))

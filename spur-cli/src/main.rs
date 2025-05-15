@@ -7,6 +7,7 @@ mod commands;
 mod error_response;
 mod input_validators;
 mod prompt;
+mod request;
 mod token_store;
 
 use anyhow::{Context, Result, anyhow};
@@ -18,6 +19,7 @@ use commands::{
     Commands::{Check, Login, Signup},
 };
 use prompt::InteractiveAuthPrompt;
+use request::BackendRequest;
 use std::env;
 use token_store::LocalTokenStore;
 use url::Url;
@@ -31,12 +33,12 @@ async fn main() -> Result<()> {
 
     let backend_url_string = env::var("BACKEND_URL").context("failed to load BACKEND_URL")?;
     let backend_url = Url::parse(&backend_url_string).context("failed to parse BACKEND_URL")?;
-
     let home_dir = dirs_next::home_dir().ok_or_else(|| anyhow!("could not find home directory"))?;
+
     let auth = AuthCommand {
         prompt: InteractiveAuthPrompt,
         store: LocalTokenStore::new(&home_dir)?,
-        backend_url: &backend_url,
+        request: BackendRequest::new(backend_url)?,
     };
 
     let result = match Cli::parse().command {
