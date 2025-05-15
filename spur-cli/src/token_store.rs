@@ -30,3 +30,42 @@ impl TokenStore for LocalTokenStore {
         fs::read_to_string(&self.token_path).context("failed to read token from file")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert_fs::{
+        TempDir,
+        assert::PathAssert,
+        prelude::{FileWriteStr, PathChild},
+    };
+
+    #[test]
+    fn saves_token_correctly() {
+        let temp_home = TempDir::new().expect("failed to create temp home");
+        let store = LocalTokenStore::new(&temp_home).expect("failed to initialize store");
+
+        let token = "my token";
+        store.save(token).expect("failed to save token");
+
+        temp_home.child(".spur").child("token.txt").assert(token);
+        temp_home.close().expect("failed to close temp home");
+    }
+
+    #[test]
+    fn loads_token_correctly() {
+        let temp_home = TempDir::new().expect("failed to create temp home");
+        let store = LocalTokenStore::new(&temp_home).expect("failed to initialize store");
+
+        let token = "your token";
+        temp_home
+            .child(".spur")
+            .child("token.txt")
+            .write_str(token)
+            .expect("failed to write to token file");
+
+        let got_token = store.load().expect("failed to load token");
+        assert_eq!(got_token, token);
+        temp_home.close().expect("failed to close temp home");
+    }
+}
