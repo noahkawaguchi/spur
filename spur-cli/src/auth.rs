@@ -1,4 +1,4 @@
-use crate::{error_response, request::ApiRequest};
+use crate::{error_response, request::RequestClient};
 use anyhow::{Result, anyhow};
 use inquire::error::InquireResult;
 use reqwest::StatusCode;
@@ -18,26 +18,26 @@ pub trait TokenStore: Send + Sync {
     fn load(&self) -> Result<String>;
 }
 
-pub struct AuthCommand<P, S, R>
+pub struct AuthCommand<P, S, C>
 where
     P: AuthPrompt,
     S: TokenStore,
-    R: ApiRequest,
+    C: RequestClient,
 {
     pub prompt: P,
     pub store: S,
-    pub request: R,
+    pub client: C,
 }
 
-impl<P, S, R> AuthCommand<P, S, R>
+impl<P, S, C> AuthCommand<P, S, C>
 where
     P: AuthPrompt,
     S: TokenStore,
-    R: ApiRequest,
+    C: RequestClient,
 {
     pub async fn signup(&self) -> Result<String> {
         let body = self.prompt.signup()?;
-        let response = self.request.post("signup", body).await?;
+        let response = self.client.post("signup", body).await?;
 
         if response.status() == StatusCode::CREATED {
             Ok(String::from("Successfully registered"))
@@ -48,7 +48,7 @@ where
 
     pub async fn login(&self) -> Result<String> {
         let body = self.prompt.login()?;
-        let response = self.request.post("login", body).await?;
+        let response = self.client.post("login", body).await?;
 
         if response.status() == StatusCode::OK {
             match self
@@ -65,7 +65,7 @@ where
 
     pub async fn check(&self) -> Result<String> {
         let token = self.store.load()?;
-        let response = self.request.get("check", &token).await?;
+        let response = self.client.get("check", &token).await?;
 
         if response.status() == StatusCode::NO_CONTENT {
             Ok(String::from("Your token is valid"))

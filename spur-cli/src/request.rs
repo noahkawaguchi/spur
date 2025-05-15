@@ -3,26 +3,25 @@ use reqwest::{ClientBuilder, Response};
 use serde::Serialize;
 use url::Url;
 
-pub trait ApiRequest: Send + Sync {
-    async fn post<S: Serialize>(&self, endpoint: &str, body: S) -> Result<Response>;
+pub trait RequestClient: Send + Sync {
+    async fn post<B: Serialize>(&self, endpoint: &str, body: B) -> Result<Response>;
     async fn get(&self, endpoint: &str, token: &str) -> Result<Response>;
 }
 
-pub struct BackendRequest {
+pub struct ApiRequestClient {
     client: reqwest::Client,
     base_url: Url,
 }
 
-impl BackendRequest {
-    /// Creates a request client.
+impl ApiRequestClient {
     pub fn new(base_url: Url) -> reqwest::Result<Self> {
         let client = ClientBuilder::new().build()?;
         Ok(Self { client, base_url })
     }
 }
 
-impl ApiRequest for BackendRequest {
-    async fn post<S: Serialize>(&self, endpoint: &str, body: S) -> Result<Response> {
+impl RequestClient for ApiRequestClient {
+    async fn post<B: Serialize>(&self, endpoint: &str, body: B) -> Result<Response> {
         let url = self.base_url.join(endpoint)?;
 
         self.client
@@ -42,5 +41,112 @@ impl ApiRequest for BackendRequest {
             .send()
             .await
             .with_context(|| format!("GET request to {url} failed"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use wiremock::{
+        Mock, MockServer, ResponseTemplate,
+        matchers::{body_json, header, method, path},
+    };
+
+    mod post {
+        use super::*;
+
+        #[tokio::test]
+        async fn creates_and_sends_requests() {
+            let mock_server = MockServer::start().await;
+
+            let body = json!({"key": "value", "apples": 5});
+
+            Mock::given(method("POST"))
+                .and(path("/hello"))
+                .and(header("content-type", "application/json"))
+                .and(body_json(&body))
+                .respond_with(ResponseTemplate::new(200))
+                .expect(1)
+                .mount(&mock_server)
+                .await;
+
+            let base_url = Url::parse(&mock_server.uri()).expect("failed to parse mock server URI");
+            let client =
+                ApiRequestClient::new(base_url).expect("failed to initialize request client");
+
+            client
+                .post("hello", body)
+                .await
+                .expect("failed to make request");
+        }
+
+        #[tokio::test]
+        async fn handles_failed_requests() {
+            let base = "http://localhost:0";
+            let endpoint = "anything";
+
+            let port_zero = Url::parse(base).expect("failed to parse port 0 URL");
+            let client =
+                ApiRequestClient::new(port_zero).expect("failed to initialize request client");
+
+            let result = client
+                .post(endpoint, json!({}))
+                .await
+                .expect_err("unexpected successful request");
+
+            assert_eq!(
+                result.to_string(),
+                format!("POST request to {base}/{endpoint} failed"),
+            );
+        }
+    }
+
+    mod get {
+        use super::*;
+
+        #[tokio::test]
+        async fn creates_and_sends_requests() {
+            let mock_server = MockServer::start().await;
+
+            let token = "my_secret_token";
+
+            Mock::given(method("GET"))
+                .and(path("/banana"))
+                .and(header("authorization", format!("Bearer {token}")))
+                .respond_with(ResponseTemplate::new(200))
+                .expect(1)
+                .mount(&mock_server)
+                .await;
+
+            let base_url = Url::parse(&mock_server.uri()).expect("failed to parse mock server URI");
+            let client =
+                ApiRequestClient::new(base_url).expect("failed to initialize request client");
+
+            client
+                .get("banana", token)
+                .await
+                .expect("failed to make request");
+        }
+
+        #[tokio::test]
+        async fn handles_failed_requests() {
+            let base = "http://localhost:0";
+            let endpoint = "nothing";
+
+            let port_zero = Url::parse(base).expect("failed to parse port 0 URL");
+            let client =
+                ApiRequestClient::new(port_zero).expect("failed to initialize request client");
+
+            let result = client
+                .get(endpoint, "token_token")
+                .await
+                .expect_err("unexpected successful request");
+
+            assert_eq!(
+                result.to_string(),
+                format!("GET request to {base}/{endpoint} failed"),
+            );
+        }
     }
 }

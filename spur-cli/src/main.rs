@@ -19,7 +19,7 @@ use commands::{
     Commands::{Check, Login, Signup},
 };
 use prompt::InteractiveAuthPrompt;
-use request::BackendRequest;
+use request::ApiRequestClient;
 use std::env;
 use token_store::LocalTokenStore;
 use url::Url;
@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
     let auth = AuthCommand {
         prompt: InteractiveAuthPrompt,
         store: LocalTokenStore::new(&home_dir)?,
-        request: BackendRequest::new(backend_url)?,
+        client: ApiRequestClient::new(backend_url)?,
     };
 
     let result = match Cli::parse().command {
