@@ -35,27 +35,21 @@ impl UserStore for UserRepo {
     }
 
     async fn get_by_id(&self, id: i32) -> sqlx::Result<User> {
-        let user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", id)
+        sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", id)
             .fetch_one(&self.pool)
-            .await?;
-
-        Ok(user)
+            .await
     }
 
     async fn get_by_email(&self, email: &str) -> sqlx::Result<User> {
-        let user = sqlx::query_as!(User, "SELECT * FROM users WHERE email = $1", email)
+        sqlx::query_as!(User, "SELECT * FROM users WHERE email = $1", email)
             .fetch_one(&self.pool)
-            .await?;
-
-        Ok(user)
+            .await
     }
 
     async fn get_by_username(&self, username: &str) -> sqlx::Result<User> {
-        let user = sqlx::query_as!(User, "SELECT * FROM users WHERE username = $1", username)
+        sqlx::query_as!(User, "SELECT * FROM users WHERE username = $1", username)
             .fetch_one(&self.pool)
-            .await?;
-
-        Ok(user)
+            .await
     }
 }
 

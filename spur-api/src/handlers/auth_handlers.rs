@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
-pub trait AuthService: Send + Sync {
+pub trait Authenticator: Send + Sync {
     /// Checks if an account with the given email or username already exists in the database.
     async fn email_username_available(&self, req: &SignupRequest) -> Result<(), String>;
     /// Hashes the password and creates a new user in the database.
@@ -25,7 +25,7 @@ pub trait AuthService: Send + Sync {
 }
 
 pub async fn signup(
-    State(auth_svc): State<Arc<dyn AuthService>>,
+    State(auth_svc): State<Arc<dyn Authenticator>>,
     Json(payload): Json<SignupRequest>,
 ) -> ResponseResult<StatusCode> {
     // Validate the request fields
@@ -115,7 +115,7 @@ mod tests {
                 password: String::from("insecure_password"),
             };
 
-            let mut mock_svc = MockAuthService::new();
+            let mut mock_svc = MockAuthenticator::new();
             mock_svc.expect_email_username_available().never();
             mock_svc.expect_register().never();
             mock_svc.expect_validate_credentials().never();
@@ -142,7 +142,7 @@ mod tests {
                 password: String::from("passWORD135@$^secURITY"),
             };
 
-            let mut mock_svc = MockAuthService::new();
+            let mut mock_svc = MockAuthenticator::new();
             mock_svc.expect_register().never();
             mock_svc.expect_validate_credentials().never();
             mock_svc
@@ -175,7 +175,7 @@ mod tests {
                 password: String::from("abcABC994&&ad"),
             };
 
-            let mut mock_svc = MockAuthService::new();
+            let mut mock_svc = MockAuthenticator::new();
             mock_svc.expect_validate_credentials().never();
             mock_svc
                 .expect_email_username_available()
@@ -208,7 +208,7 @@ mod tests {
                 password: String::from("abcABC994&&ad"),
             };
 
-            let mut mock_svc = MockAuthService::new();
+            let mut mock_svc = MockAuthenticator::new();
             mock_svc.expect_validate_credentials().never();
             mock_svc
                 .expect_email_username_available()
@@ -241,7 +241,7 @@ mod tests {
                 password: String::from("my_pass"),
             };
 
-            let mut mock_svc = MockAuthService::new();
+            let mut mock_svc = MockAuthenticator::new();
             mock_svc.expect_email_username_available().never();
             mock_svc.expect_register().never();
             mock_svc.expect_validate_credentials().never();
@@ -269,7 +269,7 @@ mod tests {
                 password: String::from("my_pass"),
             };
 
-            let mut mock_svc = MockAuthService::new();
+            let mut mock_svc = MockAuthenticator::new();
             mock_svc.expect_email_username_available().never();
             mock_svc.expect_register().never();
             mock_svc
@@ -310,7 +310,7 @@ mod tests {
 
             let good_request = LoginRequest { email: greg.email.clone(), password };
 
-            let mut mock_svc = MockAuthService::new();
+            let mut mock_svc = MockAuthenticator::new();
             mock_svc.expect_email_username_available().never();
             mock_svc.expect_register().never();
             mock_svc

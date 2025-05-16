@@ -1,4 +1,7 @@
-use crate::repositories::{friendship_repo::FriendshipStatus, user_repo::UserStore};
+use crate::{
+    handlers::friendship_handlers::FriendshipManager,
+    repositories::{friendship_repo::FriendshipStatus, user_repo::UserStore},
+};
 use std::sync::Arc;
 
 pub enum FriendshipOutcome {
@@ -9,6 +12,9 @@ pub enum FriendshipOutcome {
 }
 
 pub trait FriendshipStore: Send + Sync {
+    /// Creates a new friend request between the two users. `first_id` should always be less than
+    /// `second_id`. `requester_id`, equal to either `first_id` or `second_id`, indicates who
+    /// initiated the request.
     async fn new_request(
         &self,
         first_id: i32,
@@ -16,12 +22,18 @@ pub trait FriendshipStore: Send + Sync {
         requester_id: i32,
     ) -> sqlx::Result<()>;
 
+    /// Accepts a pending friend request that involves the two users. `first_id` should always be
+    /// less than `second_id`. The request will be accepted regardless of who initiated it.
     async fn accept_request(&self, first_id: i32, second_id: i32) -> sqlx::Result<()>;
 
+    /// Determines the status of the relationship between the two users. `first_id` should always
+    /// be less than `second_id`. See [`FriendshipStatus`] for more information on status meanings.
     async fn get_status(&self, first_id: i32, second_id: i32) -> sqlx::Result<FriendshipStatus>;
 
+    /// Retrieves the IDs of all confirmed friends of the user with the provided ID.
     async fn get_friends(&self, id: i32) -> sqlx::Result<Vec<i32>>;
 
+    /// Retrieves the IDs of all users who have pending requests to the user with the provided ID.
     async fn get_requests(&self, id: i32) -> sqlx::Result<Vec<i32>>;
 }
 
@@ -30,7 +42,7 @@ struct FriendshipSvc<S: FriendshipStore> {
     user_store: Arc<dyn UserStore>,
 }
 
-impl<S: FriendshipStore> FriendshipSvc<S> {
+impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
     async fn add_friend(
         &self,
         sender_id: i32,

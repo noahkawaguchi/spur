@@ -1,4 +1,4 @@
-use crate::handlers::auth_handlers::AuthService;
+use crate::handlers::auth_handlers::Authenticator;
 use anyhow::{Context, Result};
 use axum::extract::FromRef;
 use std::{env, sync::Arc};
@@ -26,6 +26,6 @@ impl AppConfig {
 
 #[derive(Clone, FromRef)]
 pub struct AppState {
-    pub auth_svc: Arc<dyn AuthService>,
+    pub auth_svc: Arc<dyn Authenticator>,
     pub jwt_secret: String,
 }

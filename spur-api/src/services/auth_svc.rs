@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    handlers::auth_handlers::AuthService,
+    handlers::auth_handlers::Authenticator,
     models::user::{NewUser, User},
     repositories::user_repo::UserStore,
 };
@@ -18,7 +18,7 @@ impl AuthSvc {
 }
 
 #[async_trait::async_trait]
-impl AuthService for AuthSvc {
+impl Authenticator for AuthSvc {
     async fn email_username_available(&self, req: &SignupRequest) -> Result<(), String> {
         if self.store.get_by_email(&req.email).await.is_ok() {
             return Err(String::from(
