@@ -1,6 +1,6 @@
 use crate::{
     models::user::{NewUser, User},
-    services::auth_svc::UserRepository,
+    services::auth_svc::UserStore,
 };
 
 #[derive(Clone)]
@@ -13,7 +13,7 @@ impl UserRepo {
 }
 
 #[async_trait::async_trait]
-impl UserRepository for UserRepo {
+impl UserStore for UserRepo {
     async fn insert_new(&self, new_user: &NewUser) -> sqlx::Result<()> {
         let _ = sqlx::query!(
             "INSERT INTO users (name, email, username, password_hash) VALUES ($1, $2, $3, $4)",

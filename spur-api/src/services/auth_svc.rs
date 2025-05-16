@@ -7,31 +7,31 @@ use spur_shared::dto::{LoginRequest, SignupRequest};
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
-pub trait UserRepository: Send + Sync {
+pub trait UserStore: Send + Sync {
     async fn insert_new(&self, new_user: &NewUser) -> sqlx::Result<()>;
     async fn get_by_email(&self, email: &str) -> sqlx::Result<User>;
     async fn get_by_username(&self, username: &str) -> sqlx::Result<User>;
 }
 
 #[derive(Clone)]
-pub struct AuthSvc<R: UserRepository> {
-    repo: R,
+pub struct AuthSvc<S: UserStore> {
+    store: S,
 }
 
-impl<R: UserRepository> AuthSvc<R> {
-    pub const fn new(repo: R) -> Self { Self { repo } }
+impl<S: UserStore> AuthSvc<S> {
+    pub const fn new(store: S) -> Self { Self { store } }
 }
 
 #[async_trait::async_trait]
-impl<R: UserRepository> AuthService for AuthSvc<R> {
+impl<S: UserStore> AuthService for AuthSvc<S> {
     async fn email_username_available(&self, req: &SignupRequest) -> Result<(), String> {
-        if self.repo.get_by_email(&req.email).await.is_ok() {
+        if self.store.get_by_email(&req.email).await.is_ok() {
             return Err(String::from(
                 "an account with the same email already exists",
             ));
         }
 
-        if self.repo.get_by_username(&req.username).await.is_ok() {
+        if self.store.get_by_username(&req.username).await.is_ok() {
             return Err(String::from(
                 "an account with the same username already exists",
             ));
@@ -43,13 +43,13 @@ impl<R: UserRepository> AuthService for AuthSvc<R> {
     async fn register(&self, req: SignupRequest) -> Result<()> {
         let hashed = bcrypt::hash(&req.password, bcrypt::DEFAULT_COST)?;
         let new_user = NewUser::from_request(req, hashed);
-        self.repo.insert_new(&new_user).await?;
+        self.store.insert_new(&new_user).await?;
         Ok(())
     }
 
     async fn validate_credentials(&self, req: &LoginRequest) -> Result<User, String> {
         // Check if the user exists
-        let Ok(user) = self.repo.get_by_email(&req.email).await else {
+        let Ok(user) = self.store.get_by_email(&req.email).await else {
             return Err(String::from("invalid email"));
         };
 
@@ -92,7 +92,7 @@ mod tests {
                 password: String::from("secret"),
             };
 
-            let mut mock_repo = MockUserRepository::new();
+            let mut mock_repo = MockUserStore::new();
             mock_repo.expect_insert_new().never();
             mock_repo.expect_get_by_username().never();
             mock_repo
@@ -121,7 +121,7 @@ mod tests {
                 password: String::from("super secret"),
             };
 
-            let mut mock_repo = MockUserRepository::new();
+            let mut mock_repo = MockUserStore::new();
             mock_repo.expect_insert_new().never();
             mock_repo
                 .expect_get_by_email()
@@ -153,7 +153,7 @@ mod tests {
                 password: String::from("maximum security"),
             };
 
-            let mut mock_repo = MockUserRepository::new();
+            let mut mock_repo = MockUserStore::new();
             mock_repo.expect_insert_new().never();
             mock_repo
                 .expect_get_by_email()
@@ -194,7 +194,7 @@ mod tests {
                 password: password.clone(),
             };
 
-            let mut mock_repo = MockUserRepository::new();
+            let mut mock_repo = MockUserStore::new();
 
             mock_repo.expect_get_by_email().never();
             mock_repo.expect_get_by_username().never();
@@ -229,7 +229,7 @@ mod tests {
                 password: String::from("extremely secure"),
             };
 
-            let mut mock_repo = MockUserRepository::new();
+            let mut mock_repo = MockUserStore::new();
             mock_repo.expect_insert_new().never();
             mock_repo.expect_get_by_username().never();
             mock_repo
@@ -263,7 +263,7 @@ mod tests {
                 password: String::from("incorrect password"),
             };
 
-            let mut mock_repo = MockUserRepository::new();
+            let mut mock_repo = MockUserStore::new();
             mock_repo.expect_insert_new().never();
             mock_repo.expect_get_by_username().never();
             mock_repo
@@ -297,7 +297,7 @@ mod tests {
 
             let correct_request = LoginRequest { email: correct_bob.email.clone(), password };
 
-            let mut mock_repo = MockUserRepository::new();
+            let mut mock_repo = MockUserStore::new();
             mock_repo.expect_insert_new().never();
             mock_repo.expect_get_by_username().never();
             mock_repo

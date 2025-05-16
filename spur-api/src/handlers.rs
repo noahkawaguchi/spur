@@ -1,4 +1,5 @@
 pub mod auth_handlers;
+pub mod friendship_handlers;
 
 use axum::{Json, http::StatusCode};
 use spur_shared::dto::ErrorResponse;

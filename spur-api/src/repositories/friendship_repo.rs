@@ -1,31 +1,24 @@
-use anyhow::{Result, anyhow};
+use crate::services::friendship_svc::{FriendshipStatus, FriendshipStore};
 
-enum FriendshipState {
-    Friends,
-    PendingFromFirst,
-    PendingFromSecond,
-    Nil,
-}
-
-struct FriendshipRepo {
+pub struct FriendshipRepo {
     pool: sqlx::PgPool,
 }
 
-impl FriendshipRepo {
+impl FriendshipStore for FriendshipRepo {
     async fn new_request(
         &self,
-        first_user_id: i32,
-        second_user_id: i32,
+        first_id: i32,
+        second_id: i32,
         requester_id: i32,
     ) -> sqlx::Result<()> {
         let _ = sqlx::query!(
             "
-            INSERT INTO friendships (first_user_id, second_user_id, requester_id) 
+            INSERT INTO friendships (first_id, second_id, requester_first) 
             VALUES ($1, $2, $3)
             ",
-            first_user_id,
-            second_user_id,
-            requester_id,
+            first_id,
+            second_id,
+            requester_id == first_id,
         )
         .execute(&self.pool)
         .await?;
@@ -33,15 +26,15 @@ impl FriendshipRepo {
         Ok(())
     }
 
-    async fn accept_request(&self, first_user_id: i32, second_user_id: i32) -> sqlx::Result<()> {
+    async fn accept_request(&self, first_id: i32, second_id: i32) -> sqlx::Result<()> {
         let _ = sqlx::query!(
             "
             UPDATE friendships
             SET confirmed = TRUE, confirmed_at = CURRENT_TIMESTAMP
-            WHERE first_user_id = $1 AND second_user_id = $2
+            WHERE first_id = $1 AND second_id = $2
             ",
-            first_user_id,
-            second_user_id,
+            first_id,
+            second_id,
         )
         .execute(&self.pool)
         .await?;
@@ -49,31 +42,26 @@ impl FriendshipRepo {
         Ok(())
     }
 
-    async fn get_friendship_state(
-        &self,
-        first_user_id: i32,
-        second_user_id: i32,
-    ) -> Result<FriendshipState> {
+    async fn get_status(&self, first_id: i32, second_id: i32) -> sqlx::Result<FriendshipStatus> {
         let row = sqlx::query!(
             "
-            SELECT requester_id, confirmed FROM friendships
-            WHERE first_user_id = $1 AND second_user_id = $2
+            SELECT requester_first, confirmed FROM friendships
+            WHERE first_id = $1 AND second_id = $2
             ",
-            first_user_id,
-            second_user_id,
+            first_id,
+            second_id,
         )
         .fetch_optional(&self.pool)
         .await?;
 
-        let state = match row {
-            None => FriendshipState::Nil,
-            Some(friends) if friends.confirmed => FriendshipState::Friends,
-            Some(pair) if pair.requester_id == first_user_id => FriendshipState::PendingFromFirst,
-            Some(pair) if pair.requester_id == second_user_id => FriendshipState::PendingFromSecond,
-            Some(_) => return Err(anyhow!("unexpected values checking friendship state")),
+        let status = match row {
+            None => FriendshipStatus::Nil,
+            Some(friends) if friends.confirmed => FriendshipStatus::Friends,
+            Some(pair) if pair.requester_first => FriendshipStatus::PendingFrom(first_id),
+            Some(_) => FriendshipStatus::PendingFrom(second_id),
         };
 
-        Ok(state)
+        Ok(status)
     }
 
     async fn get_friends(&self, id: i32) -> sqlx::Result<Vec<i32>> {
@@ -81,12 +69,12 @@ impl FriendshipRepo {
             "
             SELECT
                 CASE
-                    WHEN first_user_id = $1 THEN second_user_id
-                    ELSE first_user_id
+                    WHEN first_id = $1 THEN second_id
+                    ELSE first_id
                 END AS friend_id
             FROM friendships
-            WHERE confirmed = TRUE
-            AND (first_user_id = $1 OR second_user_id = $1)
+            WHERE confirmed
+            AND (first_id = $1 OR second_id = $1)
             ",
             id,
         )
@@ -99,16 +87,26 @@ impl FriendshipRepo {
     async fn get_requests(&self, id: i32) -> sqlx::Result<Vec<i32>> {
         let requesters = sqlx::query!(
             "
-            SELECT requester_id FROM friendships
-            WHERE confirmed = FALSE
-            AND (first_user_id = $1 OR second_user_id = $1)
-            AND requester_id != $1
+            SELECT first_id AS requester_id FROM friendships
+            WHERE NOT confirmed
+            AND second_id = $1
+            AND requester_first
+
+            UNION ALL
+
+            SELECT second_id AS requester_id FROM friendships
+            WHERE NOT confirmed
+            AND first_id = $1
+            AND NOT requester_first
             ",
             id,
         )
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(requesters.into_iter().map(|r| r.requester_id).collect())
+        Ok(requesters
+            .into_iter()
+            .filter_map(|r| r.requester_id)
+            .collect())
     }
 }
