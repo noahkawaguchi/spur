@@ -2400,6 +2400,7 @@ dependencies = [
  "chrono",
  "colored",
  "dotenvy",
+ "futures",
  "jsonwebtoken",
  "mockall",
  "serde",

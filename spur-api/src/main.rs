@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
         .connect(&config.database_url)
         .await?;
 
-    let user_repo = UserRepo::new(pool);
+    let user_repo = Arc::new(UserRepo::new(pool));
     let auth_svc = AuthSvc::new(user_repo);
 
     let state = AppState { auth_svc: Arc::new(auth_svc), jwt_secret: config.jwt_secret };

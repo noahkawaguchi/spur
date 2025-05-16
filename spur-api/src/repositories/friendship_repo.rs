@@ -1,4 +1,10 @@
-use crate::services::friendship_svc::{FriendshipStatus, FriendshipStore};
+use crate::services::friendship_svc::FriendshipStore;
+
+pub enum FriendshipStatus {
+    Friends,
+    PendingFrom(i32),
+    Nil,
+}
 
 pub struct FriendshipRepo {
     pool: sqlx::PgPool,

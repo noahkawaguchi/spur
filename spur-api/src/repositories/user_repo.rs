@@ -1,7 +1,13 @@
-use crate::{
-    models::user::{NewUser, User},
-    services::auth_svc::UserStore,
-};
+use crate::models::user::{NewUser, User};
+
+#[cfg_attr(test, mockall::automock)]
+#[async_trait::async_trait]
+pub trait UserStore: Send + Sync {
+    async fn insert_new(&self, new_user: &NewUser) -> sqlx::Result<()>;
+    async fn get_by_id(&self, id: i32) -> sqlx::Result<User>;
+    async fn get_by_email(&self, email: &str) -> sqlx::Result<User>;
+    async fn get_by_username(&self, username: &str) -> sqlx::Result<User>;
+}
 
 #[derive(Clone)]
 pub struct UserRepo {
@@ -26,6 +32,14 @@ impl UserStore for UserRepo {
         .await?;
 
         Ok(())
+    }
+
+    async fn get_by_id(&self, id: i32) -> sqlx::Result<User> {
+        let user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", id)
+            .fetch_one(&self.pool)
+            .await?;
+
+        Ok(user)
     }
 
     async fn get_by_email(&self, email: &str) -> sqlx::Result<User> {

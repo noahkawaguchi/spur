@@ -1,29 +1,24 @@
+use std::sync::Arc;
+
 use crate::{
     handlers::auth_handlers::AuthService,
     models::user::{NewUser, User},
+    repositories::user_repo::UserStore,
 };
 use anyhow::Result;
 use spur_shared::dto::{LoginRequest, SignupRequest};
 
-#[cfg_attr(test, mockall::automock)]
-#[async_trait::async_trait]
-pub trait UserStore: Send + Sync {
-    async fn insert_new(&self, new_user: &NewUser) -> sqlx::Result<()>;
-    async fn get_by_email(&self, email: &str) -> sqlx::Result<User>;
-    async fn get_by_username(&self, username: &str) -> sqlx::Result<User>;
-}
-
 #[derive(Clone)]
-pub struct AuthSvc<S: UserStore> {
-    store: S,
+pub struct AuthSvc {
+    store: Arc<dyn UserStore>,
 }
 
-impl<S: UserStore> AuthSvc<S> {
-    pub const fn new(store: S) -> Self { Self { store } }
+impl AuthSvc {
+    pub const fn new(store: Arc<dyn UserStore>) -> Self { Self { store } }
 }
 
 #[async_trait::async_trait]
-impl<S: UserStore> AuthService for AuthSvc<S> {
+impl AuthService for AuthSvc {
     async fn email_username_available(&self, req: &SignupRequest) -> Result<(), String> {
         if self.store.get_by_email(&req.email).await.is_ok() {
             return Err(String::from(
@@ -65,6 +60,7 @@ impl<S: UserStore> AuthService for AuthSvc<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::repositories::user_repo::MockUserStore;
     use chrono::Utc;
     use mockall::predicate::eq;
 
@@ -101,7 +97,7 @@ mod tests {
                 .once()
                 .return_once(|_| Ok(alice));
 
-            let auth_svc = AuthSvc::new(mock_repo);
+            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
 
             assert_eq!(
                 auth_svc.email_username_available(&alice_request).await,
@@ -134,7 +130,7 @@ mod tests {
                 .once()
                 .return_once(|_| Ok(alice));
 
-            let auth_svc = AuthSvc::new(mock_repo);
+            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
 
             assert_eq!(
                 auth_svc.email_username_available(&alice_request).await,
@@ -166,7 +162,7 @@ mod tests {
                 .once()
                 .return_once(|_| Err(sqlx::Error::RowNotFound));
 
-            let auth_svc = AuthSvc::new(mock_repo);
+            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
 
             assert_eq!(
                 auth_svc.email_username_available(&alice_request).await,
@@ -210,7 +206,7 @@ mod tests {
                 .once()
                 .return_once(|_| Ok(()));
 
-            let auth_svc = AuthSvc::new(mock_repo);
+            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
 
             assert!(matches!(
                 auth_svc.register(alice_request).await,
@@ -238,7 +234,7 @@ mod tests {
                 .once()
                 .return_once(|_| Err(sqlx::Error::RowNotFound));
 
-            let auth_svc = AuthSvc::new(mock_repo);
+            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
 
             assert_eq!(
                 auth_svc.validate_credentials(&login_request).await,
@@ -272,7 +268,7 @@ mod tests {
                 .once()
                 .return_once(|_| Ok(correct_bob));
 
-            let auth_svc = AuthSvc::new(mock_repo);
+            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
 
             assert_eq!(
                 auth_svc.validate_credentials(&incorrect_request).await,
@@ -306,7 +302,7 @@ mod tests {
                 .once()
                 .return_once(|_| Ok(also_bob));
 
-            let auth_svc = AuthSvc::new(mock_repo);
+            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
 
             assert_eq!(
                 auth_svc.validate_credentials(&correct_request).await,

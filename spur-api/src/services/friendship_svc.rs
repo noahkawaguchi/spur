@@ -1,9 +1,11 @@
-use crate::handlers::friendship_handlers::FriendshipOutcome;
+use crate::repositories::{friendship_repo::FriendshipStatus, user_repo::UserStore};
+use std::sync::Arc;
 
-pub enum FriendshipStatus {
-    Friends,
-    PendingFrom(i32),
-    Nil,
+pub enum FriendshipOutcome {
+    AlreadyFriends,
+    BecameFriends,
+    AlreadyRequested,
+    CreatedRequest,
 }
 
 pub trait FriendshipStore: Send + Sync {
@@ -24,15 +26,23 @@ pub trait FriendshipStore: Send + Sync {
 }
 
 struct FriendshipSvc<S: FriendshipStore> {
-    store: S,
+    friendship_store: S,
+    user_store: Arc<dyn UserStore>,
 }
 
 impl<S: FriendshipStore> FriendshipSvc<S> {
     async fn add_friend(
         &self,
         sender_id: i32,
-        recipient_id: i32,
+        recipient_username: &str,
     ) -> sqlx::Result<FriendshipOutcome> {
+        // First find the recipient's ID
+        let recipient_id = self
+            .user_store
+            .get_by_username(recipient_username)
+            .await?
+            .id;
+
         // Determine how this pair would be stored in the database
         let (first_id, second_id) = if sender_id < recipient_id {
             (sender_id, recipient_id)
@@ -41,7 +51,10 @@ impl<S: FriendshipStore> FriendshipSvc<S> {
         };
 
         // Get their current status
-        let status = self.store.get_status(first_id, second_id).await?;
+        let status = self
+            .friendship_store
+            .get_status(first_id, second_id)
+            .await?;
 
         match status {
             // Already friends, no action needed
@@ -53,16 +66,40 @@ impl<S: FriendshipStore> FriendshipSvc<S> {
             // There is already a pending request in the opposite direction,
             // so accept the existing request
             FriendshipStatus::PendingFrom(_) => {
-                self.store.accept_request(first_id, second_id).await?;
+                self.friendship_store
+                    .accept_request(first_id, second_id)
+                    .await?;
                 Ok(FriendshipOutcome::BecameFriends)
             }
             // No existing relationship, create a new request
             FriendshipStatus::Nil => {
-                self.store
+                self.friendship_store
                     .new_request(first_id, second_id, sender_id)
                     .await?;
                 Ok(FriendshipOutcome::CreatedRequest)
             }
         }
+    }
+
+    async fn get_friends(&self, id: i32) -> sqlx::Result<Vec<String>> {
+        futures::future::try_join_all(
+            self.friendship_store
+                .get_friends(id)
+                .await?
+                .into_iter()
+                .map(|id| async move { Ok(self.user_store.get_by_id(id).await?.username) }),
+        )
+        .await
+    }
+
+    async fn get_requests(&self, id: i32) -> sqlx::Result<Vec<String>> {
+        futures::future::try_join_all(
+            self.friendship_store
+                .get_requests(id)
+                .await?
+                .into_iter()
+                .map(|id| async move { Ok(self.user_store.get_by_id(id).await?.username) }),
+        )
+        .await
     }
 }
