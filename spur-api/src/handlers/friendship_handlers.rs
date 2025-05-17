@@ -1,6 +1,8 @@
 use crate::services::friendship_svc::FriendshipOutcome;
 
-pub trait FriendshipManager {
+#[cfg_attr(test, mockall::automock)]
+#[async_trait::async_trait]
+pub trait FriendshipManager: Send + Sync {
     /// Attempts to add a friendship between the two users. If the they are already friends, or if
     /// there is a pending request from the sender to the recipient, nothing is changed. If there
     /// is a pending request from the recipient to the sender, the request is accepted and the two

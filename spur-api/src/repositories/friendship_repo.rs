@@ -13,6 +13,11 @@ pub struct FriendshipRepo {
     pool: sqlx::PgPool,
 }
 
+impl FriendshipRepo {
+    pub const fn new(pool: sqlx::PgPool) -> Self { Self { pool } }
+}
+
+#[async_trait::async_trait]
 impl FriendshipStore for FriendshipRepo {
     async fn new_request(
         &self,

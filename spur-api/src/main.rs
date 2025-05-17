@@ -18,8 +18,8 @@ use axum::{
 };
 use config::{AppConfig, AppState};
 use handlers::auth_handlers;
-use repositories::user_repo::UserRepo;
-use services::auth_svc::AuthSvc;
+use repositories::{friendship_repo::FriendshipRepo, user_repo::UserRepo};
+use services::{auth_svc::AuthSvc, friendship_svc::FriendshipSvc};
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -33,10 +33,17 @@ async fn main() -> Result<()> {
         .connect(&config.database_url)
         .await?;
 
-    let user_repo = Arc::new(UserRepo::new(pool));
-    let auth_svc = AuthSvc::new(user_repo);
+    let user_repo = UserRepo::new_arc(pool.clone());
+    let friendship_repo = FriendshipRepo::new(pool);
 
-    let state = AppState { auth_svc: Arc::new(auth_svc), jwt_secret: config.jwt_secret };
+    let auth_svc = AuthSvc::new(Arc::clone(&user_repo));
+    let friendship_svc = FriendshipSvc::new(friendship_repo, user_repo);
+
+    let state = AppState {
+        jwt_secret: config.jwt_secret,
+        auth_svc: Arc::new(auth_svc),
+        friendship_svc: Arc::new(friendship_svc),
+    };
 
     let app = Router::new()
         .route("/signup", post(auth_handlers::signup))

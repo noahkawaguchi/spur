@@ -1,4 +1,5 @@
 use crate::models::user::{NewUser, User};
+use std::sync::Arc;
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
@@ -15,7 +16,7 @@ pub struct UserRepo {
 }
 
 impl UserRepo {
-    pub const fn new(pool: sqlx::PgPool) -> Self { Self { pool } }
+    pub fn new_arc(pool: sqlx::PgPool) -> Arc<dyn UserStore> { Arc::new(Self { pool }) }
 }
 
 #[async_trait::async_trait]
@@ -86,7 +87,7 @@ mod tests {
     async fn inserts_and_gets_users() {
         with_test_pool(|pool| async move {
             let test_users = make_test_users();
-            let repo = UserRepo::new(pool);
+            let repo = UserRepo::new_arc(pool);
 
             // Insert
             for user in &test_users {
@@ -121,7 +122,7 @@ mod tests {
     #[tokio::test]
     async fn sets_auto_generated_id_and_created_at() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new(pool);
+            let repo = UserRepo::new_arc(pool);
 
             for (i, user) in make_test_users().into_iter().enumerate() {
                 repo.insert_new(&user).await.expect("failed to insert user");
@@ -146,7 +147,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_duplicate_email() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new(pool);
+            let repo = UserRepo::new_arc(pool);
 
             let real_alice = NewUser {
                 name: String::from("Alice"),
@@ -176,7 +177,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_duplicate_username() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new(pool);
+            let repo = UserRepo::new_arc(pool);
 
             let real_bob = NewUser {
                 name: String::from("Bob"),
@@ -206,7 +207,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_empty_and_blank_fields() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new(pool);
+            let repo = UserRepo::new_arc(pool);
 
             let complete_user = NewUser {
                 name: String::from("Carla"),

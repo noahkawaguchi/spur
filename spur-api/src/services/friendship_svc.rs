@@ -11,6 +11,7 @@ pub enum FriendshipOutcome {
     CreatedRequest,
 }
 
+#[async_trait::async_trait]
 pub trait FriendshipStore: Send + Sync {
     /// Creates a new friend request between the two users. `first_id` should always be less than
     /// `second_id`. `requester_id`, equal to either `first_id` or `second_id`, indicates who
@@ -37,11 +38,18 @@ pub trait FriendshipStore: Send + Sync {
     async fn get_requests(&self, id: i32) -> sqlx::Result<Vec<i32>>;
 }
 
-struct FriendshipSvc<S: FriendshipStore> {
+pub struct FriendshipSvc<S: FriendshipStore> {
     friendship_store: S,
     user_store: Arc<dyn UserStore>,
 }
 
+impl<S: FriendshipStore> FriendshipSvc<S> {
+    pub fn new(friendship_store: S, user_store: Arc<dyn UserStore>) -> Self {
+        Self { friendship_store, user_store }
+    }
+}
+
+#[async_trait::async_trait]
 impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
     async fn add_friend(
         &self,

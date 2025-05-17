@@ -25,7 +25,7 @@ pub trait Authenticator: Send + Sync {
 }
 
 pub async fn signup(
-    State(auth_svc): State<Arc<dyn Authenticator>>,
+    auth_svc: State<Arc<dyn Authenticator>>,
     Json(payload): Json<SignupRequest>,
 ) -> ResponseResult<StatusCode> {
     // Validate the request fields
@@ -52,7 +52,7 @@ pub async fn signup(
 }
 
 pub async fn login(
-    State(state): State<AppState>,
+    state: State<AppState>,
     Json(payload): Json<LoginRequest>,
 ) -> ResponseResult<(StatusCode, Json<LoginResponse>)> {
     // Validate the request fields
@@ -82,7 +82,7 @@ pub async fn login(
 }
 
 pub async fn check(
-    State(jwt_secret): State<String>,
+    jwt_secret: State<String>,
     TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,
 ) -> ResponseResult<StatusCode> {
     match jwt_svc::verify_jwt(bearer.token(), jwt_secret.as_ref()) {
@@ -98,6 +98,9 @@ pub async fn check(
 mod tests {
     use super::*;
     use crate::services::jwt_svc::create_jwt;
+    use crate::{
+        handlers::friendship_handlers::MockFriendshipManager, services::jwt_svc::verify_jwt,
+    };
     use anyhow::anyhow;
     use axum_extra::{extract::TypedHeader, headers::Authorization};
     use chrono::Utc;
@@ -230,8 +233,6 @@ mod tests {
     }
 
     mod login {
-        use crate::services::jwt_svc::verify_jwt;
-
         use super::*;
 
         #[tokio::test]
@@ -247,8 +248,9 @@ mod tests {
             mock_svc.expect_validate_credentials().never();
 
             let state = AppState {
-                auth_svc: Arc::new(mock_svc),
                 jwt_secret: String::from("anything here"),
+                auth_svc: Arc::new(mock_svc),
+                friendship_svc: Arc::new(MockFriendshipManager::new()),
             };
 
             let (status, Json(body)) = login(State(state), Json(invalid_request))
@@ -279,8 +281,9 @@ mod tests {
                 .return_const(Err(String::from("invalid email")));
 
             let state = AppState {
-                auth_svc: Arc::new(mock_svc),
                 jwt_secret: String::from("anything here"),
+                auth_svc: Arc::new(mock_svc),
+                friendship_svc: Arc::new(MockFriendshipManager::new()),
             };
 
             let (status, Json(body)) = login(State(state), Json(unregistered))
@@ -319,7 +322,11 @@ mod tests {
                 .once()
                 .return_const(Ok(greg.clone()));
 
-            let state = AppState { auth_svc: Arc::new(mock_svc), jwt_secret: secret.clone() };
+            let state = AppState {
+                jwt_secret: secret.clone(),
+                auth_svc: Arc::new(mock_svc),
+                friendship_svc: Arc::new(MockFriendshipManager::new()),
+            };
 
             let (status, Json(body)) = login(State(state), Json(good_request))
                 .await
