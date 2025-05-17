@@ -50,6 +50,8 @@ async fn main() -> Result<()> {
         .route("/login", post(auth_handlers::login))
         .route("/check", get(auth_handlers::check))
         .route("/add", post(friendship_handlers::add_friend))
+        .route("/friends", get(friendship_handlers::get_friends))
+        .route("/requests", get(friendship_handlers::get_requests))
         .with_state(state);
 
     let listener = TcpListener::bind(&config.bind_addr).await?;

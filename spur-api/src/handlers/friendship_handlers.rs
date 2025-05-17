@@ -8,7 +8,7 @@ use axum_extra::{
 use colored::Colorize;
 use spur_shared::{
     requests::AddFriendRequest,
-    responses::{ErrorResponse, SuccessResponse},
+    responses::{ErrorResponse, SuccessResponse, UsernamesResponse},
 };
 use std::sync::Arc;
 
@@ -62,7 +62,7 @@ pub async fn add_friend(
             StatusCode::CONFLICT,
             Json(ErrorResponse {
                 error: format!(
-                    "You are already friends with {}",
+                    "you are already friends with {}",
                     payload.recipient_username
                 ),
             }),
@@ -72,7 +72,7 @@ pub async fn add_friend(
             StatusCode::CONFLICT,
             Json(ErrorResponse {
                 error: format!(
-                    "You already have a pending friend request to {}",
+                    "you already have a pending friend request to {}",
                     payload.recipient_username
                 ),
             }),
@@ -91,5 +91,57 @@ pub async fn add_friend(
                 message: format!("Created friend request to {}", payload.recipient_username),
             }),
         )),
+    }
+}
+
+pub async fn get_friends(
+    jwt_secret: State<String>,
+    friendship_svc: State<Arc<dyn FriendshipManager>>,
+    bearer: TypedHeader<Authorization<Bearer>>,
+) -> ResponseResult<(StatusCode, Json<UsernamesResponse>)> {
+    // User must be authorized
+    let Ok(id) = jwt_svc::verify_jwt(bearer.token(), jwt_secret.as_ref()) else {
+        return unauthorized_token();
+    };
+
+    // List this user's confirmed friends
+    match friendship_svc.get_friends(id).await {
+        Ok(friends) => Ok((
+            StatusCode::OK,
+            Json(UsernamesResponse { usernames: friends }),
+        )),
+        Err(e) => {
+            eprintln!("{}", e.to_string().red()); // TODO: use a logger
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse { error: String::from("failed to get friends") }),
+            ))
+        }
+    }
+}
+
+pub async fn get_requests(
+    jwt_secret: State<String>,
+    friendship_svc: State<Arc<dyn FriendshipManager>>,
+    bearer: TypedHeader<Authorization<Bearer>>,
+) -> ResponseResult<(StatusCode, Json<UsernamesResponse>)> {
+    // User must be authorized
+    let Ok(id) = jwt_svc::verify_jwt(bearer.token(), jwt_secret.as_ref()) else {
+        return unauthorized_token();
+    };
+
+    // List pending requests to this user
+    match friendship_svc.get_requests(id).await {
+        Ok(requests) => Ok((
+            StatusCode::OK,
+            Json(UsernamesResponse { usernames: requests }),
+        )),
+        Err(e) => {
+            eprintln!("{}", e.to_string().red()); // TODO: use a logger
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse { error: String::from("failed to get requests") }),
+            ))
+        }
     }
 }

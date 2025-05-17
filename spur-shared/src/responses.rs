@@ -16,3 +16,9 @@ pub struct SuccessResponse {
 pub struct LoginResponse {
     pub token: String,
 }
+
+/// A response body for listing the usernames of a set of users.
+#[derive(Serialize, Deserialize)]
+pub struct UsernamesResponse {
+    pub usernames: Vec<String>,
+}
