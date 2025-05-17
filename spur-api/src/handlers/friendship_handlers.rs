@@ -1,4 +1,4 @@
-use super::{ResponseResult, unauthorized_token};
+use super::{ResponseResult, bad_request, unauthorized_token};
 use crate::services::{friendship_svc::FriendshipOutcome, jwt_svc};
 use axum::{Json, extract::State, http::StatusCode};
 use axum_extra::{
@@ -11,6 +11,7 @@ use spur_shared::{
     responses::{ErrorResponse, SuccessResponse, UsernamesResponse},
 };
 use std::sync::Arc;
+use validator::Validate;
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
@@ -40,6 +41,11 @@ pub async fn add_friend(
     bearer: TypedHeader<Authorization<Bearer>>,
     payload: Json<AddFriendRequest>,
 ) -> ResponseResult<(StatusCode, Json<SuccessResponse>)> {
+    // Ensure the request body content is valid
+    if let Err(e) = payload.validate() {
+        return bad_request(e.to_string());
+    }
+
     // User must have a valid token to add a friend
     let Ok(sender_id) = jwt_svc::verify_jwt(bearer.token(), jwt_secret.as_ref()) else {
         return unauthorized_token();
