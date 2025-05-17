@@ -19,4 +19,10 @@ pub enum Commands {
 
     #[command(about = "Add a friend by username")]
     Add { username: String },
+
+    #[command(about = "List your friends")]
+    Friends,
+
+    #[command(about = "List pending requests to you")]
+    Requests,
 }

@@ -17,7 +17,7 @@ use clap::Parser;
 use colored::Colorize;
 use commands::{
     Cli,
-    Commands::{Add, Check, Login, Signup},
+    Commands::{Add, Check, Friends, Login, Requests, Signup},
 };
 use friends::FriendsCommand;
 use prompt::InteractiveAuthPrompt;
@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
             Signup => auth.signup().await,
             Login => auth.login().await,
             Check => auth.check().await,
-            Add { username: _ } => unreachable!(),
+            _ => unreachable!(),
         }
     } else {
         let token = &store.load()?;
@@ -58,6 +58,8 @@ async fn main() -> Result<()> {
 
         match command {
             Add { username } => friends.add_friend(username).await,
+            Friends => friends.list_friends().await,
+            Requests => friends.list_requests().await,
             _ => unreachable!(),
         }
     };
