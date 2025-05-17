@@ -4,10 +4,17 @@ use serde::Serialize;
 use url::Url;
 
 pub trait RequestClient: Send + Sync {
-    async fn post<B: Serialize>(&self, endpoint: &str, body: B) -> Result<Response>;
     async fn get(&self, endpoint: &str, token: &str) -> Result<Response>;
+
+    async fn post<B: Serialize>(
+        &self,
+        endpoint: &str,
+        body: B,
+        token: Option<&str>,
+    ) -> Result<Response>;
 }
 
+#[derive(Clone)]
 pub struct ApiRequestClient {
     client: reqwest::Client,
     base_url: Url,
@@ -21,17 +28,6 @@ impl ApiRequestClient {
 }
 
 impl RequestClient for ApiRequestClient {
-    async fn post<B: Serialize>(&self, endpoint: &str, body: B) -> Result<Response> {
-        let url = self.base_url.join(endpoint)?;
-
-        self.client
-            .post(url.as_str())
-            .json(&body)
-            .send()
-            .await
-            .with_context(|| format!("POST request to {url} failed"))
-    }
-
     async fn get(&self, endpoint: &str, token: &str) -> Result<Response> {
         let url = self.base_url.join(endpoint)?;
 
@@ -41,6 +37,25 @@ impl RequestClient for ApiRequestClient {
             .send()
             .await
             .with_context(|| format!("GET request to {url} failed"))
+    }
+
+    async fn post<B: Serialize>(
+        &self,
+        endpoint: &str,
+        body: B,
+        token: Option<&str>,
+    ) -> Result<Response> {
+        let url = self.base_url.join(endpoint)?;
+        let mut request = self.client.post(url.as_str()).json(&body);
+
+        if let Some(token) = token {
+            request = request.bearer_auth(token);
+        }
+
+        request
+            .send()
+            .await
+            .with_context(|| format!("POST request to {url} failed"))
     }
 }
 
@@ -76,7 +91,7 @@ mod tests {
                 ApiRequestClient::new(base_url).expect("failed to initialize request client");
 
             client
-                .post("hello", body)
+                .post("hello", body, None)
                 .await
                 .expect("failed to make request");
         }
@@ -91,7 +106,7 @@ mod tests {
                 ApiRequestClient::new(port_zero).expect("failed to initialize request client");
 
             let result = client
-                .post(endpoint, json!({}))
+                .post(endpoint, json!({}), None)
                 .await
                 .expect_err("unexpected successful request");
 

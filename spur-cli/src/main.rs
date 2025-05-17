@@ -5,6 +5,7 @@
 mod auth;
 mod commands;
 mod error_response;
+mod friends;
 mod input_validators;
 mod prompt;
 mod request;
@@ -16,11 +17,12 @@ use clap::Parser;
 use colored::Colorize;
 use commands::{
     Cli,
-    Commands::{Check, Login, Signup},
+    Commands::{Add, Check, Login, Signup},
 };
+use friends::FriendsCommand;
 use prompt::InteractiveAuthPrompt;
 use request::ApiRequestClient;
-use std::env;
+use std::{env, sync::Arc};
 use token_store::LocalTokenStore;
 use url::Url;
 
@@ -35,16 +37,22 @@ async fn main() -> Result<()> {
     let backend_url = Url::parse(&backend_url_string).context("failed to parse BACKEND_URL")?;
     let home_dir = dirs_next::home_dir().ok_or_else(|| anyhow!("could not find home directory"))?;
 
+    let client = ApiRequestClient::new(backend_url)?;
+    let store = LocalTokenStore::new_arc(&home_dir)?;
+
     let auth = AuthCommand {
         prompt: InteractiveAuthPrompt,
-        store: LocalTokenStore::new(&home_dir)?,
-        client: ApiRequestClient::new(backend_url)?,
+        store: Arc::clone(&store),
+        client: client.clone(),
     };
+
+    let friends = FriendsCommand { client, store };
 
     let result = match Cli::parse().command {
         Signup => auth.signup().await,
         Login => auth.login().await,
         Check => auth.check().await,
+        Add { username } => friends.add_friend(username).await,
     };
 
     match result {

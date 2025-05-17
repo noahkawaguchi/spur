@@ -1,4 +1,6 @@
-use crate::{error_response, request::RequestClient};
+use std::sync::Arc;
+
+use crate::{error_response, request::RequestClient, token_store::TokenStore};
 use anyhow::{Result, anyhow};
 use inquire::error::InquireResult;
 use reqwest::StatusCode;
@@ -14,33 +16,24 @@ pub trait AuthPrompt: Send + Sync {
     fn login(&self) -> InquireResult<LoginRequest>;
 }
 
-pub trait TokenStore: Send + Sync {
-    /// Saves the token to a text file.
-    fn save(&self, token: &str) -> Result<()>;
-    /// Reads the saved token if it exists.
-    fn load(&self) -> Result<String>;
-}
-
-pub struct AuthCommand<P, S, C>
+pub struct AuthCommand<P, C>
 where
     P: AuthPrompt,
-    S: TokenStore,
     C: RequestClient,
 {
     pub prompt: P,
-    pub store: S,
     pub client: C,
+    pub store: Arc<dyn TokenStore>,
 }
 
-impl<P, S, C> AuthCommand<P, S, C>
+impl<P, C> AuthCommand<P, C>
 where
     P: AuthPrompt,
-    S: TokenStore,
     C: RequestClient,
 {
     pub async fn signup(&self) -> Result<String> {
         let body = self.prompt.signup()?;
-        let response = self.client.post("signup", body).await?;
+        let response = self.client.post("signup", body, None).await?;
 
         if response.status() == StatusCode::CREATED {
             Ok(String::from("Successfully registered"))
@@ -51,7 +44,7 @@ where
 
     pub async fn login(&self) -> Result<String> {
         let body = self.prompt.login()?;
-        let response = self.client.post("login", body).await?;
+        let response = self.client.post("login", body, None).await?;
 
         if response.status() == StatusCode::OK {
             match self

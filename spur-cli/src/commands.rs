@@ -16,4 +16,7 @@ pub enum Commands {
 
     #[command(about = "Confirm JWT validity")]
     Check,
+
+    #[command(about = "Add a friend by username")]
+    Add { username: String },
 }
