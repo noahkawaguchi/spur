@@ -19,6 +19,7 @@ reqwest = { version = "0.12.15", features = ["json"] }
 serde.workspace = true
 spur-shared = { path = "../spur-shared" }
 tokio.workspace = true
+validator.workspace = true
 url.workspace = true
 
 [dev-dependencies]

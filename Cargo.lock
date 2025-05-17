@@ -2493,6 +2493,7 @@ dependencies = [
  "spur-shared",
  "tokio",
  "url",
+ "validator",
  "wiremock",
 ]
 

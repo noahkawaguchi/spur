@@ -5,6 +5,7 @@ use spur_shared::{
     requests::AddFriendRequest,
     responses::{SuccessResponse, UsernamesResponse},
 };
+use validator::Validate;
 
 pub struct FriendsCommand<'a, C: RequestClient> {
     pub client: C,
@@ -14,6 +15,11 @@ pub struct FriendsCommand<'a, C: RequestClient> {
 impl<C: RequestClient> FriendsCommand<'_, C> {
     pub async fn add_friend(&self, username: String) -> Result<String> {
         let body = AddFriendRequest { recipient_username: username };
+
+        if let Err(e) = body.validate() {
+            return Err(anyhow!(e));
+        }
+
         let response = self.client.post("add", body, Some(self.token)).await?;
 
         match response.status() {
