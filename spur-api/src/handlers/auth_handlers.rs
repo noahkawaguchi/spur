@@ -10,9 +10,9 @@ use colored::Colorize;
 use spur_shared::{
     requests::{LoginRequest, SignupRequest},
     responses::{ErrorResponse, LoginResponse},
-    validator::{validate_login_request, validate_signup_request},
 };
 use std::sync::Arc;
+use validator::Validate;
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
@@ -30,8 +30,8 @@ pub async fn signup(
     Json(payload): Json<SignupRequest>,
 ) -> ResponseResult<StatusCode> {
     // Validate the request fields
-    if let Err(e) = validate_signup_request(&payload) {
-        return bad_request(e);
+    if let Err(e) = payload.validate() {
+        return bad_request(e.to_string());
     }
 
     // Check for email and username uniqueness
@@ -57,8 +57,8 @@ pub async fn login(
     payload: Json<LoginRequest>,
 ) -> ResponseResult<(StatusCode, Json<LoginResponse>)> {
     // Validate the request fields
-    if let Err(e) = validate_login_request(&payload) {
-        return bad_request(e);
+    if let Err(e) = payload.validate() {
+        return bad_request(e.to_string());
     }
 
     // Validate the email and password
@@ -129,7 +129,9 @@ mod tests {
             assert_eq!(
                 body,
                 ErrorResponse {
-                    error: String::from("password must contain at least one uppercase letter"),
+                    error: String::from(
+                        "password: password must contain at least one uppercase letter"
+                    ),
                 }
             );
         }
@@ -258,7 +260,7 @@ mod tests {
             assert_eq!(status, StatusCode::BAD_REQUEST);
             assert_eq!(
                 body,
-                ErrorResponse { error: String::from("not a valid email address") },
+                ErrorResponse { error: String::from("email: not a valid email address") },
             );
         }
 

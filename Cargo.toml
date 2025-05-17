@@ -6,7 +6,7 @@ resolver = "3"
 anyhow = "1.0.98"
 colored = "3.0.0"
 dotenvy = "0.15.7"
-email_address = "0.2.9"
 serde = { version = "1.0.219", features = ["derive"] }
 tokio = { version = "1.45.0", features = ["full"] }
+validator = { version = "0.20.0", features = ["derive"] }
 url = "2.5.4"

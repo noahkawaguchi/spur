@@ -1,44 +1,14 @@
-use crate::requests::{LoginRequest, SignupRequest};
-use email_address::EmailAddress;
+use validator::ValidationError;
 
 /// # Errors
 ///
-/// Will return `Err` if `name` or `username` are empty, `email` is not in a valid email address format,
-/// or `password` does not meet the following requirements:
+/// Will return `Err` if `password` does not meet the following requirements:
 ///
 /// - At least 10 characters
 /// - At most 72 bytes
 /// - At least one lowercase letter, uppercase letter, digit, and special character
-pub fn validate_signup_request(req: &SignupRequest) -> Result<(), String> {
-    if req.name.is_empty() {
-        return Err(String::from("name cannot be empty"));
-    }
-
-    if req.username.is_empty() {
-        return Err(String::from("username cannot be empty"));
-    }
-
-    if !EmailAddress::is_valid(&req.email) {
-        return Err(String::from("not a valid email address"));
-    }
-
-    validate_password(&req.password)
-}
-
-/// # Errors
-///
-/// Will return `Err` if `email` is not in a valid email address format or if `password` is empty.
-/// Does not check specific password requirements because a new password is not being created.
-pub fn validate_login_request(req: &LoginRequest) -> Result<(), String> {
-    if !EmailAddress::is_valid(&req.email) {
-        return Err(String::from("not a valid email address"));
-    }
-
-    if req.password.is_empty() {
-        return Err(String::from("password cannot be empty"));
-    }
-
-    Ok(())
+pub fn validate_struct_pw(password: &str) -> Result<(), ValidationError> {
+    validate_password(password).map_err(|e| ValidationError::new("").with_message(e.into()))
 }
 
 /// # Errors

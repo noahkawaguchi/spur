@@ -5,7 +5,7 @@ use inquire::{
     CustomUserError,
     validator::{ErrorMessage, Validation},
 };
-use spur_shared::validator::validate_password;
+use spur_shared::password_validator::validate_password;
 
 pub fn email(input: &str) -> Result<Validation, CustomUserError> {
     if EmailAddress::is_valid(input) {
