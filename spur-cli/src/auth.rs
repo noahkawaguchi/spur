@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::{error_response, request::RequestClient, token_store::TokenStore};
 use anyhow::{Result, anyhow};
 use inquire::error::InquireResult;
@@ -16,19 +14,21 @@ pub trait AuthPrompt: Send + Sync {
     fn login(&self) -> InquireResult<LoginRequest>;
 }
 
-pub struct AuthCommand<P, C>
+pub struct AuthCommand<P, S, C>
 where
     P: AuthPrompt,
+    S: TokenStore,
     C: RequestClient,
 {
     pub prompt: P,
+    pub store: S,
     pub client: C,
-    pub store: Arc<dyn TokenStore>,
 }
 
-impl<P, C> AuthCommand<P, C>
+impl<P, S, C> AuthCommand<P, S, C>
 where
     P: AuthPrompt,
+    S: TokenStore,
     C: RequestClient,
 {
     pub async fn signup(&self) -> Result<String> {

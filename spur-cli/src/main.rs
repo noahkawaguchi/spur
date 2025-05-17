@@ -22,8 +22,8 @@ use commands::{
 use friends::FriendsCommand;
 use prompt::InteractiveAuthPrompt;
 use request::ApiRequestClient;
-use std::{env, sync::Arc};
-use token_store::LocalTokenStore;
+use std::env;
+use token_store::{LocalTokenStore, TokenStore};
 use url::Url;
 
 #[tokio::main]
@@ -38,21 +38,28 @@ async fn main() -> Result<()> {
     let home_dir = dirs_next::home_dir().ok_or_else(|| anyhow!("could not find home directory"))?;
 
     let client = ApiRequestClient::new(backend_url)?;
-    let store = LocalTokenStore::new_arc(&home_dir)?;
+    let store = LocalTokenStore::new(&home_dir)?;
 
-    let auth = AuthCommand {
-        prompt: InteractiveAuthPrompt,
-        store: Arc::clone(&store),
-        client: client.clone(),
-    };
+    let command = Cli::parse().command;
 
-    let friends = FriendsCommand { client, store };
+    // Auth commands don't require the user to already have a token, while all others do
+    let result = if matches!(command, Signup | Login | Check) {
+        let auth = AuthCommand { prompt: InteractiveAuthPrompt, store, client };
 
-    let result = match Cli::parse().command {
-        Signup => auth.signup().await,
-        Login => auth.login().await,
-        Check => auth.check().await,
-        Add { username } => friends.add_friend(username).await,
+        match command {
+            Signup => auth.signup().await,
+            Login => auth.login().await,
+            Check => auth.check().await,
+            Add { username: _ } => unreachable!(),
+        }
+    } else {
+        let token = &store.load()?;
+        let friends = FriendsCommand { client, token };
+
+        match command {
+            Add { username } => friends.add_friend(username).await,
+            _ => unreachable!(),
+        }
     };
 
     match result {

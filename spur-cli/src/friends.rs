@@ -1,20 +1,17 @@
-use crate::{error_response, request::RequestClient, token_store::TokenStore};
+use crate::{error_response, request::RequestClient};
 use anyhow::{Result, anyhow};
 use reqwest::StatusCode;
 use spur_shared::{requests::AddFriendRequest, responses::SuccessResponse};
-use std::sync::Arc;
 
-pub struct FriendsCommand<C: RequestClient> {
+pub struct FriendsCommand<'a, C: RequestClient> {
     pub client: C,
-    pub store: Arc<dyn TokenStore>,
+    pub token: &'a str,
 }
 
-impl<C: RequestClient> FriendsCommand<C> {
+impl<C: RequestClient> FriendsCommand<'_, C> {
     pub async fn add_friend(&self, username: String) -> Result<String> {
-        let token = self.store.load()?;
         let body = AddFriendRequest { recipient_username: username };
-
-        let response = self.client.post("add", body, Some(&token)).await?;
+        let response = self.client.post("add", body, Some(self.token)).await?;
 
         match response.status() {
             StatusCode::OK | StatusCode::CREATED => {

@@ -2,7 +2,6 @@ use anyhow::{Context, Result};
 use std::{
     fs,
     path::{Path, PathBuf},
-    sync::Arc,
 };
 
 pub trait TokenStore: Send + Sync {
@@ -18,13 +17,13 @@ pub struct LocalTokenStore {
 
 impl LocalTokenStore {
     /// Creates the .spur directory if it doesn't exist.
-    pub fn new_arc(home_dir: &Path) -> Result<Arc<dyn TokenStore>> {
+    pub fn new(home_dir: &Path) -> Result<Self> {
         let app_dir = home_dir.join(".spur");
 
         fs::create_dir_all(&app_dir)
             .with_context(|| format!("failed to create app directory at {app_dir:?}"))?;
 
-        Ok(Arc::new(Self { token_path: app_dir.join("token.txt") }))
+        Ok(Self { token_path: app_dir.join("token.txt") })
     }
 }
 
@@ -50,7 +49,7 @@ mod tests {
     #[test]
     fn saves_token_correctly() {
         let temp_home = TempDir::new().expect("failed to create temp home");
-        let store = LocalTokenStore::new_arc(&temp_home).expect("failed to initialize store");
+        let store = LocalTokenStore::new(&temp_home).expect("failed to initialize store");
 
         let token = "my token";
         store.save(token).expect("failed to save token");
@@ -62,7 +61,7 @@ mod tests {
     #[test]
     fn loads_token_correctly() {
         let temp_home = TempDir::new().expect("failed to create temp home");
-        let store = LocalTokenStore::new_arc(&temp_home).expect("failed to initialize store");
+        let store = LocalTokenStore::new(&temp_home).expect("failed to initialize store");
 
         let token = "your token";
         temp_home
