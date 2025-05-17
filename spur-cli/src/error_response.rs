@@ -1,5 +1,5 @@
 use reqwest::Response;
-use spur_shared::dto::ErrorResponse;
+use spur_shared::responses::ErrorResponse;
 
 /// Parses the body as an error response and returns the error message, or the status if the
 /// parsing fails.

@@ -6,7 +6,7 @@ use crate::{
     repositories::user_repo::UserStore,
 };
 use anyhow::Result;
-use spur_shared::dto::{LoginRequest, SignupRequest};
+use spur_shared::requests::{LoginRequest, SignupRequest};
 
 #[derive(Clone)]
 pub struct AuthSvc {

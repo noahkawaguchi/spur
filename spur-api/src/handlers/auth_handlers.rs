@@ -8,8 +8,7 @@ use axum_extra::{
 };
 use colored::Colorize;
 use spur_shared::{
-    dto::{ErrorResponse, LoginRequest, LoginResponse, SignupRequest},
-    validator::{validate_login_request, validate_signup_request},
+    requests::{LoginRequest, SignupRequest}, responses::{ErrorResponse, LoginResponse}, validator::{validate_login_request, validate_signup_request}
 };
 use std::sync::Arc;
 

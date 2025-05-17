@@ -1,4 +1,4 @@
-use crate::dto::{LoginRequest, SignupRequest};
+use crate::requests::{LoginRequest, SignupRequest};
 use email_address::EmailAddress;
 
 /// # Errors

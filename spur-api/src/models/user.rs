@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use spur_shared::dto::SignupRequest;
+use spur_shared::requests::SignupRequest;
 
 #[cfg_attr(test, derive(Debug, Clone, PartialEq, Eq))]
 pub struct NewUser {

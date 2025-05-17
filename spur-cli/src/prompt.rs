@@ -1,6 +1,6 @@
 use crate::{auth::AuthPrompt, input_validators};
 use inquire::{Password, Text, error::InquireResult, validator::ValueRequiredValidator};
-use spur_shared::dto::{LoginRequest, SignupRequest};
+use spur_shared::requests::{LoginRequest, SignupRequest};
 
 pub struct InteractiveAuthPrompt;
 

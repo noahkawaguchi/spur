@@ -2,7 +2,10 @@ use crate::{error_response, request::RequestClient};
 use anyhow::{Result, anyhow};
 use inquire::error::InquireResult;
 use reqwest::StatusCode;
-use spur_shared::dto::{LoginRequest, LoginResponse, SignupRequest};
+use spur_shared::{
+    requests::{LoginRequest, SignupRequest},
+    responses::LoginResponse,
+};
 
 pub trait AuthPrompt: Send + Sync {
     /// Prompts the user for name, email, username, and password.
