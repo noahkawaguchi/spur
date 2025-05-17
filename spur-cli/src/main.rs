@@ -57,10 +57,10 @@ async fn main() -> Result<()> {
         let friends = FriendsCommand { client, token };
 
         match command {
+            Signup | Login | Check => unreachable!(),
             Add { username } => friends.add_friend(username).await,
             Friends => friends.list_friends().await,
             Requests => friends.list_requests().await,
-            _ => unreachable!(),
         }
     };
 
