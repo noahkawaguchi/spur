@@ -1,4 +1,4 @@
-use crate::services::friendship_svc::FriendshipStore;
+use crate::{error::TechnicalError, services::friendship_svc::FriendshipStore};
 
 pub enum FriendshipStatus {
     /// The two users are confirmed friends.
@@ -24,7 +24,7 @@ impl FriendshipStore for FriendshipRepo {
         first_id: i32,
         second_id: i32,
         requester_id: i32,
-    ) -> sqlx::Result<()> {
+    ) -> Result<(), TechnicalError> {
         let _ = sqlx::query!(
             "
             INSERT INTO friendships (first_id, second_id, requester_first) 
@@ -40,7 +40,7 @@ impl FriendshipStore for FriendshipRepo {
         Ok(())
     }
 
-    async fn accept_request(&self, first_id: i32, second_id: i32) -> sqlx::Result<()> {
+    async fn accept_request(&self, first_id: i32, second_id: i32) -> Result<(), TechnicalError> {
         let _ = sqlx::query!(
             "
             UPDATE friendships
@@ -56,7 +56,11 @@ impl FriendshipStore for FriendshipRepo {
         Ok(())
     }
 
-    async fn get_status(&self, first_id: i32, second_id: i32) -> sqlx::Result<FriendshipStatus> {
+    async fn get_status(
+        &self,
+        first_id: i32,
+        second_id: i32,
+    ) -> Result<FriendshipStatus, TechnicalError> {
         let row = sqlx::query!(
             "
             SELECT requester_first, confirmed FROM friendships
@@ -78,7 +82,7 @@ impl FriendshipStore for FriendshipRepo {
         Ok(status)
     }
 
-    async fn get_friends(&self, id: i32) -> sqlx::Result<Vec<i32>> {
+    async fn get_friends(&self, id: i32) -> Result<Vec<i32>, TechnicalError> {
         let friends = sqlx::query!(
             "
             SELECT
@@ -98,7 +102,7 @@ impl FriendshipStore for FriendshipRepo {
         Ok(friends.into_iter().filter_map(|f| f.friend_id).collect())
     }
 
-    async fn get_requests(&self, id: i32) -> sqlx::Result<Vec<i32>> {
+    async fn get_requests(&self, id: i32) -> Result<Vec<i32>, TechnicalError> {
         let requesters = sqlx::query!(
             "
             SELECT first_id AS requester_id FROM friendships

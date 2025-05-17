@@ -1,4 +1,5 @@
 use crate::{
+    error::{ApiError, TechnicalError},
     handlers::friendship_handlers::FriendshipManager,
     repositories::{friendship_repo::FriendshipStatus, user_repo::UserStore},
 };
@@ -21,21 +22,25 @@ pub trait FriendshipStore: Send + Sync {
         first_id: i32,
         second_id: i32,
         requester_id: i32,
-    ) -> sqlx::Result<()>;
+    ) -> Result<(), TechnicalError>;
 
     /// Accepts a pending friend request that involves the two users. `first_id` should always be
     /// less than `second_id`. The request will be accepted regardless of who initiated it.
-    async fn accept_request(&self, first_id: i32, second_id: i32) -> sqlx::Result<()>;
+    async fn accept_request(&self, first_id: i32, second_id: i32) -> Result<(), TechnicalError>;
 
     /// Determines the status of the relationship between the two users. `first_id` should always
     /// be less than `second_id`. See [`FriendshipStatus`] for more information on status meanings.
-    async fn get_status(&self, first_id: i32, second_id: i32) -> sqlx::Result<FriendshipStatus>;
+    async fn get_status(
+        &self,
+        first_id: i32,
+        second_id: i32,
+    ) -> Result<FriendshipStatus, TechnicalError>;
 
     /// Retrieves the IDs of all confirmed friends of the user with the provided ID.
-    async fn get_friends(&self, id: i32) -> sqlx::Result<Vec<i32>>;
+    async fn get_friends(&self, id: i32) -> Result<Vec<i32>, TechnicalError>;
 
     /// Retrieves the IDs of all users who have pending requests to the user with the provided ID.
-    async fn get_requests(&self, id: i32) -> sqlx::Result<Vec<i32>>;
+    async fn get_requests(&self, id: i32) -> Result<Vec<i32>, TechnicalError>;
 }
 
 pub struct FriendshipSvc<S: FriendshipStore> {
@@ -55,12 +60,17 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
         &self,
         sender_id: i32,
         recipient_username: &str,
-    ) -> sqlx::Result<FriendshipOutcome> {
+    ) -> Result<FriendshipOutcome, ApiError> {
         // First find the recipient's ID
         let recipient_id = self
             .user_store
             .get_by_username(recipient_username)
             .await?
+            .ok_or_else(|| {
+                ApiError::Nonexistent(format!(
+                    "There is no user with the username {recipient_username}"
+                ))
+            })?
             .id;
 
         // Determine how this pair would be stored in the database
@@ -78,7 +88,9 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
 
         match status {
             // Already friends, no action needed
-            FriendshipStatus::Friends => Ok(FriendshipOutcome::AlreadyFriends),
+            FriendshipStatus::Friends => Err(ApiError::Duplicate(format!(
+                "Already friends with {recipient_username}"
+            ))),
             // A request from this sender to this recipient already exists, no action needed
             FriendshipStatus::PendingFrom(id) if id == sender_id => {
                 Ok(FriendshipOutcome::AlreadyRequested)
@@ -101,7 +113,7 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
         }
     }
 
-    async fn get_friends(&self, id: i32) -> sqlx::Result<Vec<String>> {
+    async fn get_friends(&self, id: i32) -> Result<Vec<String>, TechnicalError> {
         futures::future::try_join_all(
             self.friendship_store
                 .get_friends(id)
@@ -112,7 +124,7 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
         .await
     }
 
-    async fn get_requests(&self, id: i32) -> sqlx::Result<Vec<String>> {
+    async fn get_requests(&self, id: i32) -> Result<Vec<String>, TechnicalError> {
         futures::future::try_join_all(
             self.friendship_store
                 .get_requests(id)

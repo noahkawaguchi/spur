@@ -1,5 +1,8 @@
 use super::{ResponseResult, bad_request, unauthorized_token};
-use crate::services::{friendship_svc::FriendshipOutcome, jwt_svc};
+use crate::{
+    error::{ApiError, TechnicalError},
+    services::{friendship_svc::FriendshipOutcome, jwt_svc},
+};
 use axum::{Json, extract::State, http::StatusCode};
 use axum_extra::{
     TypedHeader,
@@ -25,14 +28,14 @@ pub trait FriendshipManager: Send + Sync {
         &self,
         sender_id: i32,
         recipient_username: &str,
-    ) -> sqlx::Result<FriendshipOutcome>;
+    ) -> Result<FriendshipOutcome, ApiError>;
 
     /// Retrieves the usernames of all confirmed friends of the user with the provided ID.
-    async fn get_friends(&self, id: i32) -> sqlx::Result<Vec<String>>;
+    async fn get_friends(&self, id: i32) -> Result<Vec<String>, TechnicalError>;
 
     /// Retrieves the usernames of all users who have pending requests to the user with the
     /// provided ID.
-    async fn get_requests(&self, id: i32) -> sqlx::Result<Vec<String>>;
+    async fn get_requests(&self, id: i32) -> Result<Vec<String>, TechnicalError>;
 }
 
 pub async fn add_friend(
