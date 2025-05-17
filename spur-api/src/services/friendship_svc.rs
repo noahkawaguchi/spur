@@ -5,18 +5,13 @@ use crate::{
 };
 use std::sync::Arc;
 
-pub enum FriendshipOutcome {
-    AlreadyFriends,
-    BecameFriends,
-    AlreadyRequested,
-    CreatedRequest,
-}
-
 #[async_trait::async_trait]
 pub trait FriendshipStore: Send + Sync {
-    /// Creates a new friend request between the two users. `first_id` should always be less than
-    /// `second_id`. `requester_id`, equal to either `first_id` or `second_id`, indicates who
-    /// initiated the request.
+    /// Creates a new friend request between the two users.
+    ///
+    /// - `first_id` should always be less than `second_id`.
+    /// - `requester_id`, equal to either `first_id` or `second_id`, indicates who initiated the
+    /// request.
     async fn new_request(
         &self,
         first_id: i32,
@@ -24,12 +19,17 @@ pub trait FriendshipStore: Send + Sync {
         requester_id: i32,
     ) -> Result<(), TechnicalError>;
 
-    /// Accepts a pending friend request that involves the two users. `first_id` should always be
-    /// less than `second_id`. The request will be accepted regardless of who initiated it.
+    /// Accepts a pending friend request that involves the two users, regardless of who initiated
+    /// it.
+    ///
+    /// `first_id` should always be less than `second_id`.
     async fn accept_request(&self, first_id: i32, second_id: i32) -> Result<(), TechnicalError>;
 
-    /// Determines the status of the relationship between the two users. `first_id` should always
-    /// be less than `second_id`. See [`FriendshipStatus`] for more information on status meanings.
+    /// Determines the status of the relationship between the two users.
+    ///
+    /// `first_id` should always be less than `second_id`.
+    ///
+    /// See [`FriendshipStatus`] for more information on status meanings.
     async fn get_status(
         &self,
         first_id: i32,
@@ -56,11 +56,7 @@ impl<S: FriendshipStore> FriendshipSvc<S> {
 
 #[async_trait::async_trait]
 impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
-    async fn add_friend(
-        &self,
-        sender_id: i32,
-        recipient_username: &str,
-    ) -> Result<FriendshipOutcome, ApiError> {
+    async fn add_friend(&self, sender_id: i32, recipient_username: &str) -> Result<bool, ApiError> {
         // First find the recipient's ID
         let recipient_id = self
             .user_store
@@ -87,28 +83,30 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
             .await?;
 
         match status {
-            // Already friends, no action needed
+            // Already friends, cannot request to become friends
             FriendshipStatus::Friends => Err(ApiError::Duplicate(format!(
                 "Already friends with {recipient_username}"
             ))),
-            // A request from this sender to this recipient already exists, no action needed
-            FriendshipStatus::PendingFrom(id) if id == sender_id => {
-                Ok(FriendshipOutcome::AlreadyRequested)
-            }
-            // There is already a pending request in the opposite direction,
-            // so accept the existing request
+
+            // A request from this sender to this recipient already exists, cannot request again
+            FriendshipStatus::PendingFrom(id) if id == sender_id => Err(ApiError::Duplicate(
+                format!("A pending friend request to {recipient_username} already exists"),
+            )),
+
+            // Already a pending request in the opposite direction, so accept it
             FriendshipStatus::PendingFrom(_) => {
                 self.friendship_store
                     .accept_request(first_id, second_id)
                     .await?;
-                Ok(FriendshipOutcome::BecameFriends)
+                Ok(true)
             }
+
             // No existing relationship, create a new request
             FriendshipStatus::Nil => {
                 self.friendship_store
                     .new_request(first_id, second_id, sender_id)
                     .await?;
-                Ok(FriendshipOutcome::CreatedRequest)
+                Ok(false)
             }
         }
     }

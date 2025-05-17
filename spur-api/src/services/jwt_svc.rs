@@ -2,6 +2,16 @@ use anyhow::{Context, Result};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum JwtValidationError {
+    #[error(transparent)]
+    Jwt(#[from] jsonwebtoken::errors::Error),
+
+    #[error(transparent)]
+    Parse(#[from] std::num::ParseIntError),
+}
 
 #[derive(Serialize, Deserialize)]
 struct Claims {
@@ -33,7 +43,7 @@ pub fn create_jwt(id: i32, secret: &[u8]) -> Result<String> {
 }
 
 /// Validates a JSON web token and parses the user ID.
-pub fn verify_jwt(token: &str, secret: &[u8]) -> Result<i32> {
+pub fn validate_jwt(token: &str, secret: &[u8]) -> Result<i32, JwtValidationError> {
     let id = jsonwebtoken::decode::<Claims>(
         token,
         &DecodingKey::from_secret(secret),
@@ -84,7 +94,7 @@ mod tests {
             let secret = "super_duper_secret".as_ref();
 
             let token = create_jwt(id, secret).expect("failed to create token");
-            let got_id = verify_jwt(&token, secret).expect("failed to verify token");
+            let got_id = validate_jwt(&token, secret).expect("failed to verify token");
 
             assert_eq!(got_id, id);
         }
@@ -95,7 +105,7 @@ mod tests {
             let secret = "no one's gonna know".as_ref();
 
             let _ = create_jwt(id, secret).expect("failed to create token");
-            assert!(verify_jwt("fake token", secret).is_err());
+            assert!(validate_jwt("fake token", secret).is_err());
         }
 
         #[test]
@@ -104,7 +114,7 @@ mod tests {
             let secret = "shh".as_ref();
 
             let token = create_jwt(id, secret).expect("failed to create token");
-            assert!(verify_jwt(&token, "boo!".as_ref()).is_err());
+            assert!(validate_jwt(&token, "boo!".as_ref()).is_err());
         }
     }
 }

@@ -22,8 +22,10 @@ use validator::Validate;
 pub trait Authenticator: Send + Sync {
     /// Checks if an account with the given email or username already exists in the database.
     async fn email_username_available(&self, req: &SignupRequest) -> Result<(), ApiError>;
+
     /// Hashes the password and creates a new user in the database.
     async fn register(&self, req: SignupRequest) -> Result<(), TechnicalError>;
+
     /// Checks `email` and `password` for a valid match in the database.
     async fn validate_credentials(&self, req: &LoginRequest) -> Result<User, ApiError>;
 }
@@ -65,10 +67,8 @@ pub async fn check(
     jwt_secret: State<String>,
     bearer: TypedHeader<Authorization<Bearer>>,
 ) -> Result<StatusCode, ApiError> {
-    match jwt_svc::verify_jwt(bearer.token(), jwt_secret.as_ref()) {
-        Ok(_) => Ok(StatusCode::NO_CONTENT),
-        Err(_) => Err(ApiError::Token),
-    }
+    jwt_svc::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 // TODO: Now that the handlers are simpler with the help of thiserror, the tests below should

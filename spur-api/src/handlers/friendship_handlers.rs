@@ -1,17 +1,15 @@
-use super::{ResponseResult, bad_request, unauthorized_token};
 use crate::{
     error::{ApiError, TechnicalError},
-    services::{friendship_svc::FriendshipOutcome, jwt_svc},
+    services::jwt_svc,
 };
 use axum::{Json, extract::State, http::StatusCode};
 use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-use colored::Colorize;
 use spur_shared::{
     requests::AddFriendRequest,
-    responses::{ErrorResponse, SuccessResponse, UsernamesResponse},
+    responses::{SuccessResponse, UsernamesResponse},
 };
 use std::sync::Arc;
 use validator::Validate;
@@ -19,16 +17,20 @@ use validator::Validate;
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait FriendshipManager: Send + Sync {
-    /// Attempts to add a friendship between the two users. If the they are already friends, or if
-    /// there is a pending request from the sender to the recipient, nothing is changed. If there
-    /// is a pending request from the recipient to the sender, the request is accepted and the two
-    /// users become friends. If there is no existing relationship, a new request from the sender
-    /// to the recipient is created.
-    async fn add_friend(
-        &self,
-        sender_id: i32,
-        recipient_username: &str,
-    ) -> Result<FriendshipOutcome, ApiError>;
+    /// Attempts to add a friendship between the two users, returning whether or not they are now
+    /// friends.
+    ///
+    /// - If there is a pending request from the recipient to the sender (i.e., an existing request
+    /// in the opposite direction), the request is accepted and the two users become friends
+    /// (returns true).
+    /// - If there is no existing relationship, a new request from the sender to the recipient is
+    /// created (returns false).
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if the two users are already friends, or if there is already a pending
+    /// request from the sender to the recipient. (In which case nothing is mutated.)
+    async fn add_friend(&self, sender_id: i32, recipient_username: &str) -> Result<bool, ApiError>;
 
     /// Retrieves the usernames of all confirmed friends of the user with the provided ID.
     async fn get_friends(&self, id: i32) -> Result<Vec<String>, TechnicalError>;
@@ -43,63 +45,32 @@ pub async fn add_friend(
     friendship_svc: State<Arc<dyn FriendshipManager>>,
     bearer: TypedHeader<Authorization<Bearer>>,
     payload: Json<AddFriendRequest>,
-) -> ResponseResult<(StatusCode, Json<SuccessResponse>)> {
+) -> Result<(StatusCode, Json<SuccessResponse>), ApiError> {
     // Ensure the request body content is valid
-    if let Err(e) = payload.validate() {
-        return bad_request(e.to_string());
-    }
+    payload.validate()?;
 
     // User must have a valid token to add a friend
-    let Ok(sender_id) = jwt_svc::verify_jwt(bearer.token(), jwt_secret.as_ref()) else {
-        return unauthorized_token();
-    };
+    let sender_id = jwt_svc::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
 
     // Try to add the friend
-    match friendship_svc
+    let became_friends = friendship_svc
         .add_friend(sender_id, &payload.recipient_username)
-        .await
-    {
-        Err(e) => {
-            eprintln!("{}", e.to_string().red()); // TODO: use a logger
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse { error: String::from("failed to add friend") }),
-            ))
-        }
+        .await?;
 
-        Ok(FriendshipOutcome::AlreadyFriends) => Err((
-            StatusCode::CONFLICT,
-            Json(ErrorResponse {
-                error: format!(
-                    "you are already friends with {}",
-                    payload.recipient_username
-                ),
-            }),
-        )),
-
-        Ok(FriendshipOutcome::AlreadyRequested) => Err((
-            StatusCode::CONFLICT,
-            Json(ErrorResponse {
-                error: format!(
-                    "you already have a pending friend request to {}",
-                    payload.recipient_username
-                ),
-            }),
-        )),
-
-        Ok(FriendshipOutcome::BecameFriends) => Ok((
+    if became_friends {
+        Ok((
             StatusCode::OK,
             Json(SuccessResponse {
                 message: format!("You are now friends with {}", payload.recipient_username),
             }),
-        )),
-
-        Ok(FriendshipOutcome::CreatedRequest) => Ok((
+        ))
+    } else {
+        Ok((
             StatusCode::CREATED,
             Json(SuccessResponse {
-                message: format!("Created friend request to {}", payload.recipient_username),
+                message: format!("Created a friend request to {}", payload.recipient_username),
             }),
-        )),
+        ))
     }
 }
 
@@ -107,50 +78,32 @@ pub async fn get_friends(
     jwt_secret: State<String>,
     friendship_svc: State<Arc<dyn FriendshipManager>>,
     bearer: TypedHeader<Authorization<Bearer>>,
-) -> ResponseResult<(StatusCode, Json<UsernamesResponse>)> {
+) -> Result<(StatusCode, Json<UsernamesResponse>), ApiError> {
     // User must be authorized
-    let Ok(id) = jwt_svc::verify_jwt(bearer.token(), jwt_secret.as_ref()) else {
-        return unauthorized_token();
-    };
+    let id = jwt_svc::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
 
     // List this user's confirmed friends
-    match friendship_svc.get_friends(id).await {
-        Ok(friends) => Ok((
-            StatusCode::OK,
-            Json(UsernamesResponse { usernames: friends }),
-        )),
-        Err(e) => {
-            eprintln!("{}", e.to_string().red()); // TODO: use a logger
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse { error: String::from("failed to get friends") }),
-            ))
-        }
-    }
+    let friends = friendship_svc.get_friends(id).await?;
+
+    Ok((
+        StatusCode::OK,
+        Json(UsernamesResponse { usernames: friends }),
+    ))
 }
 
 pub async fn get_requests(
     jwt_secret: State<String>,
     friendship_svc: State<Arc<dyn FriendshipManager>>,
     bearer: TypedHeader<Authorization<Bearer>>,
-) -> ResponseResult<(StatusCode, Json<UsernamesResponse>)> {
+) -> Result<(StatusCode, Json<UsernamesResponse>), ApiError> {
     // User must be authorized
-    let Ok(id) = jwt_svc::verify_jwt(bearer.token(), jwt_secret.as_ref()) else {
-        return unauthorized_token();
-    };
+    let id = jwt_svc::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
 
     // List pending requests to this user
-    match friendship_svc.get_requests(id).await {
-        Ok(requests) => Ok((
-            StatusCode::OK,
-            Json(UsernamesResponse { usernames: requests }),
-        )),
-        Err(e) => {
-            eprintln!("{}", e.to_string().red()); // TODO: use a logger
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse { error: String::from("failed to get requests") }),
-            ))
-        }
-    }
+    let requests = friendship_svc.get_requests(id).await?;
+
+    Ok((
+        StatusCode::OK,
+        Json(UsernamesResponse { usernames: requests }),
+    ))
 }

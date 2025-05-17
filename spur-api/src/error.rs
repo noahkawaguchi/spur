@@ -1,3 +1,4 @@
+use crate::services::jwt_svc::JwtValidationError;
 use axum::{
     Json,
     http::StatusCode,
@@ -16,7 +17,7 @@ pub enum ApiError {
     Credentials(String),
 
     #[error("Expired or invalid token")]
-    Token,
+    Token(#[from] JwtValidationError),
 
     #[error("{0}")]
     Nonexistent(String),
@@ -74,7 +75,7 @@ impl IntoResponse for ApiError {
                 (StatusCode::UNAUTHORIZED, Json(ErrorResponse { error })).into_response()
             }
 
-            Self::Token => (
+            Self::Token(_) => (
                 StatusCode::UNAUTHORIZED,
                 Json(ErrorResponse { error: String::from("Expired or invalid token") }),
             )
