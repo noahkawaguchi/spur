@@ -17,7 +17,7 @@ use axum::{
     routing::{get, post},
 };
 use config::{AppConfig, AppState};
-use handlers::auth_handlers;
+use handlers::{auth_handlers, friendship_handlers};
 use repositories::{friendship_repo::FriendshipRepo, user_repo::UserRepo};
 use services::{auth_svc::AuthSvc, friendship_svc::FriendshipSvc};
 use sqlx::postgres::PgPoolOptions;
@@ -49,6 +49,7 @@ async fn main() -> Result<()> {
         .route("/signup", post(auth_handlers::signup))
         .route("/login", post(auth_handlers::login))
         .route("/check", get(auth_handlers::check))
+        .route("/add", post(friendship_handlers::add_friend))
         .with_state(state);
 
     let listener = TcpListener::bind(&config.bind_addr).await?;

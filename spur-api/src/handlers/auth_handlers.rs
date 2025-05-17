@@ -1,4 +1,4 @@
-use super::{ResponseResult, bad_request};
+use super::{ResponseResult, bad_request, unauthorized_token};
 use crate::{config::AppState, models::user::User, services::jwt_svc};
 use anyhow::Result;
 use axum::{Json, extract::State, http::StatusCode};
@@ -8,7 +8,9 @@ use axum_extra::{
 };
 use colored::Colorize;
 use spur_shared::{
-    requests::{LoginRequest, SignupRequest}, responses::{ErrorResponse, LoginResponse}, validator::{validate_login_request, validate_signup_request}
+    requests::{LoginRequest, SignupRequest},
+    responses::{ErrorResponse, LoginResponse},
+    validator::{validate_login_request, validate_signup_request},
 };
 use std::sync::Arc;
 
@@ -52,7 +54,7 @@ pub async fn signup(
 
 pub async fn login(
     state: State<AppState>,
-    Json(payload): Json<LoginRequest>,
+    payload: Json<LoginRequest>,
 ) -> ResponseResult<(StatusCode, Json<LoginResponse>)> {
     // Validate the request fields
     if let Err(e) = validate_login_request(&payload) {
@@ -82,14 +84,11 @@ pub async fn login(
 
 pub async fn check(
     jwt_secret: State<String>,
-    TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,
+    bearer: TypedHeader<Authorization<Bearer>>,
 ) -> ResponseResult<StatusCode> {
     match jwt_svc::verify_jwt(bearer.token(), jwt_secret.as_ref()) {
         Ok(_) => Ok(StatusCode::NO_CONTENT),
-        Err(_) => Err((
-            StatusCode::UNAUTHORIZED,
-            Json(ErrorResponse { error: String::from("expired or invalid token") }),
-        )),
+        Err(_) => unauthorized_token(),
     }
 }
 
