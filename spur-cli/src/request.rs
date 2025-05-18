@@ -97,6 +97,33 @@ mod tests {
         }
 
         #[tokio::test]
+        async fn optionally_sets_authorization_header() {
+            let mock_server = MockServer::start().await;
+
+            let body = json!({"top": "secret", "method": "jwt", "clementines": 1});
+            let token = "one or zero clementines";
+
+            Mock::given(method("POST"))
+                .and(path("/clementine"))
+                .and(header("content-type", "application/json"))
+                .and(header("authorization", format!("Bearer {token}")))
+                .and(body_json(&body))
+                .respond_with(ResponseTemplate::new(200))
+                .expect(1)
+                .mount(&mock_server)
+                .await;
+
+            let base_url = Url::parse(&mock_server.uri()).expect("failed to parse mock server URI");
+            let client =
+                ApiRequestClient::new(base_url).expect("failed to initialize request client");
+
+            client
+                .post("clementine", body, Some(token))
+                .await
+                .expect("failed to make request");
+        }
+
+        #[tokio::test]
         async fn handles_failed_requests() {
             let base = "http://localhost:0";
             let endpoint = "anything";
