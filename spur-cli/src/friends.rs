@@ -34,11 +34,16 @@ impl<C: RequestClient> FriendsCommand<'_, C> {
         let response = self.client.get("friends", self.token).await?;
 
         if response.status() == StatusCode::OK {
-            let friends_list = response
-                .json::<UsernamesResponse>()
-                .await?
-                .usernames
-                .join("\n");
+            let usernames = response.json::<UsernamesResponse>().await?.usernames;
+
+            let friends_list = format!(
+                "Your friends:\n    {}",
+                if usernames.is_empty() {
+                    String::from("(no friends)")
+                } else {
+                    usernames.join("\n    ")
+                }
+            );
 
             Ok(friends_list)
         } else {
@@ -50,11 +55,19 @@ impl<C: RequestClient> FriendsCommand<'_, C> {
         let response = self.client.get("requests", self.token).await?;
 
         if response.status() == StatusCode::OK {
-            let requests_list = response
-                .json::<UsernamesResponse>()
-                .await?
-                .usernames
-                .join("\n");
+            let usernames = response.json::<UsernamesResponse>().await?.usernames;
+
+            let requests_list = format!(
+                "Pending friend requests:\n    {}",
+                if usernames.is_empty() {
+                    String::from("(no requests)")
+                } else {
+                    format!(
+                        "{}\n(use the `add` command to accept)",
+                        usernames.join("\n    "),
+                    )
+                }
+            );
 
             Ok(requests_list)
         } else {

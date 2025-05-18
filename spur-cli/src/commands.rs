@@ -14,7 +14,7 @@ pub enum Commands {
     #[command(about = "Log in to an existing account")]
     Login,
 
-    #[command(about = "Confirm JWT validity")]
+    #[command(about = "Confirm JSON Web Token validity")]
     Check,
 
     #[command(about = "Add a friend by username")]

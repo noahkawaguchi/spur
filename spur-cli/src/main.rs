@@ -67,7 +67,14 @@ async fn main() -> Result<()> {
     match result {
         Err(e) => Err(anyhow!(e.to_string().red())),
         Ok(msg) => {
-            println!("{}", msg.green());
+            // Color only the first line green
+            let mut lines = msg.lines();
+            if let Some(first) = lines.next() {
+                println!("{}", first.green());
+            }
+            for line in lines {
+                println!("{line}");
+            }
             Ok(())
         }
     }
