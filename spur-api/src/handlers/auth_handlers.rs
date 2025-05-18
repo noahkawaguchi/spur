@@ -1,7 +1,7 @@
 use super::api_error::ApiError;
 use crate::{
     config::AppState,
-    models::user::User,
+    models::user::{User, UserRegistration},
     services::{domain_error::DomainError, jwt_svc},
     technical_error::TechnicalError,
 };
@@ -22,13 +22,17 @@ use validator::Validate;
 #[async_trait::async_trait]
 pub trait Authenticator: Send + Sync {
     /// Checks if an account with the given email or username already exists in the database.
-    async fn email_username_available(&self, req: &SignupRequest) -> Result<(), DomainError>;
+    async fn email_username_available(
+        &self,
+        email: &str,
+        username: &str,
+    ) -> Result<(), DomainError>;
 
     /// Hashes the password and creates a new user in the database.
-    async fn register(&self, req: SignupRequest) -> Result<(), DomainError>;
+    async fn register(&self, reg: UserRegistration) -> Result<(), DomainError>;
 
     /// Checks `email` and `password` for a valid match in the database.
-    async fn validate_credentials(&self, req: &LoginRequest) -> Result<User, DomainError>;
+    async fn validate_credentials(&self, email: &str, password: &str) -> Result<User, DomainError>;
 }
 
 pub async fn signup(
@@ -39,10 +43,12 @@ pub async fn signup(
     payload.validate()?;
 
     // Check for email and username uniqueness
-    auth_svc.email_username_available(&payload).await?;
+    auth_svc
+        .email_username_available(&payload.email, &payload.username)
+        .await?;
 
     // Register the new user
-    auth_svc.register(payload).await?;
+    auth_svc.register(payload.into()).await?;
 
     Ok(StatusCode::CREATED)
 }
@@ -55,7 +61,10 @@ pub async fn login(
     payload.validate()?;
 
     // Validate the email and password
-    let user = state.auth_svc.validate_credentials(&payload).await?;
+    let user = state
+        .auth_svc
+        .validate_credentials(&payload.email, &payload.password)
+        .await?;
 
     // Create a JWT
     let token = jwt_svc::create_jwt(user.id, state.jwt_secret.as_ref())

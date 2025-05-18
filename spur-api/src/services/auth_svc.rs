@@ -1,12 +1,11 @@
 use super::domain_error::{AuthError, DomainError};
 use crate::{
     handlers::auth_handlers::Authenticator,
-    models::user::{NewUser, User},
+    models::user::{User, UserRegistration},
     repositories::user_repo::UserStore,
     technical_error::TechnicalError,
 };
 use anyhow::Result;
-use spur_shared::requests::{LoginRequest, SignupRequest};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -20,36 +19,50 @@ impl AuthSvc {
 
 #[async_trait::async_trait]
 impl Authenticator for AuthSvc {
-    async fn email_username_available(&self, req: &SignupRequest) -> Result<(), DomainError> {
-        if self.store.get_by_email(&req.email).await?.is_some() {
-            return Err(AuthError::DuplicateEmail.into());
-        }
+    async fn email_username_available(
+        &self,
+        email: &str,
+        username: &str,
+    ) -> Result<(), DomainError> {
+        // Attempting to get a user with the provided email/username will return None if the
+        // email/username is available.
+        self.store
+            .get_by_email(email)
+            .await?
+            .map_or(Ok(()), |_| Err(AuthError::DuplicateEmail))?;
 
-        if self.store.get_by_username(&req.username).await?.is_some() {
-            return Err(AuthError::DuplicateUsername.into());
-        }
+        self.store
+            .get_by_username(username)
+            .await?
+            .map_or(Ok(()), |_| Err(AuthError::DuplicateUsername))?;
 
         Ok(())
     }
 
-    async fn register(&self, req: SignupRequest) -> Result<(), DomainError> {
-        let hashed =
-            bcrypt::hash(&req.password, bcrypt::DEFAULT_COST).map_err(TechnicalError::from)?;
-        let new_user = NewUser::from_request(req, hashed);
-        self.store.insert_new(&new_user).await?;
+    async fn register(&self, reg: UserRegistration) -> Result<(), DomainError> {
+        let pw_hash =
+            bcrypt::hash(&reg.password, bcrypt::DEFAULT_COST).map_err(TechnicalError::from)?;
+
+        self.store
+            .insert_new(&reg.into_new_user_with(pw_hash))
+            .await?;
+
         Ok(())
     }
 
-    async fn validate_credentials(&self, req: &LoginRequest) -> Result<User, DomainError> {
-        // Check if the user exists
-        let Some(user) = self.store.get_by_email(&req.email).await? else {
-            return Err(AuthError::InvalidEmail.into());
-        };
+    async fn validate_credentials(&self, email: &str, password: &str) -> Result<User, DomainError> {
+        // Validate the email and get the associated user
+        let user = self
+            .store
+            .get_by_email(email)
+            .await?
+            .ok_or(AuthError::InvalidEmail)?;
 
         // Validate the password
-        if !bcrypt::verify(&req.password, &user.password_hash).map_err(TechnicalError::from)? {
-            return Err(AuthError::InvalidPassword.into());
-        }
+        bcrypt::verify(password, &user.password_hash)
+            .map_err(TechnicalError::from)?
+            .then_some(())
+            .ok_or(AuthError::InvalidPassword)?;
 
         Ok(user)
     }
@@ -79,7 +92,7 @@ mod tests {
         #[tokio::test]
         async fn errors_for_existing_email() {
             let alice = new_alice();
-            let alice_request = SignupRequest {
+            let alice_registration = UserRegistration {
                 name: String::from("New Alice"),
                 email: alice.email.clone(),
                 username: String::from("new_alice"),
@@ -91,12 +104,14 @@ mod tests {
             mock_repo.expect_get_by_username().never();
             mock_repo
                 .expect_get_by_email()
-                .with(eq(alice_request.email.clone()))
+                .with(eq(alice_registration.email.clone()))
                 .once()
                 .return_once(|_| Ok(Some(alice)));
 
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc.email_username_available(&alice_request).await;
+            let result = auth_svc
+                .email_username_available(&alice_registration.email, &alice_registration.password)
+                .await;
 
             assert!(matches!(
                 result,
@@ -107,7 +122,7 @@ mod tests {
         #[tokio::test]
         async fn errors_for_existing_username() {
             let alice = new_alice();
-            let alice_request = SignupRequest {
+            let alice_registration = UserRegistration {
                 name: String::from("New Alice"),
                 email: String::from("new_alice@example.com"),
                 username: alice.username.clone(),
@@ -118,17 +133,19 @@ mod tests {
             mock_repo.expect_insert_new().never();
             mock_repo
                 .expect_get_by_email()
-                .with(eq(alice_request.email.clone()))
+                .with(eq(alice_registration.email.clone()))
                 .once()
                 .return_once(|_| Ok(None));
             mock_repo
                 .expect_get_by_username()
-                .with(eq(alice_request.username.clone()))
+                .with(eq(alice_registration.username.clone()))
                 .once()
                 .return_once(|_| Ok(Some(alice)));
 
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc.email_username_available(&alice_request).await;
+            let result = auth_svc
+                .email_username_available(&alice_registration.email, &alice_registration.username)
+                .await;
 
             assert!(matches!(
                 result,
@@ -138,7 +155,7 @@ mod tests {
 
         #[tokio::test]
         async fn returns_ok_if_available() {
-            let alice_request = SignupRequest {
+            let alice_registration = UserRegistration {
                 name: String::from("Unique Alice"),
                 email: String::from("unique@alice.com"),
                 username: String::from("alice_the_unique"),
@@ -149,19 +166,24 @@ mod tests {
             mock_repo.expect_insert_new().never();
             mock_repo
                 .expect_get_by_email()
-                .with(eq(alice_request.email.clone()))
+                .with(eq(alice_registration.email.clone()))
                 .once()
                 .return_once(|_| Ok(None));
             mock_repo
                 .expect_get_by_username()
-                .with(eq(alice_request.username.clone()))
+                .with(eq(alice_registration.username.clone()))
                 .once()
                 .return_once(|_| Ok(None));
 
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
 
             assert!(matches!(
-                auth_svc.email_username_available(&alice_request).await,
+                auth_svc
+                    .email_username_available(
+                        &alice_registration.email,
+                        &alice_registration.username,
+                    )
+                    .await,
                 Ok(()),
             ));
         }
@@ -179,7 +201,7 @@ mod tests {
                 String::from("top secret"),
             );
 
-            let alice_request = SignupRequest {
+            let alice_registration = UserRegistration {
                 name: name.clone(),
                 email: email.clone(),
                 username: username.clone(),
@@ -205,7 +227,7 @@ mod tests {
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
 
             assert!(matches!(
-                auth_svc.register(alice_request).await,
+                auth_svc.register(alice_registration).await,
                 anyhow::Result::Ok(()),
             ));
         }
@@ -216,22 +238,20 @@ mod tests {
 
         #[tokio::test]
         async fn errors_for_invalid_email() {
-            let login_request = LoginRequest {
-                email: String::from("bob@bob.bob"),
-                password: String::from("extremely secure"),
-            };
+            let email = String::from("bob@bob.bob");
+            let password = String::from("extremely secure");
 
             let mut mock_repo = MockUserStore::new();
             mock_repo.expect_insert_new().never();
             mock_repo.expect_get_by_username().never();
             mock_repo
                 .expect_get_by_email()
-                .with(eq(login_request.email.clone()))
+                .with(eq(email.clone()))
                 .once()
                 .return_once(|_| Ok(None));
 
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc.validate_credentials(&login_request).await;
+            let result = auth_svc.validate_credentials(&email, &password).await;
 
             assert!(matches!(
                 result,
@@ -251,22 +271,22 @@ mod tests {
                 created_at: Utc::now(),
             };
 
-            let incorrect_request = LoginRequest {
-                email: correct_bob.email.clone(),
-                password: String::from("incorrect password"),
-            };
+            let correct_email = correct_bob.email.clone();
+            let incorrect_password = String::from("incorrect password");
 
             let mut mock_repo = MockUserStore::new();
             mock_repo.expect_insert_new().never();
             mock_repo.expect_get_by_username().never();
             mock_repo
                 .expect_get_by_email()
-                .with(eq(incorrect_request.email.clone()))
+                .with(eq(correct_email.clone()))
                 .once()
                 .return_once(|_| Ok(Some(correct_bob)));
 
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc.validate_credentials(&incorrect_request).await;
+            let result = auth_svc
+                .validate_credentials(&correct_email, &incorrect_password)
+                .await;
 
             assert!(matches!(
                 result,
@@ -289,19 +309,19 @@ mod tests {
             };
             let also_bob = correct_bob.clone();
 
-            let correct_request = LoginRequest { email: correct_bob.email.clone(), password };
-
             let mut mock_repo = MockUserStore::new();
             mock_repo.expect_insert_new().never();
             mock_repo.expect_get_by_username().never();
             mock_repo
                 .expect_get_by_email()
-                .with(eq(correct_request.email.clone()))
+                .with(eq(correct_bob.email.clone()))
                 .once()
                 .return_once(|_| Ok(Some(also_bob)));
 
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc.validate_credentials(&correct_request).await;
+            let result = auth_svc
+                .validate_credentials(&correct_bob.email, &password)
+                .await;
 
             match result {
                 Ok(user) => assert_eq!(user, correct_bob),

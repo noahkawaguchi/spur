@@ -5,7 +5,7 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum JwtCreationError {
-    #[error(transparent)]
+    #[error("JWT error: {0}")]
     Jwt(#[from] jsonwebtoken::errors::Error),
 
     #[error("Unexpected pre-1970 system time: {0}")]
@@ -14,10 +14,10 @@ pub enum JwtCreationError {
 
 #[derive(Debug, Error)]
 pub enum JwtValidationError {
-    #[error(transparent)]
+    #[error("JWT error: {0}")]
     Jwt(#[from] jsonwebtoken::errors::Error),
 
-    #[error(transparent)]
+    #[error("Error parsing ID as integer: {0}")]
     Parse(#[from] std::num::ParseIntError),
 }
 

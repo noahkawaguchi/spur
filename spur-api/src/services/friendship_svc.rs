@@ -77,13 +77,12 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
             (recipient_id, sender_id)
         };
 
-        // Get their current status
-        let status = self
+        // Determine the pair's current status
+        match self
             .friendship_store
             .get_status(first_id, second_id)
-            .await?;
-
-        match status {
+            .await?
+        {
             // Already friends, cannot request to become friends
             FriendshipStatus::Friends => Err(FriendshipError::AlreadyFriends.into()),
 
@@ -97,6 +96,7 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
                 self.friendship_store
                     .accept_request(first_id, second_id)
                     .await?;
+
                 Ok(true)
             }
 
@@ -105,6 +105,7 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
                 self.friendship_store
                     .new_request(first_id, second_id, sender_id)
                     .await?;
+
                 Ok(false)
             }
         }

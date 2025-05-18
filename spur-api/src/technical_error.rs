@@ -10,8 +10,5 @@ pub enum TechnicalError {
     Bcrypt(#[from] bcrypt::BcryptError),
 
     #[error("JWT creation error: {0}")]
-    TokenCreation(#[from] JwtCreationError),
-
-    #[error("Technical error: {0}")]
-    Other(#[from] anyhow::Error),
+    JwtCreation(#[from] JwtCreationError),
 }
