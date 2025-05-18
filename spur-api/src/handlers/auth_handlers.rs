@@ -1,8 +1,9 @@
+use super::api_error::ApiError;
 use crate::{
     config::AppState,
-    error::{ApiError, TechnicalError},
     models::user::User,
-    services::jwt_svc,
+    services::{domain_error::DomainError, jwt_svc},
+    technical_error::TechnicalError,
 };
 use anyhow::Result;
 use axum::{Json, extract::State, http::StatusCode};
@@ -21,13 +22,13 @@ use validator::Validate;
 #[async_trait::async_trait]
 pub trait Authenticator: Send + Sync {
     /// Checks if an account with the given email or username already exists in the database.
-    async fn email_username_available(&self, req: &SignupRequest) -> Result<(), ApiError>;
+    async fn email_username_available(&self, req: &SignupRequest) -> Result<(), DomainError>;
 
     /// Hashes the password and creates a new user in the database.
-    async fn register(&self, req: SignupRequest) -> Result<(), TechnicalError>;
+    async fn register(&self, req: SignupRequest) -> Result<(), DomainError>;
 
     /// Checks `email` and `password` for a valid match in the database.
-    async fn validate_credentials(&self, req: &LoginRequest) -> Result<User, ApiError>;
+    async fn validate_credentials(&self, req: &LoginRequest) -> Result<User, DomainError>;
 }
 
 pub async fn signup(
@@ -57,8 +58,9 @@ pub async fn login(
     let user = state.auth_svc.validate_credentials(&payload).await?;
 
     // Create a JWT
-    let token =
-        jwt_svc::create_jwt(user.id, state.jwt_secret.as_ref()).map_err(TechnicalError::from)?;
+    let token = jwt_svc::create_jwt(user.id, state.jwt_secret.as_ref())
+        .map_err(TechnicalError::from)
+        .map_err(DomainError::from)?;
 
     Ok((StatusCode::OK, Json(LoginResponse { token })))
 }

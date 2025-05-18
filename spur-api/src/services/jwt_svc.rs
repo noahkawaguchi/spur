@@ -1,8 +1,16 @@
-use anyhow::{Context, Result};
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum JwtCreationError {
+    #[error(transparent)]
+    Jwt(#[from] jsonwebtoken::errors::Error),
+
+    #[error("Unexpected pre-1970 system time: {0}")]
+    Pre1970(DateTime<Utc>),
+}
 
 #[derive(Debug, Error)]
 pub enum JwtValidationError {
@@ -21,18 +29,20 @@ struct Claims {
 
 impl Claims {
     /// Initializes claims with an expiration 24 hours in the future.
-    fn new(id: i32) -> Result<Self> {
+    fn new(id: i32) -> Result<Self, JwtCreationError> {
         let now = Utc::now();
+
         let exp = (now + Duration::hours(24))
             .timestamp()
             .try_into()
-            .context(format!("unexpected pre-1970 system time: {now}"))?;
+            .map_err(|_| JwtCreationError::Pre1970(now))?;
+
         Ok(Self { sub: id.to_string(), exp })
     }
 }
 
 /// Creates a JSON web token with the id as the subject.
-pub fn create_jwt(id: i32, secret: &[u8]) -> Result<String> {
+pub fn create_jwt(id: i32, secret: &[u8]) -> Result<String, JwtCreationError> {
     let token = jsonwebtoken::encode(
         &Header::default(),
         &Claims::new(id)?,

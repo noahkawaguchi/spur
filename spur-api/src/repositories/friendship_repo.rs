@@ -1,4 +1,4 @@
-use crate::{error::TechnicalError, services::friendship_svc::FriendshipStore};
+use crate::{technical_error::TechnicalError, services::friendship_svc::FriendshipStore};
 
 pub enum FriendshipStatus {
     /// The two users are confirmed friends.

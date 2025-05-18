@@ -1,8 +1,9 @@
+use super::domain_error::{AuthError, DomainError};
 use crate::{
-    error::{ApiError, TechnicalError},
     handlers::auth_handlers::Authenticator,
     models::user::{NewUser, User},
     repositories::user_repo::UserStore,
+    technical_error::TechnicalError,
 };
 use anyhow::Result;
 use spur_shared::requests::{LoginRequest, SignupRequest};
@@ -19,38 +20,35 @@ impl AuthSvc {
 
 #[async_trait::async_trait]
 impl Authenticator for AuthSvc {
-    async fn email_username_available(&self, req: &SignupRequest) -> Result<(), ApiError> {
+    async fn email_username_available(&self, req: &SignupRequest) -> Result<(), DomainError> {
         if self.store.get_by_email(&req.email).await?.is_some() {
-            return Err(ApiError::Duplicate(String::from(
-                "an account with the same email already exists",
-            )));
+            return Err(AuthError::DuplicateEmail.into());
         }
 
         if self.store.get_by_username(&req.username).await?.is_some() {
-            return Err(ApiError::Duplicate(String::from(
-                "an account with the same username already exists",
-            )));
+            return Err(AuthError::DuplicateUsername.into());
         }
 
         Ok(())
     }
 
-    async fn register(&self, req: SignupRequest) -> Result<(), TechnicalError> {
-        let hashed = bcrypt::hash(&req.password, bcrypt::DEFAULT_COST)?;
+    async fn register(&self, req: SignupRequest) -> Result<(), DomainError> {
+        let hashed =
+            bcrypt::hash(&req.password, bcrypt::DEFAULT_COST).map_err(TechnicalError::from)?;
         let new_user = NewUser::from_request(req, hashed);
         self.store.insert_new(&new_user).await?;
         Ok(())
     }
 
-    async fn validate_credentials(&self, req: &LoginRequest) -> Result<User, ApiError> {
+    async fn validate_credentials(&self, req: &LoginRequest) -> Result<User, DomainError> {
         // Check if the user exists
         let Some(user) = self.store.get_by_email(&req.email).await? else {
-            return Err(ApiError::Credentials(String::from("invalid email")));
+            return Err(AuthError::InvalidEmail.into());
         };
 
         // Validate the password
         if !bcrypt::verify(&req.password, &user.password_hash).map_err(TechnicalError::from)? {
-            return Err(ApiError::Credentials(String::from("invalid password")));
+            return Err(AuthError::InvalidPassword.into());
         }
 
         Ok(user)
@@ -100,13 +98,10 @@ mod tests {
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
             let result = auth_svc.email_username_available(&alice_request).await;
 
-            match result {
-                Err(ApiError::Duplicate(msg)) => assert_eq!(
-                    msg,
-                    String::from("an account with the same email already exists",)
-                ),
-                other => panic!("unexpected result: {other:?}"),
-            }
+            assert!(matches!(
+                result,
+                Err(DomainError::Auth(AuthError::DuplicateEmail)),
+            ));
         }
 
         #[tokio::test]
@@ -135,13 +130,10 @@ mod tests {
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
             let result = auth_svc.email_username_available(&alice_request).await;
 
-            match result {
-                Err(ApiError::Duplicate(msg)) => assert_eq!(
-                    msg,
-                    String::from("an account with the same username already exists",)
-                ),
-                other => panic!("unexpected result: {other:?}"),
-            }
+            assert!(matches!(
+                result,
+                Err(DomainError::Auth(AuthError::DuplicateUsername)),
+            ));
         }
 
         #[tokio::test]
@@ -241,12 +233,10 @@ mod tests {
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
             let result = auth_svc.validate_credentials(&login_request).await;
 
-            match result {
-                Err(ApiError::Credentials(msg)) => {
-                    assert_eq!(msg, String::from("invalid email"));
-                }
-                other => panic!("unexpected result: {other:?}"),
-            }
+            assert!(matches!(
+                result,
+                Err(DomainError::Auth(AuthError::InvalidEmail))
+            ));
         }
 
         #[tokio::test]
@@ -278,12 +268,10 @@ mod tests {
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
             let result = auth_svc.validate_credentials(&incorrect_request).await;
 
-            match result {
-                Err(ApiError::Credentials(msg)) => {
-                    assert_eq!(msg, String::from("invalid password"));
-                }
-                other => panic!("unexpected result: {other:?}"),
-            }
+            assert!(matches!(
+                result,
+                Err(DomainError::Auth(AuthError::InvalidPassword))
+            ));
         }
 
         #[tokio::test]

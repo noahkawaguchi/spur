@@ -1,5 +1,5 @@
 use crate::{
-    error::TechnicalError,
+    technical_error::TechnicalError,
     models::user::{NewUser, User},
 };
 use std::sync::Arc;

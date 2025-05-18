@@ -1,7 +1,5 @@
-use crate::{
-    error::{ApiError, TechnicalError},
-    services::jwt_svc,
-};
+use super::api_error::ApiError;
+use crate::services::{domain_error::DomainError, jwt_svc};
 use axum::{Json, extract::State, http::StatusCode};
 use axum_extra::{
     TypedHeader,
@@ -30,14 +28,18 @@ pub trait FriendshipManager: Send + Sync {
     ///
     /// Will return `Err` if the two users are already friends, or if there is already a pending
     /// request from the sender to the recipient. (In which case nothing is mutated.)
-    async fn add_friend(&self, sender_id: i32, recipient_username: &str) -> Result<bool, ApiError>;
+    async fn add_friend(
+        &self,
+        sender_id: i32,
+        recipient_username: &str,
+    ) -> Result<bool, DomainError>;
 
     /// Retrieves the usernames of all confirmed friends of the user with the provided ID.
-    async fn get_friends(&self, id: i32) -> Result<Vec<String>, TechnicalError>;
+    async fn get_friends(&self, id: i32) -> Result<Vec<String>, DomainError>;
 
     /// Retrieves the usernames of all users who have pending requests to the user with the
     /// provided ID.
-    async fn get_requests(&self, id: i32) -> Result<Vec<String>, TechnicalError>;
+    async fn get_requests(&self, id: i32) -> Result<Vec<String>, DomainError>;
 }
 
 pub async fn add_friend(

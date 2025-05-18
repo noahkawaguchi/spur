@@ -1,7 +1,8 @@
+use super::domain_error::{DomainError, FriendshipError};
 use crate::{
-    error::{ApiError, TechnicalError},
     handlers::friendship_handlers::FriendshipManager,
     repositories::{friendship_repo::FriendshipStatus, user_repo::UserStore},
+    technical_error::TechnicalError,
 };
 use std::sync::Arc;
 
@@ -56,17 +57,17 @@ impl<S: FriendshipStore> FriendshipSvc<S> {
 
 #[async_trait::async_trait]
 impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
-    async fn add_friend(&self, sender_id: i32, recipient_username: &str) -> Result<bool, ApiError> {
+    async fn add_friend(
+        &self,
+        sender_id: i32,
+        recipient_username: &str,
+    ) -> Result<bool, DomainError> {
         // First find the recipient's ID
         let recipient_id = self
             .user_store
             .get_by_username(recipient_username)
             .await?
-            .ok_or_else(|| {
-                ApiError::Nonexistent(format!(
-                    "There is no user with the username {recipient_username}"
-                ))
-            })?
+            .ok_or(FriendshipError::NonexistentUser)?
             .id;
 
         // Determine how this pair would be stored in the database
@@ -84,14 +85,12 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
 
         match status {
             // Already friends, cannot request to become friends
-            FriendshipStatus::Friends => Err(ApiError::Duplicate(format!(
-                "Already friends with {recipient_username}"
-            ))),
+            FriendshipStatus::Friends => Err(FriendshipError::AlreadyFriends.into()),
 
             // A request from this sender to this recipient already exists, cannot request again
-            FriendshipStatus::PendingFrom(id) if id == sender_id => Err(ApiError::Duplicate(
-                format!("A pending friend request to {recipient_username} already exists"),
-            )),
+            FriendshipStatus::PendingFrom(id) if id == sender_id => {
+                Err(FriendshipError::AlreadyRequested.into())
+            }
 
             // Already a pending request in the opposite direction, so accept it
             FriendshipStatus::PendingFrom(_) => {
@@ -111,7 +110,7 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
         }
     }
 
-    async fn get_friends(&self, id: i32) -> Result<Vec<String>, TechnicalError> {
+    async fn get_friends(&self, id: i32) -> Result<Vec<String>, DomainError> {
         futures::future::try_join_all(
             self.friendship_store
                 .get_friends(id)
@@ -122,7 +121,7 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
         .await
     }
 
-    async fn get_requests(&self, id: i32) -> Result<Vec<String>, TechnicalError> {
+    async fn get_requests(&self, id: i32) -> Result<Vec<String>, DomainError> {
         futures::future::try_join_all(
             self.friendship_store
                 .get_requests(id)

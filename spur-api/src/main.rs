@@ -3,11 +3,11 @@
 #![warn(clippy::nursery)]
 
 mod config;
-mod error;
 mod handlers;
 mod models;
 mod repositories;
 mod services;
+mod technical_error;
 
 #[cfg(test)]
 mod test_utils;
