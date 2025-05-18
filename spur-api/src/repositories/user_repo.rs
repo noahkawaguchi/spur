@@ -1,6 +1,6 @@
 use crate::{
-    technical_error::TechnicalError,
     models::user::{NewUser, User},
+    technical_error::TechnicalError,
 };
 use std::sync::Arc;
 
@@ -105,6 +105,16 @@ mod tests {
                     .expect("failed to insert test user");
             }
 
+            // Get by ID (should automatically increment starting from 1)
+            for (i, user) in test_users.iter().enumerate() {
+                let got_by_id = repo
+                    .get_by_id(i32::try_from(i + 1).expect("failed to convert usize to i32"))
+                    .await
+                    .expect("failed to get user by ID");
+
+                assert_eq!(got_by_id, user);
+            }
+
             // Get by email
             for user in &test_users {
                 let got_by_email = repo
@@ -126,6 +136,20 @@ mod tests {
 
                 assert_eq!(got_by_username, user);
             }
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn returns_none_for_nonexistent_email_or_username() {
+        with_test_pool(|pool| async move {
+            let repo = UserRepo::new_arc(pool);
+
+            let from_nonsense_email = repo.get_by_email("nonsense@nothing.abc").await;
+            let from_nonsense_username = repo.get_by_username("nonsensical_naan").await;
+
+            assert!(matches!(from_nonsense_email, Ok(None)));
+            assert!(matches!(from_nonsense_username, Ok(None)));
         })
         .await;
     }
