@@ -18,7 +18,6 @@ use spur_shared::{
 use std::sync::Arc;
 use validator::Validate;
 
-#[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait Authenticator: Send + Sync {
     /// Checks if an account with the given email or username already exists in the database.
