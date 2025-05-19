@@ -1,11 +1,13 @@
 use anyhow::{Context, Result};
 use std::{
     fs,
+    io::Write,
     path::{Path, PathBuf},
 };
 
 pub trait TokenStore: Send + Sync {
-    /// Saves the token to a text file.
+    /// Saves the token to a text file in the app directory, using `0o600` (`-rw-------`)
+    /// permissions if on Unix.
     fn save(&self, token: &str) -> Result<()>;
     /// Reads the saved token if it exists.
     fn load(&self) -> Result<String>;
@@ -16,12 +18,22 @@ pub struct LocalTokenStore {
 }
 
 impl LocalTokenStore {
-    /// Creates the .spur directory if it doesn't exist.
+    /// Creates the `.spur` app directory in the user's home directory if it doesn't exist. If on
+    /// Unix, sets `0o700` (`drwx------`) permissions (even if the directory already existed).
     pub fn new(home_dir: &Path) -> Result<Self> {
         let app_dir = home_dir.join(".spur");
 
         fs::create_dir_all(&app_dir)
             .with_context(|| format!("failed to create app directory at {app_dir:?}"))?;
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let perms = fs::Permissions::from_mode(0o700);
+            fs::set_permissions(&app_dir, perms).with_context(|| {
+                format!("failed to set secure Unix permissions for app directory at {app_dir:?}")
+            })?;
+        }
 
         Ok(Self { token_path: app_dir.join("token.txt") })
     }
@@ -29,7 +41,22 @@ impl LocalTokenStore {
 
 impl TokenStore for LocalTokenStore {
     fn save(&self, token: &str) -> Result<()> {
-        fs::write(&self.token_path, token).context("failed to write token to file")
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&self.token_path)
+            .context("failed to open file for writing")?;
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            file.set_permissions(fs::Permissions::from_mode(0o600))
+                .context("failed to set secure Unix permissions for token file")?;
+        }
+
+        file.write_all(token.as_bytes())
+            .context("failed to write token to file")
     }
 
     fn load(&self) -> Result<String> {
