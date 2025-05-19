@@ -1,5 +1,6 @@
-use crate::{technical_error::TechnicalError, services::friendship_svc::FriendshipStore};
+use crate::{services::friendship_svc::FriendshipStore, technical_error::TechnicalError};
 
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub enum FriendshipStatus {
     /// The two users are confirmed friends.
     Friends,
@@ -126,5 +127,241 @@ impl FriendshipStore for FriendshipRepo {
             .into_iter()
             .filter_map(|r| r.requester_id)
             .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        models::user::NewUser,
+        repositories::user_repo::UserRepo,
+        test_utils::{with_test_pool, within_one_second},
+    };
+    use chrono::{DateTime, Utc};
+    use sqlx::PgPool;
+
+    struct Friendship {
+        first_id: i32,
+        second_id: i32,
+        requester_first: bool,
+        confirmed: bool,
+        requested_at: DateTime<Utc>,
+        confirmed_at: Option<DateTime<Utc>>,
+    }
+
+    async fn must_get_friendship(pool: PgPool, first_id: i32, second_id: i32) -> Friendship {
+        sqlx::query_as!(
+            Friendship,
+            "SELECT * FROM friendships WHERE first_id = $1 AND second_id = $2",
+            first_id,
+            second_id,
+        )
+        .fetch_one(&pool)
+        .await
+        .expect("failed to get friendship")
+    }
+
+    async fn must_seed_users(pool: PgPool) {
+        let user_repo = UserRepo::new_arc(pool);
+
+        let drake = NewUser {
+            name: String::from("Drake"),
+            email: String::from("drake@mail.cool"),
+            username: String::from("drake_conan"),
+            password_hash: String::from("ab45%2$#lLS"),
+        };
+
+        let eunice = NewUser {
+            name: String::from("Eunice Lee"),
+            email: String::from("eunice@lee.eee"),
+            username: String::from("you_n_15"),
+            password_hash: String::from("UNE$@$_b08088"),
+        };
+
+        let felipe = NewUser {
+            name: String::from("Felipe Hall"),
+            email: String::from("f.hall@mail-cloud.net"),
+            username: String::from("fe_to_the_lip_to_the_e"),
+            password_hash: String::from("ppaPpA44245$$$$"),
+        };
+
+        user_repo
+            .insert_new(&drake)
+            .await
+            .expect("failed to insert Drake");
+
+        user_repo
+            .insert_new(&eunice)
+            .await
+            .expect("failed to insert Eunice");
+
+        user_repo
+            .insert_new(&felipe)
+            .await
+            .expect("failed to insert Felipe");
+    }
+
+    #[tokio::test]
+    async fn rejects_improperly_ordered_ids() {
+        with_test_pool(|pool| async move {
+            let repo = FriendshipRepo::new(pool.clone());
+            must_seed_users(pool).await;
+
+            let result1 = repo.new_request(2, 1, 1).await;
+            let result2 = repo.new_request(2, 1, 2).await;
+
+            assert!(matches!(result1, Err(TechnicalError::Database(_))));
+            assert!(matches!(result2, Err(TechnicalError::Database(_))));
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn sets_initial_values_on_insertion() {
+        with_test_pool(|pool| async move {
+            let repo = FriendshipRepo::new(pool.clone());
+            must_seed_users(pool.clone()).await;
+
+            repo.new_request(1, 2, 1)
+                .await
+                .expect("failed to insert new request");
+
+            let friendship = must_get_friendship(pool, 1, 2).await;
+
+            assert_eq!(friendship.first_id, 1);
+            assert_eq!(friendship.second_id, 2);
+            assert!(friendship.requester_first);
+            assert!(!friendship.confirmed);
+            assert!(within_one_second(friendship.requested_at, Utc::now()));
+            assert!(friendship.confirmed_at.is_none());
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn updates_values_for_accepted_request() {
+        with_test_pool(|pool| async move {
+            let repo = FriendshipRepo::new(pool.clone());
+            must_seed_users(pool.clone()).await;
+
+            repo.new_request(1, 3, 3)
+                .await
+                .expect("failed to insert new request");
+
+            repo.accept_request(1, 3)
+                .await
+                .expect("failed to accept request");
+
+            let friendship = must_get_friendship(pool, 1, 3).await;
+
+            assert_eq!(friendship.first_id, 1);
+            assert_eq!(friendship.second_id, 3);
+            assert!(!friendship.requester_first);
+            assert!(friendship.confirmed);
+            assert!(within_one_second(friendship.requested_at, Utc::now()));
+            assert!(within_one_second(
+                friendship
+                    .confirmed_at
+                    .expect("unexpected None confirmation time"),
+                Utc::now(),
+            ));
+        })
+        .await;
+    }
+
+    /// Even though the enum has three variants, there are four possible statuses because a pending
+    /// request can be from either the first user or the second user.
+    #[tokio::test]
+    async fn gets_all_four_possible_statuses() {
+        with_test_pool(|pool| async move {
+            let repo = FriendshipRepo::new(pool.clone());
+            must_seed_users(pool).await;
+
+            let status = repo.get_status(2, 3).await.expect("failed to get status");
+            assert_eq!(status, FriendshipStatus::Nil);
+
+            repo.new_request(2, 3, 3)
+                .await
+                .expect("failed to create new request");
+            let status = repo.get_status(2, 3).await.expect("failed to get status");
+            assert_eq!(status, FriendshipStatus::PendingFrom(3));
+
+            repo.new_request(1, 3, 1)
+                .await
+                .expect("failed to create new request");
+            let status = repo.get_status(1, 3).await.expect("failed to get status");
+            assert_eq!(status, FriendshipStatus::PendingFrom(1));
+
+            repo.accept_request(2, 3)
+                .await
+                .expect("failed to accept request");
+            let status = repo.get_status(2, 3).await.expect("failed to get status");
+            assert_eq!(status, FriendshipStatus::Friends);
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn gets_all_requests_and_friends() {
+        with_test_pool(|pool| async move {
+            let repo = FriendshipRepo::new(pool.clone());
+            must_seed_users(pool).await;
+
+            // No requests, no friends
+            let requests = repo
+                .get_requests(3)
+                .await
+                .expect("failed to get empty requests");
+            assert!(requests.is_empty());
+            let friends = repo
+                .get_friends(3)
+                .await
+                .expect("failed to get empty friends");
+            assert!(friends.is_empty());
+
+            // Two requests, no friends
+            repo.new_request(1, 3, 1)
+                .await
+                .expect("failed to create new request");
+            repo.new_request(2, 3, 2)
+                .await
+                .expect("failed to create new request");
+            let requests = repo.get_requests(3).await.expect("failed to get requests");
+            assert_eq!(requests, vec![1, 2]);
+            let friends = repo
+                .get_friends(3)
+                .await
+                .expect("failed to get empty friends");
+            assert!(friends.is_empty());
+
+            // One request, one friend
+            repo.accept_request(1, 3)
+                .await
+                .expect("failed to accept request");
+            let requests = repo
+                .get_requests(3)
+                .await
+                .expect("failed to get single request");
+            assert_eq!(requests, vec![2]);
+            let friends = repo
+                .get_friends(3)
+                .await
+                .expect("failed to get single friend");
+            assert_eq!(friends, vec![1]);
+
+            // No requests, two friends
+            repo.accept_request(2, 3)
+                .await
+                .expect("failed to accept request");
+            let requests = repo
+                .get_requests(3)
+                .await
+                .expect("failed to get empty requests");
+            assert!(requests.is_empty());
+            let friends = repo.get_friends(3).await.expect("failed to get friends");
+            assert_eq!(friends, vec![1, 2]);
+        })
+        .await;
     }
 }
