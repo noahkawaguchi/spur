@@ -3,6 +3,7 @@
 #![warn(clippy::nursery)]
 
 mod auth;
+mod color_output;
 mod commands;
 mod error_response;
 mod friends;
@@ -14,7 +15,7 @@ mod token_store;
 use anyhow::{Context, Result, anyhow};
 use auth::AuthCommand;
 use clap::Parser;
-use colored::Colorize;
+use color_output::color_first_line;
 use commands::{
     Cli,
     Commands::{Add, Check, Friends, Login, Requests, Signup},
@@ -64,18 +65,6 @@ async fn main() -> Result<()> {
         }
     };
 
-    match result {
-        Err(e) => Err(anyhow!(e.to_string().red())),
-        Ok(msg) => {
-            // Color only the first line green
-            let mut lines = msg.lines();
-            if let Some(first) = lines.next() {
-                println!("{}", first.green());
-            }
-            for line in lines {
-                println!("{line}");
-            }
-            Ok(())
-        }
-    }
+    println!("{}", color_first_line(result)?);
+    Ok(())
 }
