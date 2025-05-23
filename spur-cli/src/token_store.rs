@@ -24,14 +24,14 @@ impl LocalTokenStore {
         let app_dir = home_dir.join(".spur");
 
         fs::create_dir_all(&app_dir)
-            .with_context(|| format!("failed to create app directory at {app_dir:?}"))?;
+            .with_context(|| format!("Failed to create app directory at {app_dir:?}"))?;
 
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
             let perms = fs::Permissions::from_mode(0o700);
             fs::set_permissions(&app_dir, perms).with_context(|| {
-                format!("failed to set secure Unix permissions for app directory at {app_dir:?}")
+                format!("Failed to set secure Unix permissions for app directory at {app_dir:?}")
             })?;
         }
 
@@ -46,21 +46,23 @@ impl TokenStore for LocalTokenStore {
             .create(true)
             .truncate(true)
             .open(&self.token_path)
-            .context("failed to open file for writing")?;
+            .context("Failed to open file for writing")?;
 
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
             file.set_permissions(fs::Permissions::from_mode(0o600))
-                .context("failed to set secure Unix permissions for token file")?;
+                .context("Failed to set secure Unix permissions for token file")?;
         }
 
         file.write_all(token.as_bytes())
-            .context("failed to write token to file")
+            .context("Failed to write token to file")
     }
 
     fn load(&self) -> Result<String> {
-        fs::read_to_string(&self.token_path).context("failed to read token from file")
+        fs::read_to_string(&self.token_path).context(
+            "Failed to read token from file.\nTry using the `login` command to get a new token.",
+        )
     }
 }
 

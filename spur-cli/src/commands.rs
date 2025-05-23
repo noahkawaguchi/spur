@@ -23,6 +23,6 @@ pub enum Commands {
     #[command(about = "List your friends")]
     Friends,
 
-    #[command(about = "List pending requests to you")]
+    #[command(about = "List pending friend requests to you")]
     Requests,
 }

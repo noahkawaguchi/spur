@@ -3,6 +3,9 @@ use reqwest::{ClientBuilder, Response};
 use serde::Serialize;
 use url::Url;
 
+const BUILD_FAILED: &str = "Failed to build request.\nThis can be due to a malformed token.\n\
+                            Try using the `login` command to get a new token.";
+
 pub trait RequestClient: Send + Sync {
     async fn get(&self, endpoint: &str, token: &str) -> Result<Response>;
 
@@ -31,10 +34,15 @@ impl RequestClient for ApiRequestClient {
     async fn get(&self, endpoint: &str, token: &str) -> Result<Response> {
         let url = self.base_url.join(endpoint)?;
 
-        self.client
+        let request = self
+            .client
             .get(url.as_str())
             .bearer_auth(token)
-            .send()
+            .build()
+            .context(BUILD_FAILED)?;
+
+        self.client
+            .execute(request)
             .await
             .with_context(|| format!("GET request to {url} failed"))
     }
@@ -52,8 +60,10 @@ impl RequestClient for ApiRequestClient {
             request = request.bearer_auth(token);
         }
 
-        request
-            .send()
+        let built_request = request.build().context(BUILD_FAILED)?;
+
+        self.client
+            .execute(built_request)
             .await
             .with_context(|| format!("POST request to {url} failed"))
     }

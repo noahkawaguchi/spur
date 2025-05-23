@@ -15,13 +15,9 @@ pub struct FriendsCommand<'a, C: RequestClient> {
 impl<C: RequestClient> FriendsCommand<'_, C> {
     pub async fn add_friend(&self, username: String) -> Result<String> {
         let body = AddFriendRequest { recipient_username: username };
-
-        if let Err(e) = body.validate() {
-            return Err(anyhow!(e));
-        }
+        body.validate()?;
 
         let response = self.client.post("add", body, Some(self.token)).await?;
-
         match response.status() {
             StatusCode::OK | StatusCode::CREATED => {
                 Ok(response.json::<SuccessResponse>().await?.message)
