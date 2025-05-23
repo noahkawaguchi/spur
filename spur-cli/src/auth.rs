@@ -1,4 +1,4 @@
-use crate::{error_response, request::RequestClient, token_store::TokenStore};
+use crate::{format, request::RequestClient, token_store::TokenStore};
 use anyhow::{Result, anyhow};
 use inquire::error::InquireResult;
 use reqwest::StatusCode;
@@ -38,7 +38,7 @@ where
         if response.status() == StatusCode::CREATED {
             Ok(String::from("Successfully registered"))
         } else {
-            Err(anyhow!(error_response::handle(response).await))
+            Err(anyhow!(format::err_resp(response).await))
         }
     }
 
@@ -55,7 +55,7 @@ where
                 Err(e) => Err(anyhow!(format!("Logged in but failed to save token: {e}"))),
             }
         } else {
-            Err(anyhow!(error_response::handle(response).await))
+            Err(anyhow!(format::err_resp(response).await))
         }
     }
 
@@ -66,7 +66,7 @@ where
         if response.status() == StatusCode::NO_CONTENT {
             Ok(String::from("Your token is valid"))
         } else {
-            Err(anyhow!(error_response::handle(response).await))
+            Err(anyhow!(format::err_resp(response).await))
         }
     }
 }

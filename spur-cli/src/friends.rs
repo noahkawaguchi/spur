@@ -1,4 +1,4 @@
-use crate::{error_response, request::RequestClient};
+use crate::{format, request::RequestClient};
 use anyhow::{Result, anyhow};
 use reqwest::StatusCode;
 use spur_shared::{
@@ -22,7 +22,7 @@ impl<C: RequestClient> FriendsCommand<'_, C> {
             StatusCode::OK | StatusCode::CREATED => {
                 Ok(response.json::<SuccessResponse>().await?.message)
             }
-            _ => Err(anyhow!(error_response::handle(response).await)),
+            _ => Err(anyhow!(format::err_resp(response).await)),
         }
     }
 
@@ -43,7 +43,7 @@ impl<C: RequestClient> FriendsCommand<'_, C> {
 
             Ok(friends_list)
         } else {
-            Err(anyhow!(error_response::handle(response).await))
+            Err(anyhow!(format::err_resp(response).await))
         }
     }
 
@@ -67,7 +67,7 @@ impl<C: RequestClient> FriendsCommand<'_, C> {
 
             Ok(requests_list)
         } else {
-            Err(anyhow!(error_response::handle(response).await))
+            Err(anyhow!(format::err_resp(response).await))
         }
     }
 }

@@ -3,9 +3,8 @@
 #![warn(clippy::nursery)]
 
 mod auth;
-mod color_output;
 mod commands;
-mod error_response;
+mod format;
 mod friends;
 mod input_validators;
 mod prompt;
@@ -15,7 +14,6 @@ mod token_store;
 use anyhow::{Context, Result, anyhow};
 use auth::AuthCommand;
 use clap::Parser;
-use color_output::color_first_line;
 use commands::{
     Cli,
     Commands::{Add, Check, Friends, Login, Requests, Signup},
@@ -65,6 +63,6 @@ async fn main() -> Result<()> {
         }
     };
 
-    println!("{}", color_first_line(result)?);
+    println!("{}", format::color_first_line(result)?);
     Ok(())
 }
