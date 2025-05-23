@@ -1,7 +1,4 @@
-use crate::services::jwt_svc::JwtCreationError;
-use thiserror::Error;
-
-#[derive(Debug, Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum TechnicalError {
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
@@ -10,5 +7,8 @@ pub enum TechnicalError {
     Bcrypt(#[from] bcrypt::BcryptError),
 
     #[error("JWT creation error: {0}")]
-    JwtCreation(#[from] JwtCreationError),
+    JwtCreation(#[from] jsonwebtoken::errors::Error),
+
+    #[error("Unexpected pre-1970 system time: {0}")]
+    Pre1970(chrono::DateTime<chrono::Utc>),
 }

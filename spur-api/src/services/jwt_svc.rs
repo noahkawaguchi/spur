@@ -1,16 +1,9 @@
-use chrono::{DateTime, Duration, Utc};
+use super::domain_error::DomainError;
+use crate::technical_error::TechnicalError;
+use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-
-#[derive(Debug, Error)]
-pub enum JwtCreationError {
-    #[error("JWT error: {0}")]
-    Jwt(#[from] jsonwebtoken::errors::Error),
-
-    #[error("Unexpected pre-1970 system time: {0}")]
-    Pre1970(DateTime<Utc>),
-}
 
 #[derive(Debug, Error)]
 pub enum JwtValidationError {
@@ -29,25 +22,26 @@ struct Claims {
 
 impl Claims {
     /// Initializes claims with an expiration 24 hours in the future.
-    fn new(id: i32) -> Result<Self, JwtCreationError> {
+    fn new(id: i32) -> Result<Self, TechnicalError> {
         let now = Utc::now();
 
         let exp = (now + Duration::hours(24))
             .timestamp()
             .try_into()
-            .map_err(|_| JwtCreationError::Pre1970(now))?;
+            .map_err(|_| TechnicalError::Pre1970(now))?;
 
         Ok(Self { sub: id.to_string(), exp })
     }
 }
 
 /// Creates a JSON web token with the id as the subject.
-pub fn create_jwt(id: i32, secret: &[u8]) -> Result<String, JwtCreationError> {
+pub fn create_jwt(id: i32, secret: &[u8]) -> Result<String, DomainError> {
     let token = jsonwebtoken::encode(
         &Header::default(),
         &Claims::new(id)?,
         &EncodingKey::from_secret(secret),
-    )?;
+    )
+    .map_err(TechnicalError::from)?;
 
     Ok(token)
 }
@@ -115,7 +109,10 @@ mod tests {
             let secret = "no one's gonna know".as_ref();
 
             let _ = create_jwt(id, secret).expect("failed to create token");
-            assert!(validate_jwt("fake token", secret).is_err());
+            assert!(matches!(
+                validate_jwt("fake token", secret),
+                Err(JwtValidationError::Jwt(_)),
+            ));
         }
 
         #[test]
@@ -124,7 +121,10 @@ mod tests {
             let secret = "shh".as_ref();
 
             let token = create_jwt(id, secret).expect("failed to create token");
-            assert!(validate_jwt(&token, "boo!".as_ref()).is_err());
+            assert!(matches!(
+                validate_jwt(&token, "boo!".as_ref()),
+                Err(JwtValidationError::Jwt(_)),
+            ));
         }
     }
 }

@@ -1,9 +1,7 @@
 use super::api_error::ApiError;
 use crate::{
-    config::AppState,
     models::user::{User, UserRegistration},
     services::{domain_error::DomainError, jwt_svc},
-    technical_error::TechnicalError,
 };
 use anyhow::Result;
 use axum::{Json, extract::State, http::StatusCode};
@@ -53,22 +51,20 @@ pub async fn signup(
 }
 
 pub async fn login(
-    state: State<AppState>,
+    auth_svc: State<Arc<dyn Authenticator>>,
+    jwt_secret: State<String>,
     payload: Json<LoginRequest>,
 ) -> Result<(StatusCode, Json<LoginResponse>), ApiError> {
     // Validate the request fields
     payload.validate()?;
 
     // Validate the email and password
-    let user = state
-        .auth_svc
+    let user = auth_svc
         .validate_credentials(&payload.email, &payload.password)
         .await?;
 
     // Create a JWT
-    let token = jwt_svc::create_jwt(user.id, state.jwt_secret.as_ref())
-        .map_err(TechnicalError::from)
-        .map_err(DomainError::from)?;
+    let token = jwt_svc::create_jwt(user.id, jwt_secret.as_ref())?;
 
     Ok((StatusCode::OK, Json(LoginResponse { token })))
 }
