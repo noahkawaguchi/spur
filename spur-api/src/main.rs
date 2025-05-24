@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
     let config = AppConfig::load()?;
 
     let pool = PgPoolOptions::new()
-        .max_connections(5)
+        .max_connections(10)
         .connect(&config.database_url)
         .await?;
 
