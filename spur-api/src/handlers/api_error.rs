@@ -1,5 +1,5 @@
 use crate::services::{
-    domain_error::{AuthError, DomainError, FriendshipError},
+    domain_error::{AuthError, DomainError, FriendshipError, PromptError},
     jwt_svc::JwtValidationError,
 };
 use axum::{
@@ -42,6 +42,11 @@ impl IntoResponse for ApiError {
                     FriendshipError::AlreadyFriends | FriendshipError::AlreadyRequested => {
                         StatusCode::CONFLICT
                     }
+                },
+                DomainError::Prompt(err) => match err {
+                    PromptError::Duplicate => StatusCode::CONFLICT,
+                    PromptError::NotFound => StatusCode::NOT_FOUND,
+                    PromptError::NotFriends => StatusCode::FORBIDDEN,
                 },
                 DomainError::Technical(_) => StatusCode::INTERNAL_SERVER_ERROR,
             },

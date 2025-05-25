@@ -1,41 +1,44 @@
-use crate::technical_error::TechnicalError;
+use super::insertion_error::{InsertionError, SqlxErrExt};
+use crate::{
+    models::prompt::Prompt, services::prompt_svc::PromptStore, technical_error::TechnicalError,
+};
 use spur_shared::models::PromptWithAuthor;
 
 pub struct PromptRepo {
     pool: sqlx::PgPool,
 }
 
-impl PromptRepo {
-    async fn insert_new(&self, author_id: i32, body: &str) -> Result<i32, TechnicalError> {
-        let rec = sqlx::query!(
+impl PromptStore for PromptRepo {
+    async fn insert_new(&self, author_id: i32, body: &str) -> Result<i32, InsertionError> {
+        match sqlx::query!(
             "INSERT INTO prompts (author_id, body) VALUES ($1, $2) RETURNING id",
             author_id,
             body,
         )
         .fetch_one(&self.pool)
-        .await?;
-
-        Ok(rec.id)
+        .await
+        {
+            Ok(rec) => Ok(rec.id),
+            Err(e) => {
+                if e.is_unique_violation() {
+                    Err(InsertionError::UniqueViolation)
+                } else {
+                    Err(InsertionError::Technical(e))
+                }
+            }
+        }
     }
 
-    async fn get_with_author(&self, id: i32) -> Result<PromptWithAuthor, TechnicalError> {
-        let prompt = sqlx::query_as!(
-            PromptWithAuthor,
-            "
-            SELECT
-                prompts.id, 
-                users.username AS author_username,
-                prompts.body
-            FROM prompts
-            JOIN users ON prompts.author_id = users.id
-            WHERE prompts.id = $1
-            ",
+    async fn get_by_id(&self, id: i32) -> Result<Option<Prompt>, TechnicalError> {
+        let maybe_prompt = sqlx::query_as!(
+            Prompt,
+            "SELECT id, author_id, body, created_at FROM prompts WHERE prompts.id = $1",
             id,
         )
-        .fetch_one(&self.pool)
+        .fetch_optional(&self.pool)
         .await?;
 
-        Ok(prompt)
+        Ok(maybe_prompt)
     }
 
     async fn get_user_prompts(

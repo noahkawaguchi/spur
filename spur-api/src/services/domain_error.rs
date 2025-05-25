@@ -10,6 +10,9 @@ pub enum DomainError {
     Friendship(#[from] FriendshipError),
 
     #[error(transparent)]
+    Prompt(#[from] PromptError),
+
+    #[error(transparent)]
     Technical(#[from] TechnicalError),
 }
 
@@ -38,4 +41,16 @@ pub enum FriendshipError {
 
     #[error("A pending friend request to this user already exists")]
     AlreadyRequested,
+}
+
+#[derive(Debug, Error)]
+pub enum PromptError {
+    #[error("You have already created the same prompt")]
+    Duplicate,
+
+    #[error("Prompt not found")]
+    NotFound,
+
+    #[error("You must be friends to see someone's content")]
+    NotFriends,
 }

@@ -45,19 +45,19 @@ pub trait FriendshipStore: Send + Sync {
     async fn get_requests(&self, id: i32) -> Result<Vec<i32>, TechnicalError>;
 }
 
-pub struct FriendshipSvc<S: FriendshipStore> {
-    friendship_store: S,
+pub struct FriendshipSvc {
+    friendship_store: Arc<dyn FriendshipStore>,
     user_store: Arc<dyn UserStore>,
 }
 
-impl<S: FriendshipStore> FriendshipSvc<S> {
-    pub fn new(friendship_store: S, user_store: Arc<dyn UserStore>) -> Self {
+impl FriendshipSvc {
+    pub fn new(friendship_store: Arc<dyn FriendshipStore>, user_store: Arc<dyn UserStore>) -> Self {
         Self { friendship_store, user_store }
     }
 }
 
 #[async_trait::async_trait]
-impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
+impl FriendshipManager for FriendshipSvc {
     async fn add_friend(
         &self,
         sender_id: i32,
@@ -208,7 +208,8 @@ mod tests {
 
             let mock_friendship_repo = MockFriendshipStore::new();
 
-            let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_repo));
+            let friendship_svc =
+                FriendshipSvc::new(Arc::new(mock_friendship_repo), Arc::new(mock_user_repo));
             let result = friendship_svc.add_friend(42, recipient_username).await;
 
             assert!(matches!(
@@ -237,7 +238,8 @@ mod tests {
                 .once()
                 .return_once(|_, _| Ok(FriendshipStatus::Friends));
 
-            let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_repo));
+            let friendship_svc =
+                FriendshipSvc::new(Arc::new(mock_friendship_repo), Arc::new(mock_user_repo));
             let result = friendship_svc.add_friend(my_id, &my_friend.username).await;
 
             assert!(matches!(
@@ -266,7 +268,8 @@ mod tests {
                 .once()
                 .return_once(move |_, _| Ok(FriendshipStatus::PendingFrom(my_id)));
 
-            let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_repo));
+            let friendship_svc =
+                FriendshipSvc::new(Arc::new(mock_friendship_repo), Arc::new(mock_user_repo));
             let result = friendship_svc
                 .add_friend(my_id, &desired_friend.username)
                 .await;
@@ -302,7 +305,8 @@ mod tests {
                 .once()
                 .return_once(|_, _| Ok(()));
 
-            let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_repo));
+            let friendship_svc =
+                FriendshipSvc::new(Arc::new(mock_friendship_repo), Arc::new(mock_user_repo));
             let result = friendship_svc.add_friend(my_id, &added_me.username).await;
 
             assert!(matches!(result, Ok(true)));
@@ -334,7 +338,8 @@ mod tests {
                 .once()
                 .return_once(|_, _, _| Ok(()));
 
-            let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_repo));
+            let friendship_svc =
+                FriendshipSvc::new(Arc::new(mock_friendship_repo), Arc::new(mock_user_repo));
             let result = friendship_svc
                 .add_friend(my_id, &does_not_know_me.username)
                 .await;
@@ -378,7 +383,8 @@ mod tests {
             .once()
             .return_once(|_| Ok(friend3));
 
-        let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_repo));
+        let friendship_svc =
+            FriendshipSvc::new(Arc::new(mock_friendship_repo), Arc::new(mock_user_repo));
         let result = friendship_svc
             .get_friends(me.id)
             .await
@@ -422,7 +428,8 @@ mod tests {
             .once()
             .return_once(|_| Ok(requester3));
 
-        let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_repo));
+        let friendship_svc =
+            FriendshipSvc::new(Arc::new(mock_friendship_repo), Arc::new(mock_user_repo));
         let result = friendship_svc
             .get_requests(me.id)
             .await

@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
         .await?;
 
     let user_repo = UserRepo::new_arc(pool.clone());
-    let friendship_repo = FriendshipRepo::new(pool);
+    let friendship_repo = FriendshipRepo::new_arc(pool);
 
     let auth_svc = AuthSvc::new(Arc::clone(&user_repo));
     let friendship_svc = FriendshipSvc::new(friendship_repo, user_repo);

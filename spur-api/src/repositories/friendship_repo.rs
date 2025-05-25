@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use crate::{services::friendship_svc::FriendshipStore, technical_error::TechnicalError};
 
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FriendshipStatus {
     /// The two users are confirmed friends.
     Friends,
@@ -15,7 +17,7 @@ pub struct FriendshipRepo {
 }
 
 impl FriendshipRepo {
-    pub const fn new(pool: sqlx::PgPool) -> Self { Self { pool } }
+    pub fn new_arc(pool: sqlx::PgPool) -> Arc<dyn FriendshipStore> { Arc::new(Self { pool }) }
 }
 
 #[async_trait::async_trait]
@@ -205,7 +207,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_improperly_ordered_ids() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new(pool.clone());
+            let repo = FriendshipRepo::new_arc(pool.clone());
             must_seed_users(pool).await;
 
             let result1 = repo.new_request(2, 1, 1).await;
@@ -220,7 +222,7 @@ mod tests {
     #[tokio::test]
     async fn sets_initial_values_on_insertion() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new(pool.clone());
+            let repo = FriendshipRepo::new_arc(pool.clone());
             must_seed_users(pool.clone()).await;
 
             repo.new_request(1, 2, 1)
@@ -242,7 +244,7 @@ mod tests {
     #[tokio::test]
     async fn updates_values_for_accepted_request() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new(pool.clone());
+            let repo = FriendshipRepo::new_arc(pool.clone());
             must_seed_users(pool.clone()).await;
 
             repo.new_request(1, 3, 3)
@@ -275,7 +277,7 @@ mod tests {
     #[tokio::test]
     async fn gets_all_four_possible_statuses() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new(pool.clone());
+            let repo = FriendshipRepo::new_arc(pool.clone());
             must_seed_users(pool).await;
 
             let status = repo.get_status(2, 3).await.expect("failed to get status");
@@ -305,7 +307,7 @@ mod tests {
     #[tokio::test]
     async fn gets_all_requests_and_friends() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new(pool.clone());
+            let repo = FriendshipRepo::new_arc(pool.clone());
             must_seed_users(pool).await;
 
             // No requests, no friends
