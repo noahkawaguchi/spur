@@ -37,7 +37,7 @@ impl<S: PromptStore> PromptSvc<S> {
         match self.prompt_store.insert_new(author_id, body).await {
             Ok(id) => Ok(id),
             Err(InsertionError::Technical(e)) => Err(TechnicalError::Database(e).into()),
-            Err(InsertionError::UniqueViolation) => Err(PromptError::Duplicate.into()),
+            Err(InsertionError::UniqueViolation(_)) => Err(PromptError::Duplicate.into()),
         }
     }
 

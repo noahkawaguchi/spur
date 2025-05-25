@@ -18,14 +18,7 @@ use validator::Validate;
 
 #[async_trait::async_trait]
 pub trait Authenticator: Send + Sync {
-    /// Checks if an account with the given email or username already exists in the database.
-    async fn email_username_available(
-        &self,
-        email: &str,
-        username: &str,
-    ) -> Result<(), DomainError>;
-
-    /// Hashes the password and creates a new user in the database.
+    /// Hashes the password and attempts to create a new user in the database.
     async fn register(&self, reg: UserRegistration) -> Result<(), DomainError>;
 
     /// Checks `email` and `password` for a valid match in the database.
@@ -39,12 +32,7 @@ pub async fn signup(
     // Validate the request fields
     payload.validate()?;
 
-    // Check for email and username uniqueness
-    auth_svc
-        .email_username_available(&payload.email, &payload.username)
-        .await?;
-
-    // Register the new user
+    // Attempt to register the new user
     auth_svc.register(payload.into()).await?;
 
     Ok(StatusCode::CREATED)

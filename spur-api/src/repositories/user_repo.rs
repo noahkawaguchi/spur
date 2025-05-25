@@ -1,3 +1,4 @@
+use super::insertion_error::{InsertionError, SqlxErrExt};
 use crate::{
     models::user::{NewUser, User},
     technical_error::TechnicalError,
@@ -7,7 +8,7 @@ use std::sync::Arc;
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait UserStore: Send + Sync {
-    async fn insert_new(&self, new_user: &NewUser) -> Result<(), TechnicalError>;
+    async fn insert_new(&self, new_user: &NewUser) -> Result<(), InsertionError>;
     async fn get_by_id(&self, id: i32) -> Result<User, TechnicalError>;
     async fn get_by_email(&self, email: &str) -> Result<Option<User>, TechnicalError>;
     async fn get_by_username(&self, username: &str) -> Result<Option<User>, TechnicalError>;
@@ -24,8 +25,8 @@ impl UserRepo {
 
 #[async_trait::async_trait]
 impl UserStore for UserRepo {
-    async fn insert_new(&self, new_user: &NewUser) -> Result<(), TechnicalError> {
-        let _ = sqlx::query!(
+    async fn insert_new(&self, new_user: &NewUser) -> Result<(), InsertionError> {
+        match sqlx::query!(
             "INSERT INTO users (name, email, username, password_hash) VALUES ($1, $2, $3, $4)",
             new_user.name,
             new_user.email,
@@ -33,9 +34,14 @@ impl UserStore for UserRepo {
             new_user.password_hash,
         )
         .execute(&self.pool)
-        .await?;
-
-        Ok(())
+        .await
+        {
+            Ok(_) => Ok(()),
+            Err(e) => e.unique_violation().map_or_else(
+                || Err(InsertionError::Technical(e)),
+                |v| Err(InsertionError::UniqueViolation(v)),
+            ),
+        }
     }
 
     async fn get_by_id(&self, id: i32) -> Result<User, TechnicalError> {
@@ -205,7 +211,9 @@ mod tests {
 
             let result = repo.insert_new(&fake_alice).await;
 
-            assert!(matches!(result, Err(TechnicalError::Database(_))));
+            assert!(
+                matches!(result, Err(InsertionError::UniqueViolation(v)) if v.contains("users_email_unique"))
+            );
         })
         .await;
     }
@@ -235,7 +243,7 @@ mod tests {
 
             let result = repo.insert_new(&fake_bob).await;
 
-            assert!(matches!(result, Err(TechnicalError::Database(_))));
+            assert!(matches!(result, Err(InsertionError::UniqueViolation(v)) if v.contains("users_username_unique")));
         })
         .await;
     }
@@ -265,7 +273,7 @@ mod tests {
 
             for user in incomplete_users {
                 let result = repo.insert_new(&user).await;
-                assert!(matches!(result, Err(TechnicalError::Database(_))));
+                assert!(matches!(result, Err(InsertionError::Technical(_))));
             }
         })
         .await;

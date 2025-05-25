@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use spur_shared::requests::SignupRequest;
 
 /// User with plaintext password.
+#[cfg_attr(test, derive(Clone))]
 pub struct UserRegistration {
     pub name: String,
     pub email: String,

@@ -6,22 +6,28 @@ pub enum InsertionError {
     #[error("Technical database error: {0}")]
     Technical(#[from] sqlx::Error),
 
-    #[error("Unique constraint violation error")]
-    UniqueViolation,
+    #[error("Unique constraint violation error: {0}")]
+    UniqueViolation(String),
 }
 
 pub trait SqlxErrExt {
-    /// Checks whether or not an `sqlx::Error` was due to a violation of a UNIQUE constraint.
-    fn is_unique_violation(&self) -> bool;
+    /// Gets the specific constraint name or `"<unnamed unique constraint>"` if an `sqlx::Error`
+    /// was due to a violation of a UNIQUE constraint. Returns None for other types of errors.
+    fn unique_violation(&self) -> Option<String>;
 }
 
 impl SqlxErrExt for sqlx::Error {
-    fn is_unique_violation(&self) -> bool {
+    fn unique_violation(&self) -> Option<String> {
         match self {
-            Self::Database(db_err) => db_err
+            Self::Database(pg_err) => pg_err
                 .try_downcast_ref::<PgDatabaseError>()
-                .is_some_and(|e| e.code() == "23505"),
-            _ => false,
+                .filter(|e| e.code() == "23505")
+                .map(|e| {
+                    e.constraint()
+                        .unwrap_or("<unnamed unique constraint>")
+                        .to_string()
+                }),
+            _ => None,
         }
     }
 }

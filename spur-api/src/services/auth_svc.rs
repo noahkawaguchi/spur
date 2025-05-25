@@ -2,7 +2,7 @@ use super::domain_error::{AuthError, DomainError};
 use crate::{
     handlers::auth_handlers::Authenticator,
     models::user::{User, UserRegistration},
-    repositories::user_repo::UserStore,
+    repositories::{insertion_error::InsertionError, user_repo::UserStore},
     technical_error::TechnicalError,
 };
 use anyhow::Result;
@@ -19,35 +19,27 @@ impl AuthSvc {
 
 #[async_trait::async_trait]
 impl Authenticator for AuthSvc {
-    async fn email_username_available(
-        &self,
-        email: &str,
-        username: &str,
-    ) -> Result<(), DomainError> {
-        // Attempting to get a user with the provided email/username will return None if the
-        // email/username is available.
-        self.store
-            .get_by_email(email)
-            .await?
-            .map_or(Ok(()), |_| Err(AuthError::DuplicateEmail))?;
-
-        self.store
-            .get_by_username(username)
-            .await?
-            .map_or(Ok(()), |_| Err(AuthError::DuplicateUsername))?;
-
-        Ok(())
-    }
-
     async fn register(&self, reg: UserRegistration) -> Result<(), DomainError> {
         let pw_hash =
             bcrypt::hash(&reg.password, bcrypt::DEFAULT_COST).map_err(TechnicalError::from)?;
 
-        self.store
+        match self
+            .store
             .insert_new(&reg.into_new_user_with(pw_hash))
-            .await?;
-
-        Ok(())
+            .await
+        {
+            Ok(()) => Ok(()),
+            Err(InsertionError::UniqueViolation(v)) if v.contains("email") => {
+                Err(AuthError::DuplicateEmail.into())
+            }
+            Err(InsertionError::UniqueViolation(v)) if v.contains("username") => {
+                Err(AuthError::DuplicateUsername.into())
+            }
+            Err(InsertionError::UniqueViolation(v)) => {
+                Err(TechnicalError::Unexpected(format!("Unexpected unique violation: {v}")).into())
+            }
+            Err(InsertionError::Technical(e)) => Err(TechnicalError::Database(e).into()),
+        }
     }
 
     async fn validate_credentials(&self, email: &str, password: &str) -> Result<User, DomainError> {
@@ -75,43 +67,43 @@ mod tests {
     use chrono::Utc;
     use mockall::predicate::eq;
 
-    mod email_username_available {
+    mod register {
         use super::*;
 
-        fn new_alice() -> User {
-            User {
-                id: 1,
-                name: String::from("Alice"),
-                email: String::from("alice@example.com"),
-                username: String::from("alice123"),
-                password_hash: String::from("aeb451b%@!"),
-                created_at: Utc::now(),
+        fn alice_registration() -> UserRegistration {
+            UserRegistration {
+                name: String::from("New Alice"),
+                email: String::from("alice_new@example.com"),
+                username: String::from("new_alice"),
+                password: String::from("secret"),
             }
         }
 
         #[tokio::test]
         async fn errors_for_existing_email() {
-            let alice = new_alice();
-            let alice_registration = UserRegistration {
-                name: String::from("New Alice"),
-                email: alice.email.clone(),
-                username: String::from("new_alice"),
-                password: String::from("secret"),
-            };
+            let alice_reg = alice_registration();
+            let alice_reg_clone = alice_reg.clone();
+            let pw_clone = alice_reg.password.clone();
 
             let mut mock_repo = MockUserStore::new();
-            mock_repo.expect_insert_new().never();
-            mock_repo.expect_get_by_username().never();
             mock_repo
-                .expect_get_by_email()
-                .with(eq(alice_registration.email.clone()))
+                .expect_insert_new()
+                .withf(move |u| {
+                    u.name == alice_reg_clone.name
+                        && u.email == alice_reg_clone.email
+                        && u.username == alice_reg_clone.username
+                        && bcrypt::verify(&pw_clone, &u.password_hash)
+                            .expect("failed to verify password hash")
+                })
                 .once()
-                .return_once(|_| Ok(Some(alice)));
+                .return_once(|_| {
+                    Err(InsertionError::UniqueViolation(String::from(
+                        "users_email_unique",
+                    )))
+                });
 
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc
-                .email_username_available(&alice_registration.email, &alice_registration.password)
-                .await;
+            let result = auth_svc.register(alice_reg).await;
 
             assert!(matches!(
                 result,
@@ -121,31 +113,29 @@ mod tests {
 
         #[tokio::test]
         async fn errors_for_existing_username() {
-            let alice = new_alice();
-            let alice_registration = UserRegistration {
-                name: String::from("New Alice"),
-                email: String::from("new_alice@example.com"),
-                username: alice.username.clone(),
-                password: String::from("super secret"),
-            };
+            let alice_reg = alice_registration();
+            let alice_reg_clone = alice_reg.clone();
+            let pw_clone = alice_reg.password.clone();
 
             let mut mock_repo = MockUserStore::new();
-            mock_repo.expect_insert_new().never();
             mock_repo
-                .expect_get_by_email()
-                .with(eq(alice_registration.email.clone()))
+                .expect_insert_new()
+                .withf(move |u| {
+                    u.name == alice_reg_clone.name
+                        && u.email == alice_reg_clone.email
+                        && u.username == alice_reg_clone.username
+                        && bcrypt::verify(&pw_clone, &u.password_hash)
+                            .expect("failed to verify password hash")
+                })
                 .once()
-                .return_once(|_| Ok(None));
-            mock_repo
-                .expect_get_by_username()
-                .with(eq(alice_registration.username.clone()))
-                .once()
-                .return_once(|_| Ok(Some(alice)));
+                .return_once(|_| {
+                    Err(InsertionError::UniqueViolation(String::from(
+                        "users_username_unique",
+                    )))
+                });
 
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc
-                .email_username_available(&alice_registration.email, &alice_registration.username)
-                .await;
+            let result = auth_svc.register(alice_reg).await;
 
             assert!(matches!(
                 result,
@@ -154,71 +144,24 @@ mod tests {
         }
 
         #[tokio::test]
-        async fn returns_ok_if_available() {
-            let alice_registration = UserRegistration {
-                name: String::from("Unique Alice"),
-                email: String::from("unique@alice.com"),
-                username: String::from("alice_the_unique"),
-                password: String::from("maximum security"),
-            };
-
-            let mut mock_repo = MockUserStore::new();
-            mock_repo.expect_insert_new().never();
-            mock_repo
-                .expect_get_by_email()
-                .with(eq(alice_registration.email.clone()))
-                .once()
-                .return_once(|_| Ok(None));
-            mock_repo
-                .expect_get_by_username()
-                .with(eq(alice_registration.username.clone()))
-                .once()
-                .return_once(|_| Ok(None));
-
-            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-
-            assert!(matches!(
-                auth_svc
-                    .email_username_available(
-                        &alice_registration.email,
-                        &alice_registration.username,
-                    )
-                    .await,
-                Ok(()),
-            ));
-        }
-    }
-
-    mod register {
-        use super::*;
-
-        #[tokio::test]
         async fn correctly_creates_new_user_from_request() {
+            let alice_reg = alice_registration();
+
             let (name, email, username, password) = (
-                String::from("Alice New"),
-                String::from("alice@new.you"),
-                String::from("alice_new"),
-                String::from("top secret"),
+                alice_reg.name.clone(),
+                alice_reg.email.clone(),
+                alice_reg.username.clone(),
+                alice_reg.password.clone(),
             );
 
-            let alice_registration = UserRegistration {
-                name: name.clone(),
-                email: email.clone(),
-                username: username.clone(),
-                password: password.clone(),
-            };
-
             let mut mock_repo = MockUserStore::new();
-
-            mock_repo.expect_get_by_email().never();
-            mock_repo.expect_get_by_username().never();
             mock_repo
                 .expect_insert_new()
-                .withf(move |user| {
-                    user.name == name
-                        && user.email == email
-                        && user.username == username
-                        && bcrypt::verify(&password, &user.password_hash)
+                .withf(move |u| {
+                    u.name == name
+                        && u.email == email
+                        && u.username == username
+                        && bcrypt::verify(&password, &u.password_hash)
                             .expect("failed to verify password hash")
                 })
                 .once()
@@ -227,7 +170,7 @@ mod tests {
             let auth_svc = AuthSvc::new(Arc::new(mock_repo));
 
             assert!(matches!(
-                auth_svc.register(alice_registration).await,
+                auth_svc.register(alice_reg).await,
                 anyhow::Result::Ok(()),
             ));
         }

@@ -19,13 +19,10 @@ impl PromptStore for PromptRepo {
         .await
         {
             Ok(rec) => Ok(rec.id),
-            Err(e) => {
-                if e.is_unique_violation() {
-                    Err(InsertionError::UniqueViolation)
-                } else {
-                    Err(InsertionError::Technical(e))
-                }
-            }
+            Err(e) => e.unique_violation().map_or_else(
+                || Err(InsertionError::Technical(e)),
+                |v| Err(InsertionError::UniqueViolation(v)),
+            ),
         }
     }
 

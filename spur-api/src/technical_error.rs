@@ -11,4 +11,7 @@ pub enum TechnicalError {
 
     #[error("Unexpected pre-1970 system time: {0}")]
     Pre1970(chrono::DateTime<chrono::Utc>),
+
+    #[error("Unexpected error: {0}")]
+    Unexpected(String),
 }
