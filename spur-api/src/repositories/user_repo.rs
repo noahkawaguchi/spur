@@ -1,4 +1,4 @@
-use super::insertion_error::{InsertionError, SqlxErrExt};
+use super::insertion_error::InsertionError;
 use crate::{
     models::user::{NewUser, User},
     technical_error::TechnicalError,
@@ -26,7 +26,7 @@ impl UserRepo {
 #[async_trait::async_trait]
 impl UserStore for UserRepo {
     async fn insert_new(&self, new_user: &NewUser) -> Result<(), InsertionError> {
-        match sqlx::query!(
+        let _ = sqlx::query!(
             "INSERT INTO users (name, email, username, password_hash) VALUES ($1, $2, $3, $4)",
             new_user.name,
             new_user.email,
@@ -34,14 +34,9 @@ impl UserStore for UserRepo {
             new_user.password_hash,
         )
         .execute(&self.pool)
-        .await
-        {
-            Ok(_) => Ok(()),
-            Err(e) => e.unique_violation().map_or_else(
-                || Err(InsertionError::Technical(e)),
-                |v| Err(InsertionError::UniqueViolation(v)),
-            ),
-        }
+        .await?;
+
+        Ok(())
     }
 
     async fn get_by_id(&self, id: i32) -> Result<User, TechnicalError> {

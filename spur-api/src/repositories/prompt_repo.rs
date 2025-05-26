@@ -1,4 +1,4 @@
-use super::insertion_error::{InsertionError, SqlxErrExt};
+use super::insertion_error::InsertionError;
 use crate::{
     models::prompt::Prompt, services::prompt_svc::PromptStore, technical_error::TechnicalError,
 };
@@ -10,20 +10,15 @@ pub struct PromptRepo {
 
 impl PromptStore for PromptRepo {
     async fn insert_new(&self, author_id: i32, body: &str) -> Result<i32, InsertionError> {
-        match sqlx::query!(
+        let rec = sqlx::query!(
             "INSERT INTO prompts (author_id, body) VALUES ($1, $2) RETURNING id",
             author_id,
             body,
         )
         .fetch_one(&self.pool)
-        .await
-        {
-            Ok(rec) => Ok(rec.id),
-            Err(e) => e.unique_violation().map_or_else(
-                || Err(InsertionError::Technical(e)),
-                |v| Err(InsertionError::UniqueViolation(v)),
-            ),
-        }
+        .await?;
+
+        Ok(rec.id)
     }
 
     async fn get_by_id(&self, id: i32) -> Result<Option<Prompt>, TechnicalError> {
