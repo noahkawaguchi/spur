@@ -1,5 +1,4 @@
-use super::domain_error::DomainError;
-use crate::technical_error::TechnicalError;
+use crate::{domain::error::DomainError, technical_error::TechnicalError};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};

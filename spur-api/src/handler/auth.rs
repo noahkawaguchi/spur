@@ -1,8 +1,5 @@
 use super::api_error::ApiError;
-use crate::{
-    models::user::{User, UserRegistration},
-    services::{domain_error::DomainError, jwt_svc},
-};
+use crate::{domain::auth::Authenticator, service};
 use anyhow::Result;
 use axum::{Json, extract::State, http::StatusCode};
 use axum_extra::{
@@ -15,15 +12,6 @@ use spur_shared::{
 };
 use std::sync::Arc;
 use validator::Validate;
-
-#[async_trait::async_trait]
-pub trait Authenticator: Send + Sync {
-    /// Hashes the password and attempts to create a new user in the database.
-    async fn register(&self, reg: UserRegistration) -> Result<(), DomainError>;
-
-    /// Checks `email` and `password` for a valid match in the database.
-    async fn validate_credentials(&self, email: &str, password: &str) -> Result<User, DomainError>;
-}
 
 pub async fn signup(
     auth_svc: State<Arc<dyn Authenticator>>,
@@ -52,7 +40,7 @@ pub async fn login(
         .await?;
 
     // Create a JWT
-    let token = jwt_svc::create_jwt(user.id, jwt_secret.as_ref())?;
+    let token = service::jwt::create_jwt(user.id, jwt_secret.as_ref())?;
 
     Ok((StatusCode::OK, Json(LoginResponse { token })))
 }
@@ -61,7 +49,7 @@ pub async fn check(
     jwt_secret: State<String>,
     bearer: TypedHeader<Authorization<Bearer>>,
 ) -> Result<StatusCode, ApiError> {
-    jwt_svc::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
+    service::jwt::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
     Ok(StatusCode::NO_CONTENT)
 }
 

@@ -1,30 +1,15 @@
-use super::{
-    domain_error::{DomainError, PromptError},
-    friendship_svc::FriendshipStore,
-};
 use crate::{
-    models::prompt::Prompt,
-    repositories::{
-        friendship_repo::FriendshipStatus, insertion_error::InsertionError, user_repo::UserStore,
+    domain::{
+        error::DomainError,
+        friendship::{FriendshipStatus, repository::FriendshipStore},
+        prompt::{PromptError, PromptStore},
+        user::UserStore,
     },
+    repository::insertion_error::InsertionError,
     technical_error::TechnicalError,
 };
 use spur_shared::models::PromptWithAuthor;
 use std::sync::Arc;
-
-pub trait PromptStore: Send + Sync {
-    async fn insert_new(&self, author_id: i32, body: &str) -> Result<i32, InsertionError>;
-
-    async fn get_by_id(&self, id: i32) -> Result<Option<Prompt>, TechnicalError>;
-
-    async fn get_user_prompts(&self, user_id: i32)
-    -> Result<Vec<PromptWithAuthor>, TechnicalError>;
-
-    async fn get_friend_prompts(
-        &self,
-        user_id: i32,
-    ) -> Result<Vec<PromptWithAuthor>, TechnicalError>;
-}
 
 pub struct PromptSvc<S: PromptStore> {
     prompt_store: S,

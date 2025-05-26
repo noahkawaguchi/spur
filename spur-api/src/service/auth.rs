@@ -1,8 +1,11 @@
-use super::domain_error::{AuthError, DomainError};
 use crate::{
-    handlers::auth_handlers::Authenticator,
+    domain::{
+        auth::{AuthError, Authenticator},
+        error::DomainError,
+        user::UserStore,
+    },
     models::user::{User, UserRegistration},
-    repositories::{insertion_error::InsertionError, user_repo::UserStore},
+    repository::insertion_error::InsertionError,
     technical_error::TechnicalError,
 };
 use anyhow::Result;
@@ -63,7 +66,7 @@ impl Authenticator for AuthSvc {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::repositories::user_repo::MockUserStore;
+    use crate::domain::user::MockUserStore;
     use chrono::Utc;
     use mockall::predicate::eq;
 

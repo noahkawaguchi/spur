@@ -1,49 +1,12 @@
-use super::domain_error::{DomainError, FriendshipError};
-use crate::{
-    handlers::friendship_handlers::FriendshipManager,
-    repositories::{friendship_repo::FriendshipStatus, user_repo::UserStore},
-    technical_error::TechnicalError,
+use crate::domain::{
+    error::DomainError,
+    friendship::{
+        FriendshipStatus, error::FriendshipError, repository::FriendshipStore,
+        service::FriendshipManager,
+    },
+    user::UserStore,
 };
 use std::sync::Arc;
-
-#[cfg_attr(test, mockall::automock)]
-#[async_trait::async_trait]
-pub trait FriendshipStore: Send + Sync {
-    /// Creates a new friend request between the two users.
-    ///
-    /// - `first_id` should always be less than `second_id`.
-    /// - `requester_id`, equal to either `first_id` or `second_id`, indicates who initiated the
-    /// request.
-    async fn new_request(
-        &self,
-        first_id: i32,
-        second_id: i32,
-        requester_id: i32,
-    ) -> Result<(), TechnicalError>;
-
-    /// Accepts a pending friend request that involves the two users, regardless of who initiated
-    /// it.
-    ///
-    /// `first_id` should always be less than `second_id`.
-    async fn accept_request(&self, first_id: i32, second_id: i32) -> Result<(), TechnicalError>;
-
-    /// Determines the status of the relationship between the two users.
-    ///
-    /// `first_id` should always be less than `second_id`.
-    ///
-    /// See [`FriendshipStatus`] for more information on status meanings.
-    async fn get_status(
-        &self,
-        first_id: i32,
-        second_id: i32,
-    ) -> Result<FriendshipStatus, TechnicalError>;
-
-    /// Retrieves the IDs of all confirmed friends of the user with the provided ID.
-    async fn get_friends(&self, id: i32) -> Result<Vec<i32>, TechnicalError>;
-
-    /// Retrieves the IDs of all users who have pending requests to the user with the provided ID.
-    async fn get_requests(&self, id: i32) -> Result<Vec<i32>, TechnicalError>;
-}
 
 pub struct FriendshipSvc {
     friendship_store: Arc<dyn FriendshipStore>,
@@ -138,7 +101,9 @@ impl FriendshipManager for FriendshipSvc {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{models::user::User, repositories::user_repo::MockUserStore};
+    use crate::domain::friendship::repository::MockFriendshipStore;
+    use crate::domain::user::MockUserStore;
+    use crate::models::user::User;
     use chrono::{Days, Months, Utc};
     use mockall::predicate::eq;
 

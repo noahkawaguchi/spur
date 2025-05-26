@@ -3,10 +3,11 @@
 #![warn(clippy::nursery)]
 
 mod config;
-mod handlers;
+mod domain;
+mod handler;
 mod models;
-mod repositories;
-mod services;
+mod repository;
+mod service;
 mod technical_error;
 
 #[cfg(test)]
@@ -18,9 +19,9 @@ use axum::{
     routing::{get, post},
 };
 use config::{AppConfig, AppState};
-use handlers::{auth_handlers, friendship_handlers};
-use repositories::{friendship_repo::FriendshipRepo, user_repo::UserRepo};
-use services::{auth_svc::AuthSvc, friendship_svc::FriendshipSvc};
+use handler::{auth, friendship};
+use repository::{friendship::FriendshipRepo, user::UserRepo};
+use service::{auth::AuthSvc, friendship::FriendshipSvc};
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -47,12 +48,12 @@ async fn main() -> Result<()> {
     };
 
     let app = Router::new()
-        .route("/signup", post(auth_handlers::signup))
-        .route("/login", post(auth_handlers::login))
-        .route("/check", get(auth_handlers::check))
-        .route("/add", post(friendship_handlers::add_friend))
-        .route("/friends", get(friendship_handlers::get_friends))
-        .route("/requests", get(friendship_handlers::get_requests))
+        .route("/signup", post(auth::signup))
+        .route("/login", post(auth::login))
+        .route("/check", get(auth::check))
+        .route("/add", post(friendship::add_friend))
+        .route("/friends", get(friendship::get_friends))
+        .route("/requests", get(friendship::get_requests))
         .with_state(state);
 
     let listener = TcpListener::bind(&config.bind_addr).await?;

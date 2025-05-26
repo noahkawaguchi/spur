@@ -1,5 +1,5 @@
 use super::api_error::ApiError;
-use crate::services::{domain_error::DomainError, jwt_svc};
+use crate::{domain::friendship::service::FriendshipManager, service};
 use axum::{Json, extract::State, http::StatusCode};
 use axum_extra::{
     TypedHeader,
@@ -12,35 +12,6 @@ use spur_shared::{
 use std::sync::Arc;
 use validator::Validate;
 
-#[async_trait::async_trait]
-pub trait FriendshipManager: Send + Sync {
-    /// Attempts to add a friendship between the two users, returning whether or not they are now
-    /// friends.
-    ///
-    /// - If there is a pending request from the recipient to the sender (i.e., an existing request
-    /// in the opposite direction), the request is accepted and the two users become friends
-    /// (returns true).
-    /// - If there is no existing relationship, a new request from the sender to the recipient is
-    /// created (returns false).
-    ///
-    /// # Errors
-    ///
-    /// Will return `Err` if the two users are already friends, or if there is already a pending
-    /// request from the sender to the recipient. (In which case nothing is mutated.)
-    async fn add_friend(
-        &self,
-        sender_id: i32,
-        recipient_username: &str,
-    ) -> Result<bool, DomainError>;
-
-    /// Retrieves the usernames of all confirmed friends of the user with the provided ID.
-    async fn get_friends(&self, id: i32) -> Result<Vec<String>, DomainError>;
-
-    /// Retrieves the usernames of all users who have pending requests to the user with the
-    /// provided ID.
-    async fn get_requests(&self, id: i32) -> Result<Vec<String>, DomainError>;
-}
-
 pub async fn add_friend(
     jwt_secret: State<String>,
     friendship_svc: State<Arc<dyn FriendshipManager>>,
@@ -51,7 +22,7 @@ pub async fn add_friend(
     payload.validate()?;
 
     // User must have a valid token to add a friend
-    let sender_id = jwt_svc::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
+    let sender_id = service::jwt::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
 
     // Try to add the friend
     let became_friends = friendship_svc
@@ -81,7 +52,7 @@ pub async fn get_friends(
     bearer: TypedHeader<Authorization<Bearer>>,
 ) -> Result<(StatusCode, Json<UsernamesResponse>), ApiError> {
     // User must be authorized
-    let id = jwt_svc::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
+    let id = service::jwt::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
 
     // List this user's confirmed friends
     let friends = friendship_svc.get_friends(id).await?;
@@ -98,7 +69,7 @@ pub async fn get_requests(
     bearer: TypedHeader<Authorization<Bearer>>,
 ) -> Result<(StatusCode, Json<UsernamesResponse>), ApiError> {
     // User must be authorized
-    let id = jwt_svc::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
+    let id = service::jwt::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
 
     // List pending requests to this user
     let requests = friendship_svc.get_requests(id).await?;

@@ -1,7 +1,5 @@
 use super::insertion_error::InsertionError;
-use crate::{
-    models::prompt::Prompt, services::prompt_svc::PromptStore, technical_error::TechnicalError,
-};
+use crate::{domain::prompt::PromptStore, models::prompt::Prompt, technical_error::TechnicalError};
 use spur_shared::models::PromptWithAuthor;
 
 pub struct PromptRepo {

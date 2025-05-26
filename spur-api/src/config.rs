@@ -1,4 +1,4 @@
-use crate::handlers::{auth_handlers::Authenticator, friendship_handlers::FriendshipManager};
+use crate::domain::{auth::Authenticator, friendship::service::FriendshipManager};
 use anyhow::{Context, Result};
 use axum::extract::FromRef;
 use std::{env, sync::Arc};

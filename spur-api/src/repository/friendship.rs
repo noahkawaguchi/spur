@@ -1,16 +1,8 @@
+use crate::{
+    domain::friendship::{FriendshipStatus, repository::FriendshipStore},
+    technical_error::TechnicalError,
+};
 use std::sync::Arc;
-
-use crate::{services::friendship_svc::FriendshipStore, technical_error::TechnicalError};
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum FriendshipStatus {
-    /// The two users are confirmed friends.
-    Friends,
-    /// There is a pending request from the user with the contained ID.
-    PendingFrom(i32),
-    /// There is no existing relationship between the two users.
-    Nil,
-}
 
 pub struct FriendshipRepo {
     pool: sqlx::PgPool,
@@ -137,7 +129,7 @@ mod tests {
     use super::*;
     use crate::{
         models::user::NewUser,
-        repositories::user_repo::UserRepo,
+        repository::user::UserRepo,
         test_utils::{with_test_pool, within_one_second},
     };
     use chrono::{DateTime, Utc};

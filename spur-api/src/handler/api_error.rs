@@ -1,6 +1,9 @@
-use crate::services::{
-    domain_error::{AuthError, DomainError, FriendshipError, PromptError},
-    jwt_svc::JwtValidationError,
+use crate::{
+    domain::{
+        auth::AuthError, error::DomainError, friendship::error::FriendshipError,
+        prompt::PromptError,
+    },
+    service::jwt::JwtValidationError,
 };
 use axum::{
     Json,
