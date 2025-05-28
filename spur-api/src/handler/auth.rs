@@ -1,11 +1,7 @@
-use super::api_error::ApiError;
-use crate::{domain::auth::Authenticator, service};
+use super::{AuthBearer, api_error::ApiError};
+use crate::{domain::user::UserManager, service};
 use anyhow::Result;
 use axum::{Json, extract::State, http::StatusCode};
-use axum_extra::{
-    TypedHeader,
-    headers::{Authorization, authorization::Bearer},
-};
 use spur_shared::{
     requests::{LoginRequest, SignupRequest},
     responses::LoginResponse,
@@ -14,42 +10,40 @@ use std::sync::Arc;
 use validator::Validate;
 
 pub async fn signup(
-    auth_svc: State<Arc<dyn Authenticator>>,
+    user_svc: State<Arc<dyn UserManager>>,
     Json(payload): Json<SignupRequest>,
 ) -> Result<StatusCode, ApiError> {
     // Validate the request fields
     payload.validate()?;
 
+    // Hash the password
+    let new_user = service::auth::hash_pw(payload.into())?;
+
     // Attempt to register the new user
-    auth_svc.register(payload.into()).await?;
+    user_svc.insert_new(&new_user).await?;
 
     Ok(StatusCode::CREATED)
 }
 
 pub async fn login(
-    auth_svc: State<Arc<dyn Authenticator>>,
     jwt_secret: State<String>,
+    user_svc: State<Arc<dyn UserManager>>,
     payload: Json<LoginRequest>,
 ) -> Result<(StatusCode, Json<LoginResponse>), ApiError> {
     // Validate the request fields
     payload.validate()?;
 
-    // Validate the email and password
-    let user = auth_svc
-        .validate_credentials(&payload.email, &payload.password)
-        .await?;
+    // Try to get the user
+    let user = user_svc.get_by_email(&payload.email).await?;
 
-    // Create a JWT
-    let token = service::jwt::create_jwt(user.id, jwt_secret.as_ref())?;
+    // Validate the password and create a JWT
+    let token = service::auth::jwt_if_valid_pw(&user, &payload.password, &jwt_secret)?;
 
     Ok((StatusCode::OK, Json(LoginResponse { token })))
 }
 
-pub async fn check(
-    jwt_secret: State<String>,
-    bearer: TypedHeader<Authorization<Bearer>>,
-) -> Result<StatusCode, ApiError> {
-    service::jwt::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
+pub async fn check(jwt_secret: State<String>, bearer: AuthBearer) -> Result<StatusCode, ApiError> {
+    service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
     Ok(StatusCode::NO_CONTENT)
 }
 

@@ -1,278 +1,160 @@
 use crate::{
-    domain::{
-        auth::{AuthError, Authenticator},
-        error::DomainError,
-        user::UserStore,
-    },
-    models::user::{User, UserRegistration},
-    repository::insertion_error::InsertionError,
+    domain::{auth::AuthError, error::DomainError},
+    models::user::{NewUser, User, UserRegistration},
     technical_error::TechnicalError,
 };
-use anyhow::Result;
-use std::sync::Arc;
+use chrono::{Duration, Utc};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
-pub struct AuthSvc {
-    store: Arc<dyn UserStore>,
+#[derive(Serialize, Deserialize)]
+struct Claims {
+    sub: String,
+    exp: u64,
 }
 
-impl AuthSvc {
-    pub const fn new(store: Arc<dyn UserStore>) -> Self { Self { store } }
+impl Claims {
+    /// Initializes claims with an expiration 24 hours in the future.
+    fn new(id: i32) -> Result<Self, TechnicalError> {
+        let now = Utc::now();
+
+        let exp = (now + Duration::hours(24))
+            .timestamp()
+            .try_into()
+            .map_err(|_| TechnicalError::Pre1970(now))?;
+
+        Ok(Self { sub: id.to_string(), exp })
+    }
 }
 
-#[async_trait::async_trait]
-impl Authenticator for AuthSvc {
-    async fn register(&self, reg: UserRegistration) -> Result<(), DomainError> {
-        let pw_hash =
-            bcrypt::hash(&reg.password, bcrypt::DEFAULT_COST).map_err(TechnicalError::from)?;
+pub fn hash_pw(reg: UserRegistration) -> Result<NewUser, DomainError> {
+    let pw_hash =
+        bcrypt::hash(&reg.password, bcrypt::DEFAULT_COST).map_err(TechnicalError::from)?;
 
-        match self
-            .store
-            .insert_new(&reg.into_new_user_with(pw_hash))
-            .await
-        {
-            Ok(()) => Ok(()),
-            Err(InsertionError::UniqueViolation(v)) if v.contains("email") => {
-                Err(AuthError::DuplicateEmail.into())
-            }
-            Err(InsertionError::UniqueViolation(v)) if v.contains("username") => {
-                Err(AuthError::DuplicateUsername.into())
-            }
-            Err(InsertionError::UniqueViolation(v)) => {
-                Err(TechnicalError::Unexpected(format!("Unexpected unique violation: {v}")).into())
-            }
-            Err(InsertionError::Technical(e)) => Err(TechnicalError::Database(e).into()),
+    Ok(reg.into_new_user_with(pw_hash))
+}
+
+pub fn jwt_if_valid_pw(user: &User, password: &str, secret: &str) -> Result<String, DomainError> {
+    // Validate the password
+    bcrypt::verify(password, &user.password_hash)
+        .map_err(TechnicalError::from)?
+        .then_some(())
+        .ok_or(AuthError::InvalidPassword)?;
+
+    // Create the JWT
+    let token = jsonwebtoken::encode(
+        &Header::default(),
+        &Claims::new(user.id)?,
+        &EncodingKey::from_secret(secret.as_ref()),
+    )
+    .map_err(TechnicalError::from)?;
+
+    Ok(token)
+}
+
+pub fn validate_jwt(token: &str, secret: &str) -> Result<i32, DomainError> {
+    if let Ok(token_data) = jsonwebtoken::decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(secret.as_ref()),
+        &Validation::default(),
+    ) {
+        if let Ok(id) = token_data.claims.sub.parse() {
+            return Ok(id);
         }
     }
 
-    async fn validate_credentials(&self, email: &str, password: &str) -> Result<User, DomainError> {
-        // Validate the email and get the associated user
-        let user = self
-            .store
-            .get_by_email(email)
-            .await?
-            .ok_or(AuthError::InvalidEmail)?;
-
-        // Validate the password
-        bcrypt::verify(password, &user.password_hash)
-            .map_err(TechnicalError::from)?
-            .then_some(())
-            .ok_or(AuthError::InvalidPassword)?;
-
-        Ok(user)
-    }
+    Err(AuthError::JwtValidation.into())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::user::MockUserStore;
-    use chrono::Utc;
-    use mockall::predicate::eq;
+    use crate::test_utils::within_one_second;
+    use chrono::{DateTime, Days};
+    use colored::Colorize;
 
-    mod register {
-        use super::*;
-
-        fn alice_registration() -> UserRegistration {
-            UserRegistration {
-                name: String::from("New Alice"),
-                email: String::from("alice_new@example.com"),
-                username: String::from("new_alice"),
-                password: String::from("secret"),
-            }
-        }
-
-        #[tokio::test]
-        async fn errors_for_existing_email() {
-            let alice_reg = alice_registration();
-            let alice_reg_clone = alice_reg.clone();
-            let pw_clone = alice_reg.password.clone();
-
-            let mut mock_repo = MockUserStore::new();
-            mock_repo
-                .expect_insert_new()
-                .withf(move |u| {
-                    u.name == alice_reg_clone.name
-                        && u.email == alice_reg_clone.email
-                        && u.username == alice_reg_clone.username
-                        && bcrypt::verify(&pw_clone, &u.password_hash)
-                            .expect("failed to verify password hash")
-                })
-                .once()
-                .return_once(|_| {
-                    Err(InsertionError::UniqueViolation(String::from(
-                        "users_email_unique",
-                    )))
-                });
-
-            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc.register(alice_reg).await;
-
-            assert!(matches!(
-                result,
-                Err(DomainError::Auth(AuthError::DuplicateEmail)),
-            ));
-        }
-
-        #[tokio::test]
-        async fn errors_for_existing_username() {
-            let alice_reg = alice_registration();
-            let alice_reg_clone = alice_reg.clone();
-            let pw_clone = alice_reg.password.clone();
-
-            let mut mock_repo = MockUserStore::new();
-            mock_repo
-                .expect_insert_new()
-                .withf(move |u| {
-                    u.name == alice_reg_clone.name
-                        && u.email == alice_reg_clone.email
-                        && u.username == alice_reg_clone.username
-                        && bcrypt::verify(&pw_clone, &u.password_hash)
-                            .expect("failed to verify password hash")
-                })
-                .once()
-                .return_once(|_| {
-                    Err(InsertionError::UniqueViolation(String::from(
-                        "users_username_unique",
-                    )))
-                });
-
-            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc.register(alice_reg).await;
-
-            assert!(matches!(
-                result,
-                Err(DomainError::Auth(AuthError::DuplicateUsername)),
-            ));
-        }
-
-        #[tokio::test]
-        async fn correctly_creates_new_user_from_request() {
-            let alice_reg = alice_registration();
-
-            let (name, email, username, password) = (
-                alice_reg.name.clone(),
-                alice_reg.email.clone(),
-                alice_reg.username.clone(),
-                alice_reg.password.clone(),
-            );
-
-            let mut mock_repo = MockUserStore::new();
-            mock_repo
-                .expect_insert_new()
-                .withf(move |u| {
-                    u.name == name
-                        && u.email == email
-                        && u.username == username
-                        && bcrypt::verify(&password, &u.password_hash)
-                            .expect("failed to verify password hash")
-                })
-                .once()
-                .return_once(|_| Ok(()));
-
-            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-
-            assert!(matches!(
-                auth_svc.register(alice_reg).await,
-                anyhow::Result::Ok(()),
-            ));
+    fn make_bob(password: &str) -> User {
+        User {
+            id: 55,
+            name: String::from("Bobby Robertson"),
+            email: String::from("rob@bob.net"),
+            username: String::from("amazing_robby_7"),
+            password_hash: bcrypt::hash(password, bcrypt::DEFAULT_COST)
+                .expect("failed to hash password"),
+            created_at: Utc::now()
+                .checked_sub_days(Days::new(1))
+                .expect("failed to subtract a day from now"),
         }
     }
 
-    mod validate_credentials {
-        use super::*;
+    #[test]
+    fn claims_converts_types_and_calculates_expiration() {
+        let id = 825;
+        let tomorrow = Utc::now()
+            .checked_add_days(Days::new(1))
+            .expect("failed to compute tomorrow");
 
-        #[tokio::test]
-        async fn errors_for_invalid_email() {
-            let email = String::from("bob@bob.bob");
-            let password = String::from("extremely secure");
+        let claims = Claims::new(id).expect("failed to create claims");
 
-            let mut mock_repo = MockUserStore::new();
-            mock_repo.expect_insert_new().never();
-            mock_repo.expect_get_by_username().never();
-            mock_repo
-                .expect_get_by_email()
-                .with(eq(email.clone()))
-                .once()
-                .return_once(|_| Ok(None));
+        let exp = DateTime::from_timestamp(
+            claims.exp.try_into().expect("failed to convert u64 to i64"),
+            0,
+        )
+        .expect("failed to create datetime");
 
-            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc.validate_credentials(&email, &password).await;
+        assert!(within_one_second(exp, tomorrow));
+        assert_eq!(claims.sub, id.to_string());
+    }
 
-            assert!(matches!(
-                result,
-                Err(DomainError::Auth(AuthError::InvalidEmail))
-            ));
-        }
+    // Determined that testing hash_pw would be trivial
 
-        #[tokio::test]
-        async fn errors_for_invalid_password() {
-            let correct_bob = User {
-                id: 42,
-                name: String::from("Bob"),
-                email: String::from("bob@email.co.uk"),
-                username: String::from("bobby_bob"),
-                password_hash: bcrypt::hash("correct password", bcrypt::DEFAULT_COST)
-                    .expect("failed to hash password"),
-                created_at: Utc::now(),
-            };
+    #[test]
+    fn encodes_and_decodes_id_for_valid_pw() {
+        let correct_pw = "Bob's password";
+        let secret = "shh_hhh_hhh";
 
-            let correct_email = correct_bob.email.clone();
-            let incorrect_password = String::from("incorrect password");
+        let bob = make_bob(correct_pw);
+        let token = jwt_if_valid_pw(&bob, correct_pw, secret)
+            .expect("failed to create JWT for valid password");
 
-            let mut mock_repo = MockUserStore::new();
-            mock_repo.expect_insert_new().never();
-            mock_repo.expect_get_by_username().never();
-            mock_repo
-                .expect_get_by_email()
-                .with(eq(correct_email.clone()))
-                .once()
-                .return_once(|_| Ok(Some(correct_bob)));
+        let id = validate_jwt(&token, secret).expect("failed to validate token");
+        assert_eq!(id, bob.id);
+    }
 
-            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc
-                .validate_credentials(&correct_email, &incorrect_password)
-                .await;
+    #[test]
+    fn token_creation_errors_for_invalid_pw() {
+        let bob = make_bob("correct password");
+        let result = jwt_if_valid_pw(&bob, "incorrect password", "top secret");
+        assert!(
+            matches!(result, Err(DomainError::Auth(AuthError::InvalidPassword))),
+            "{}",
+            format!("{result:?}").red(),
+        );
+    }
 
-            assert!(matches!(
-                result,
-                Err(DomainError::Auth(AuthError::InvalidPassword))
-            ));
-        }
+    #[test]
+    fn validation_errors_for_invalid_token() {
+        let password = "53cur1ty";
+        let bob = make_bob(password);
+        let secret = "no one's gonna know";
 
-        #[tokio::test]
-        async fn returns_user_for_valid_credentials() {
-            let password = String::from("correct password");
+        let _ = jwt_if_valid_pw(&bob, password, secret).expect("failed to create token");
+        assert!(matches!(
+            validate_jwt("fake token", secret),
+            Err(DomainError::Auth(AuthError::JwtValidation)),
+        ));
+    }
 
-            let correct_bob = User {
-                id: 42,
-                name: String::from("Bob"),
-                email: String::from("bob@email.co.uk"),
-                username: String::from("bobby_bob"),
-                password_hash: bcrypt::hash(&password, bcrypt::DEFAULT_COST)
-                    .expect("failed to hash password"),
-                created_at: Utc::now(),
-            };
-            let also_bob = correct_bob.clone();
+    #[test]
+    fn validation_errors_for_invalid_secret() {
+        let password = "pa$$ed654wood&24b1";
+        let bob = make_bob(password);
+        let secret = "shh";
 
-            let mut mock_repo = MockUserStore::new();
-            mock_repo.expect_insert_new().never();
-            mock_repo.expect_get_by_username().never();
-            mock_repo
-                .expect_get_by_email()
-                .with(eq(correct_bob.email.clone()))
-                .once()
-                .return_once(|_| Ok(Some(also_bob)));
-
-            let auth_svc = AuthSvc::new(Arc::new(mock_repo));
-            let result = auth_svc
-                .validate_credentials(&correct_bob.email, &password)
-                .await;
-
-            match result {
-                Ok(user) => assert_eq!(user, correct_bob),
-                other => panic!("unexpected result: {other:?}"),
-            }
-        }
+        let token = jwt_if_valid_pw(&bob, password, secret).expect("failed to create token");
+        assert!(matches!(
+            validate_jwt(&token, "boo!"),
+            Err(DomainError::Auth(AuthError::JwtValidation)),
+        ));
     }
 }

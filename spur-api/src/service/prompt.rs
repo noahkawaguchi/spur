@@ -3,7 +3,7 @@ use crate::{
         error::DomainError,
         friendship::{FriendshipStatus, repository::FriendshipStore},
         prompt::{PromptError, PromptStore},
-        user::UserStore,
+        user::UserManager,
     },
     repository::insertion_error::InsertionError,
     technical_error::TechnicalError,
@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub struct PromptSvc<S: PromptStore> {
     prompt_store: S,
     friendship_store: Arc<dyn FriendshipStore>,
-    user_store: Arc<dyn UserStore>,
+    user_svc: Arc<dyn UserManager>,
 }
 
 impl<S: PromptStore> PromptSvc<S> {
@@ -53,7 +53,7 @@ impl<S: PromptStore> PromptSvc<S> {
         {
             Ok(PromptWithAuthor {
                 id: prompt.id,
-                author_username: self.user_store.get_by_id(prompt.author_id).await?.username,
+                author_username: self.user_svc.get_by_id(prompt.author_id).await?.username,
                 body: prompt.body,
             })
         } else {

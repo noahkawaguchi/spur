@@ -2,14 +2,13 @@ use crate::{
     domain::friendship::{FriendshipStatus, repository::FriendshipStore},
     technical_error::TechnicalError,
 };
-use std::sync::Arc;
 
 pub struct FriendshipRepo {
     pool: sqlx::PgPool,
 }
 
 impl FriendshipRepo {
-    pub fn new_arc(pool: sqlx::PgPool) -> Arc<dyn FriendshipStore> { Arc::new(Self { pool }) }
+    pub const fn new(pool: sqlx::PgPool) -> Self { Self { pool } }
 }
 
 #[async_trait::async_trait]
@@ -128,6 +127,7 @@ impl FriendshipStore for FriendshipRepo {
 mod tests {
     use super::*;
     use crate::{
+        domain::user::UserStore,
         models::user::NewUser,
         repository::user::UserRepo,
         test_utils::{with_test_pool, within_one_second},
@@ -157,7 +157,7 @@ mod tests {
     }
 
     async fn must_seed_users(pool: PgPool) {
-        let user_repo = UserRepo::new_arc(pool);
+        let user_repo = UserRepo::new(pool);
 
         let drake = NewUser {
             name: String::from("Drake"),
@@ -199,7 +199,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_improperly_ordered_ids() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new_arc(pool.clone());
+            let repo = FriendshipRepo::new(pool.clone());
             must_seed_users(pool).await;
 
             let result1 = repo.new_request(2, 1, 1).await;
@@ -214,7 +214,7 @@ mod tests {
     #[tokio::test]
     async fn sets_initial_values_on_insertion() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new_arc(pool.clone());
+            let repo = FriendshipRepo::new(pool.clone());
             must_seed_users(pool.clone()).await;
 
             repo.new_request(1, 2, 1)
@@ -236,7 +236,7 @@ mod tests {
     #[tokio::test]
     async fn updates_values_for_accepted_request() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new_arc(pool.clone());
+            let repo = FriendshipRepo::new(pool.clone());
             must_seed_users(pool.clone()).await;
 
             repo.new_request(1, 3, 3)
@@ -269,7 +269,7 @@ mod tests {
     #[tokio::test]
     async fn gets_all_four_possible_statuses() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new_arc(pool.clone());
+            let repo = FriendshipRepo::new(pool.clone());
             must_seed_users(pool).await;
 
             let status = repo.get_status(2, 3).await.expect("failed to get status");
@@ -299,7 +299,7 @@ mod tests {
     #[tokio::test]
     async fn gets_all_requests_and_friends() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new_arc(pool.clone());
+            let repo = FriendshipRepo::new(pool.clone());
             must_seed_users(pool).await;
 
             // No requests, no friends

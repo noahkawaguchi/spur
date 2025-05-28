@@ -4,7 +4,6 @@ use crate::{
     models::user::{NewUser, User},
     technical_error::TechnicalError,
 };
-use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct UserRepo {
@@ -12,7 +11,7 @@ pub struct UserRepo {
 }
 
 impl UserRepo {
-    pub fn new_arc(pool: sqlx::PgPool) -> Arc<dyn UserStore> { Arc::new(Self { pool }) }
+    pub const fn new(pool: sqlx::PgPool) -> Self { Self { pool } }
 }
 
 #[async_trait::async_trait]
@@ -31,12 +30,12 @@ impl UserStore for UserRepo {
         Ok(())
     }
 
-    async fn get_by_id(&self, id: i32) -> Result<User, TechnicalError> {
-        let user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", id)
-            .fetch_one(&self.pool)
+    async fn get_by_id(&self, id: i32) -> Result<Option<User>, TechnicalError> {
+        let maybe_user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", id)
+            .fetch_optional(&self.pool)
             .await?;
 
-        Ok(user)
+        Ok(maybe_user)
     }
 
     async fn get_by_email(&self, email: &str) -> Result<Option<User>, TechnicalError> {
@@ -89,7 +88,7 @@ mod tests {
     async fn inserts_and_gets_users() {
         with_test_pool(|pool| async move {
             let test_users = make_test_users();
-            let repo = UserRepo::new_arc(pool);
+            let repo = UserRepo::new(pool);
 
             // Insert
             for user in &test_users {
@@ -103,6 +102,7 @@ mod tests {
                 let got_by_id = repo
                     .get_by_id(i32::try_from(i + 1).expect("failed to convert usize to i32"))
                     .await
+                    .expect("failed to get user by ID")
                     .expect("failed to get user by ID");
 
                 assert_eq!(got_by_id, user);
@@ -134,15 +134,17 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn returns_none_for_nonexistent_email_or_username() {
+    async fn returns_none_for_nonexistent_user() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new_arc(pool);
+            let repo = UserRepo::new(pool);
 
             let from_nonsense_email = repo.get_by_email("nonsense@nothing.abc").await;
             let from_nonsense_username = repo.get_by_username("nonsensical_naan").await;
+            let from_nonsense_id = repo.get_by_id(642).await;
 
             assert!(matches!(from_nonsense_email, Ok(None)));
             assert!(matches!(from_nonsense_username, Ok(None)));
+            assert!(matches!(from_nonsense_id, Ok(None)));
         })
         .await;
     }
@@ -150,7 +152,7 @@ mod tests {
     #[tokio::test]
     async fn sets_auto_generated_id_and_created_at() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new_arc(pool);
+            let repo = UserRepo::new(pool);
 
             for (i, user) in make_test_users().into_iter().enumerate() {
                 repo.insert_new(&user).await.expect("failed to insert user");
@@ -176,7 +178,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_duplicate_email() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new_arc(pool);
+            let repo = UserRepo::new(pool);
 
             let real_alice = NewUser {
                 name: String::from("Alice"),
@@ -208,7 +210,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_duplicate_username() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new_arc(pool);
+            let repo = UserRepo::new(pool);
 
             let real_bob = NewUser {
                 name: String::from("Bob"),
@@ -238,7 +240,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_empty_and_blank_fields() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new_arc(pool);
+            let repo = UserRepo::new(pool);
 
             let complete_user = NewUser {
                 name: String::from("Carla"),

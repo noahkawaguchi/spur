@@ -1,4 +1,6 @@
-use super::{auth::AuthError, friendship::error::FriendshipError, prompt::PromptError};
+use super::{
+    auth::AuthError, friendship::error::FriendshipError, prompt::PromptError, user::UserError,
+};
 use crate::technical_error::TechnicalError;
 use thiserror::Error;
 
@@ -6,6 +8,9 @@ use thiserror::Error;
 pub enum DomainError {
     #[error(transparent)]
     Auth(#[from] AuthError),
+
+    #[error(transparent)]
+    User(#[from] UserError),
 
     #[error(transparent)]
     Friendship(#[from] FriendshipError),

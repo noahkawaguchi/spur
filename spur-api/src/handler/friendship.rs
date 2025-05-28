@@ -1,10 +1,6 @@
-use super::api_error::ApiError;
+use super::{AuthBearer, api_error::ApiError};
 use crate::{domain::friendship::service::FriendshipManager, service};
 use axum::{Json, extract::State, http::StatusCode};
-use axum_extra::{
-    TypedHeader,
-    headers::{Authorization, authorization::Bearer},
-};
 use spur_shared::{
     requests::AddFriendRequest,
     responses::{SuccessResponse, UsernamesResponse},
@@ -15,14 +11,14 @@ use validator::Validate;
 pub async fn add_friend(
     jwt_secret: State<String>,
     friendship_svc: State<Arc<dyn FriendshipManager>>,
-    bearer: TypedHeader<Authorization<Bearer>>,
+    bearer: AuthBearer,
     payload: Json<AddFriendRequest>,
 ) -> Result<(StatusCode, Json<SuccessResponse>), ApiError> {
     // Ensure the request body content is valid
     payload.validate()?;
 
     // User must have a valid token to add a friend
-    let sender_id = service::jwt::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
+    let sender_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 
     // Try to add the friend
     let became_friends = friendship_svc
@@ -49,10 +45,10 @@ pub async fn add_friend(
 pub async fn get_friends(
     jwt_secret: State<String>,
     friendship_svc: State<Arc<dyn FriendshipManager>>,
-    bearer: TypedHeader<Authorization<Bearer>>,
+    bearer: AuthBearer,
 ) -> Result<(StatusCode, Json<UsernamesResponse>), ApiError> {
     // User must be authorized
-    let id = service::jwt::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
+    let id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 
     // List this user's confirmed friends
     let friends = friendship_svc.get_friends(id).await?;
@@ -66,10 +62,10 @@ pub async fn get_friends(
 pub async fn get_requests(
     jwt_secret: State<String>,
     friendship_svc: State<Arc<dyn FriendshipManager>>,
-    bearer: TypedHeader<Authorization<Bearer>>,
+    bearer: AuthBearer,
 ) -> Result<(StatusCode, Json<UsernamesResponse>), ApiError> {
     // User must be authorized
-    let id = service::jwt::validate_jwt(bearer.token(), jwt_secret.as_ref())?;
+    let id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 
     // List pending requests to this user
     let requests = friendship_svc.get_requests(id).await?;

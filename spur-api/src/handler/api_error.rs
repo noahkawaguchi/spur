@@ -1,9 +1,5 @@
-use crate::{
-    domain::{
-        auth::AuthError, error::DomainError, friendship::error::FriendshipError,
-        prompt::PromptError,
-    },
-    service::jwt::JwtValidationError,
+use crate::domain::{
+    error::DomainError, friendship::error::FriendshipError, prompt::PromptError, user::UserError,
 };
 use axum::{
     Json,
@@ -19,9 +15,6 @@ pub enum ApiError {
     #[error(transparent)]
     Request(#[from] validator::ValidationErrors),
 
-    #[error("Expired or invalid token")]
-    Token(#[from] JwtValidationError),
-
     #[error(transparent)]
     Domain(#[from] DomainError),
 }
@@ -30,14 +23,12 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let status = match &self {
             Self::Request(_) => StatusCode::BAD_REQUEST,
-            Self::Token(_) => StatusCode::UNAUTHORIZED,
             Self::Domain(e) => match e {
-                DomainError::Auth(err) => match err {
-                    AuthError::DuplicateEmail | AuthError::DuplicateUsername => {
+                DomainError::Auth(_) => StatusCode::UNAUTHORIZED,
+                DomainError::User(err) => match err {
+                    UserError::NotFound => StatusCode::NOT_FOUND,
+                    UserError::DuplicateEmail | UserError::DuplicateUsername => {
                         StatusCode::CONFLICT
-                    }
-                    AuthError::InvalidEmail | AuthError::InvalidPassword => {
-                        StatusCode::UNAUTHORIZED
                     }
                 },
                 DomainError::Friendship(err) => match err {
