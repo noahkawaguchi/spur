@@ -12,14 +12,14 @@ use spur_shared::models::PromptWithAuthor;
 use std::sync::Arc;
 
 pub struct PromptSvc<S: PromptStore> {
-    prompt_store: S,
+    store: S,
     friendship_svc: Arc<dyn FriendshipManager>,
     user_svc: Arc<dyn UserManager>,
 }
 
 impl<S: PromptStore> PromptSvc<S> {
     async fn create_new(&self, author_id: i32, body: &str) -> Result<i32, DomainError> {
-        match self.prompt_store.insert_new(author_id, body).await {
+        match self.store.insert_new(author_id, body).await {
             Ok(id) => Ok(id),
             Err(InsertionError::Technical(e)) => Err(TechnicalError::Database(e).into()),
             Err(InsertionError::UniqueViolation(_)) => Err(PromptError::Duplicate.into()),
@@ -32,7 +32,7 @@ impl<S: PromptStore> PromptSvc<S> {
         prompt_id: i32,
     ) -> Result<PromptWithAuthor, DomainError> {
         let prompt = self
-            .prompt_store
+            .store
             .get_by_id(prompt_id)
             .await?
             .ok_or(PromptError::NotFound)?;
@@ -64,7 +64,7 @@ impl<S: PromptStore> PromptSvc<S> {
             .are_friends(&UserIdPair::new(requester_id, target_id)?)
             .await?
         {
-            self.prompt_store
+            self.store
                 .get_user_prompts(target_id)
                 .await
                 .map_err(DomainError::from)
@@ -74,7 +74,7 @@ impl<S: PromptStore> PromptSvc<S> {
     }
 
     async fn get_friend_prompts(&self, user_id: i32) -> Result<Vec<PromptWithAuthor>, DomainError> {
-        self.prompt_store
+        self.store
             .get_friend_prompts(user_id)
             .await
             .map_err(DomainError::from)
