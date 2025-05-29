@@ -33,7 +33,7 @@ where
 {
     pub async fn signup(&self) -> Result<String> {
         let body = self.prompt.signup()?;
-        let response = self.client.post("signup", body, None).await?;
+        let response = self.client.post("auth/signup", body, None).await?;
 
         if response.status() == StatusCode::CREATED {
             Ok(String::from("Successfully registered"))
@@ -44,7 +44,7 @@ where
 
     pub async fn login(&self) -> Result<String> {
         let body = self.prompt.login()?;
-        let response = self.client.post("login", body, None).await?;
+        let response = self.client.post("auth/login", body, None).await?;
 
         if response.status() == StatusCode::OK {
             match self
@@ -61,7 +61,7 @@ where
 
     pub async fn check(&self) -> Result<String> {
         let token = self.store.load()?;
-        let response = self.client.get("check", &token).await?;
+        let response = self.client.get::<()>("auth/check", &token, None).await?;
 
         if response.status() == StatusCode::NO_CONTENT {
             Ok(String::from("Your token is valid"))

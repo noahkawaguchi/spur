@@ -16,7 +16,7 @@ use auth::AuthCommand;
 use clap::Parser;
 use commands::{
     Cli,
-    Commands::{Add, Check, Friends, Login, Requests, Signup},
+    Commands::{Add, Check, Friends, Login, Signup},
 };
 use friends::FriendsCommand;
 use prompt::InteractiveAuthPrompt;
@@ -58,8 +58,7 @@ async fn main() -> Result<()> {
         match command {
             Signup | Login | Check => unreachable!(),
             Add { username } => friends.add_friend(username).await,
-            Friends => friends.list_friends().await,
-            Requests => friends.list_requests().await,
+            Friends { pending } => friends.list_friends(pending).await,
         }
     };
 

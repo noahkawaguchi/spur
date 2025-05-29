@@ -46,12 +46,11 @@ async fn main() -> Result<()> {
     let state = AppState { jwt_secret: config.jwt_secret, user_svc, friendship_svc };
 
     let app = Router::new()
-        .route("/signup", post(auth::signup))
-        .route("/login", post(auth::login))
-        .route("/check", get(auth::check))
-        .route("/add", post(friendship::add_friend))
+        .route("/auth/signup", post(auth::signup))
+        .route("/auth/login", post(auth::login))
+        .route("/auth/check", get(auth::check))
+        .route("/friends", post(friendship::add_friend))
         .route("/friends", get(friendship::get_friends))
-        .route("/requests", get(friendship::get_requests))
         .with_state(state);
 
     let listener = TcpListener::bind(&config.bind_addr).await?;

@@ -31,3 +31,8 @@ pub struct AddFriendRequest {
     #[validate(length(min = 1, message = "recipient username cannot be empty"))]
     pub recipient_username: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct GetFriendsParam {
+    pub pending: bool,
+}

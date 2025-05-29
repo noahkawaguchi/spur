@@ -1,8 +1,12 @@
 use super::{AuthBearer, api_error::ApiError};
 use crate::{domain::friendship::service::FriendshipManager, service};
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Query, State},
+    http::StatusCode,
+};
 use spur_shared::{
-    requests::AddFriendRequest,
+    requests::{AddFriendRequest, GetFriendsParam},
     responses::{SuccessResponse, UsernamesResponse},
 };
 use std::sync::Arc;
@@ -46,32 +50,18 @@ pub async fn get_friends(
     jwt_secret: State<String>,
     friendship_svc: State<Arc<dyn FriendshipManager>>,
     bearer: AuthBearer,
+    param: Query<GetFriendsParam>,
 ) -> Result<(StatusCode, Json<UsernamesResponse>), ApiError> {
     // User must be authorized
     let id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 
-    // List this user's confirmed friends
-    let friends = friendship_svc.get_friends(id).await?;
+    let usernames = if param.pending {
+        // List pending requests to this user
+        friendship_svc.get_requests(id).await?
+    } else {
+        // List this user's confirmed friends
+        friendship_svc.get_friends(id).await?
+    };
 
-    Ok((
-        StatusCode::OK,
-        Json(UsernamesResponse { usernames: friends }),
-    ))
-}
-
-pub async fn get_requests(
-    jwt_secret: State<String>,
-    friendship_svc: State<Arc<dyn FriendshipManager>>,
-    bearer: AuthBearer,
-) -> Result<(StatusCode, Json<UsernamesResponse>), ApiError> {
-    // User must be authorized
-    let id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-
-    // List pending requests to this user
-    let requests = friendship_svc.get_requests(id).await?;
-
-    Ok((
-        StatusCode::OK,
-        Json(UsernamesResponse { usernames: requests }),
-    ))
+    Ok((StatusCode::OK, Json(UsernamesResponse { usernames })))
 }

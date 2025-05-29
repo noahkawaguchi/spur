@@ -7,7 +7,12 @@ const BUILD_FAILED: &str = "Failed to build request.\nThis can be due to a malfo
                             Try using the `login` command to get a new token.";
 
 pub trait RequestClient: Send + Sync {
-    async fn get(&self, endpoint: &str, token: &str) -> Result<Response>;
+    async fn get<Q: Serialize>(
+        &self,
+        endpoint: &str,
+        token: &str,
+        query_params: Option<Q>,
+    ) -> Result<Response>;
 
     async fn post<B: Serialize>(
         &self,
@@ -31,18 +36,23 @@ impl ApiRequestClient {
 }
 
 impl RequestClient for ApiRequestClient {
-    async fn get(&self, endpoint: &str, token: &str) -> Result<Response> {
+    async fn get<Q: Serialize>(
+        &self,
+        endpoint: &str,
+        token: &str,
+        query_params: Option<Q>,
+    ) -> Result<Response> {
         let url = self.base_url.join(endpoint)?;
+        let mut request = self.client.get(url.as_str()).bearer_auth(token);
 
-        let request = self
-            .client
-            .get(url.as_str())
-            .bearer_auth(token)
-            .build()
-            .context(BUILD_FAILED)?;
+        if let Some(params) = query_params {
+            request = request.query(&params);
+        }
+
+        let built_request = request.build().context(BUILD_FAILED)?;
 
         self.client
-            .execute(request)
+            .execute(built_request)
             .await
             .with_context(|| format!("GET request to {url} failed"))
     }
@@ -75,7 +85,7 @@ mod tests {
     use serde_json::json;
     use wiremock::{
         Mock, MockServer, ResponseTemplate,
-        matchers::{body_json, header, method, path},
+        matchers::{body_json, header, method, path, query_param},
     };
 
     mod post {
@@ -162,10 +172,13 @@ mod tests {
             let mock_server = MockServer::start().await;
 
             let token = "my_secret_token";
+            let query_params = &[("bananas", true), ("brown", false)];
 
             Mock::given(method("GET"))
                 .and(path("/banana"))
                 .and(header("authorization", format!("Bearer {token}")))
+                .and(query_param("bananas", "true"))
+                .and(query_param("brown", "false"))
                 .respond_with(ResponseTemplate::new(200))
                 .expect(1)
                 .mount(&mock_server)
@@ -176,7 +189,7 @@ mod tests {
                 ApiRequestClient::new(base_url).expect("failed to initialize request client");
 
             client
-                .get("banana", token)
+                .get("banana", token, Some(query_params))
                 .await
                 .expect("failed to make request");
         }
@@ -191,7 +204,7 @@ mod tests {
                 ApiRequestClient::new(port_zero).expect("failed to initialize request client");
 
             let result = client
-                .get(endpoint, "token_token")
+                .get(endpoint, "token_token", Some(&[("should", "fail")]))
                 .await
                 .expect_err("unexpected successful request");
 
