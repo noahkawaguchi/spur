@@ -361,4 +361,45 @@ mod tests {
 
         assert_eq!(result, requester_usernames);
     }
+
+    #[tokio::test]
+    async fn correctly_reports_friendship_as_bool() {
+        let ids1 = UserIdPair::new(15, 2).unwrap();
+        let ids2 = UserIdPair::new(999, 55).unwrap();
+        let ids3 = UserIdPair::new(739, 24252).unwrap();
+        let ids4 = UserIdPair::new(9, 10).unwrap();
+
+        let ids2_lesser = ids2.lesser();
+        let ids3_greater = ids3.greater();
+
+        let mut mock_friendship_repo = MockFriendshipStore::new();
+        mock_friendship_repo
+            .expect_get_status()
+            .with(eq(ids1.clone()))
+            .once()
+            .return_once(|_| Ok(FriendshipStatus::Friends));
+        mock_friendship_repo
+            .expect_get_status()
+            .with(eq(ids2.clone()))
+            .once()
+            .return_once(move |_| Ok(FriendshipStatus::PendingFrom(ids2_lesser)));
+        mock_friendship_repo
+            .expect_get_status()
+            .with(eq(ids3.clone()))
+            .once()
+            .return_once(move |_| Ok(FriendshipStatus::PendingFrom(ids3_greater)));
+        mock_friendship_repo
+            .expect_get_status()
+            .with(eq(ids4.clone()))
+            .once()
+            .return_once(|_| Ok(FriendshipStatus::Nil));
+
+        let friendship_svc =
+            FriendshipSvc::new(mock_friendship_repo, Arc::new(MockUserManager::new()));
+
+        assert!(friendship_svc.are_friends(&ids1).await.unwrap());
+        assert!(!friendship_svc.are_friends(&ids2).await.unwrap());
+        assert!(!friendship_svc.are_friends(&ids3).await.unwrap());
+        assert!(!friendship_svc.are_friends(&ids4).await.unwrap());
+    }
 }
