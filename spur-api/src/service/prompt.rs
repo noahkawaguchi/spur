@@ -1,7 +1,7 @@
 use crate::{
     domain::{
         error::DomainError,
-        friendship::{FriendshipStatus, repository::FriendshipStore},
+        friendship::{service::FriendshipManager, user_id_pair::UserIdPair},
         prompt::{PromptError, PromptStore},
         user::UserManager,
     },
@@ -13,7 +13,7 @@ use std::sync::Arc;
 
 pub struct PromptSvc<S: PromptStore> {
     prompt_store: S,
-    friendship_store: Arc<dyn FriendshipStore>,
+    friendship_svc: Arc<dyn FriendshipManager>,
     user_svc: Arc<dyn UserManager>,
 }
 
@@ -37,19 +37,11 @@ impl<S: PromptStore> PromptSvc<S> {
             .await?
             .ok_or(PromptError::NotFound)?;
 
-        // Determine how this pair's friendship would be stored in the database
-        let (first_id, second_id) = if requester_id < prompt.author_id {
-            (requester_id, prompt.author_id)
-        } else {
-            (prompt.author_id, requester_id)
-        };
-
         // Must be friends to see someone's prompt
         if self
-            .friendship_store
-            .get_status(first_id, second_id)
+            .friendship_svc
+            .are_friends(&UserIdPair::new(requester_id, prompt.author_id)?)
             .await?
-            == FriendshipStatus::Friends
         {
             Ok(PromptWithAuthor {
                 id: prompt.id,
@@ -66,19 +58,11 @@ impl<S: PromptStore> PromptSvc<S> {
         requester_id: i32,
         target_id: i32,
     ) -> Result<Vec<PromptWithAuthor>, DomainError> {
-        // Determine how this pair's friendship would be stored in the database
-        let (first_id, second_id) = if requester_id < target_id {
-            (requester_id, target_id)
-        } else {
-            (target_id, requester_id)
-        };
-
         // Must be friends to see someone's prompts
         if self
-            .friendship_store
-            .get_status(first_id, second_id)
+            .friendship_svc
+            .are_friends(&UserIdPair::new(requester_id, target_id)?)
             .await?
-            == FriendshipStatus::Friends
         {
             self.prompt_store
                 .get_user_prompts(target_id)

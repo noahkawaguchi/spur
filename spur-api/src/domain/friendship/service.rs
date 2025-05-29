@@ -1,3 +1,4 @@
+use super::user_id_pair::UserIdPair;
 use crate::domain::error::DomainError;
 
 #[async_trait::async_trait]
@@ -27,4 +28,7 @@ pub trait FriendshipManager: Send + Sync {
     /// Retrieves the usernames of all users who have pending requests to the user with the
     /// provided ID.
     async fn get_requests(&self, id: i32) -> Result<Vec<String>, DomainError>;
+
+    /// Determines whether two users are confirmed friends.
+    async fn are_friends(&self, ids: &UserIdPair) -> Result<bool, DomainError>;
 }

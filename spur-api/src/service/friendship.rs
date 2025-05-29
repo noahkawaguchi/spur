@@ -2,7 +2,7 @@ use crate::domain::{
     error::DomainError,
     friendship::{
         FriendshipStatus, error::FriendshipError, repository::FriendshipStore,
-        service::FriendshipManager,
+        service::FriendshipManager, user_id_pair::UserIdPair,
     },
     user::UserManager,
 };
@@ -26,22 +26,12 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
         sender_id: i32,
         recipient_username: &str,
     ) -> Result<bool, DomainError> {
-        // First find the recipient's ID
+        // Find the recipient's ID and create an ID pair
         let recipient_id = self.user_svc.get_by_username(recipient_username).await?.id;
-
-        // Determine how this pair would be stored in the database
-        let (first_id, second_id) = if sender_id < recipient_id {
-            (sender_id, recipient_id)
-        } else {
-            (recipient_id, sender_id)
-        };
+        let ids = UserIdPair::new(sender_id, recipient_id)?;
 
         // Determine the pair's current status
-        match self
-            .friendship_store
-            .get_status(first_id, second_id)
-            .await?
-        {
+        match self.friendship_store.get_status(&ids).await? {
             // Already friends, cannot request to become friends
             FriendshipStatus::Friends => Err(FriendshipError::AlreadyFriends.into()),
 
@@ -52,19 +42,13 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
 
             // Already a pending request in the opposite direction, so accept it
             FriendshipStatus::PendingFrom(_) => {
-                self.friendship_store
-                    .accept_request(first_id, second_id)
-                    .await?;
-
+                self.friendship_store.accept_request(&ids).await?;
                 Ok(true)
             }
 
             // No existing relationship, create a new request
             FriendshipStatus::Nil => {
-                self.friendship_store
-                    .new_request(first_id, second_id, sender_id)
-                    .await?;
-
+                self.friendship_store.new_request(&ids, sender_id).await?;
                 Ok(false)
             }
         }
@@ -90,6 +74,10 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
                 .map(|id| async move { Ok(self.user_svc.get_by_id(id).await?.username) }),
         )
         .await
+    }
+
+    async fn are_friends(&self, ids: &UserIdPair) -> Result<bool, DomainError> {
+        Ok(self.friendship_store.get_status(ids).await? == FriendshipStatus::Friends)
     }
 }
 
@@ -161,6 +149,7 @@ mod tests {
             let my_friend = make_user1();
             let my_friend_clone = my_friend.clone();
             let my_id = my_friend.id - 1;
+            let ids = UserIdPair::new(my_id, my_friend.id).unwrap();
 
             let mut mock_user_svc = MockUserManager::new();
             mock_user_svc
@@ -172,9 +161,9 @@ mod tests {
             let mut mock_friendship_repo = MockFriendshipStore::new();
             mock_friendship_repo
                 .expect_get_status()
-                .with(eq(my_id), eq(my_friend.id))
+                .with(eq(ids))
                 .once()
-                .return_once(|_, _| Ok(FriendshipStatus::Friends));
+                .return_once(|_| Ok(FriendshipStatus::Friends));
 
             let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_svc));
             let result = friendship_svc.add_friend(my_id, &my_friend.username).await;
@@ -190,6 +179,7 @@ mod tests {
             let desired_friend = make_user2();
             let desired_friend_clone = desired_friend.clone();
             let my_id = desired_friend.id + 3;
+            let ids = UserIdPair::new(my_id, desired_friend.id).unwrap();
 
             let mut mock_user_svc = MockUserManager::new();
             mock_user_svc
@@ -201,9 +191,9 @@ mod tests {
             let mut mock_friendship_repo = MockFriendshipStore::new();
             mock_friendship_repo
                 .expect_get_status()
-                .with(eq(desired_friend.id), eq(my_id))
+                .with(eq(ids))
                 .once()
-                .return_once(move |_, _| Ok(FriendshipStatus::PendingFrom(my_id)));
+                .return_once(move |_| Ok(FriendshipStatus::PendingFrom(my_id)));
 
             let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_svc));
             let result = friendship_svc
@@ -221,6 +211,7 @@ mod tests {
             let added_me = make_user3();
             let added_me_clone = added_me.clone();
             let my_id = added_me.id + 100;
+            let ids = UserIdPair::new(my_id, added_me.id).unwrap();
 
             let mut mock_user_svc = MockUserManager::new();
             mock_user_svc
@@ -232,14 +223,14 @@ mod tests {
             let mut mock_friendship_repo = MockFriendshipStore::new();
             mock_friendship_repo
                 .expect_get_status()
-                .with(eq(added_me.id), eq(my_id))
+                .with(eq(ids.clone()))
                 .once()
-                .return_once(move |_, _| Ok(FriendshipStatus::PendingFrom(added_me.id)));
+                .return_once(move |_| Ok(FriendshipStatus::PendingFrom(added_me.id)));
             mock_friendship_repo
                 .expect_accept_request()
-                .with(eq(added_me.id), eq(my_id))
+                .with(eq(ids))
                 .once()
-                .return_once(|_, _| Ok(()));
+                .return_once(|_| Ok(()));
 
             let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_svc));
             let result = friendship_svc.add_friend(my_id, &added_me.username).await;
@@ -252,6 +243,7 @@ mod tests {
             let does_not_know_me = make_user4();
             let does_not_know_me_clone = does_not_know_me.clone();
             let my_id = does_not_know_me.id - 7;
+            let ids = UserIdPair::new(my_id, does_not_know_me.id).unwrap();
 
             let mut mock_user_svc = MockUserManager::new();
             mock_user_svc
@@ -263,15 +255,15 @@ mod tests {
             let mut mock_friendship_repo = MockFriendshipStore::new();
             mock_friendship_repo
                 .expect_get_status()
-                .with(eq(my_id), eq(does_not_know_me.id))
+                .with(eq(ids.clone()))
                 .once()
-                .return_once(move |_, _| Ok(FriendshipStatus::Nil));
+                .return_once(move |_| Ok(FriendshipStatus::Nil));
             mock_friendship_repo.expect_accept_request().never();
             mock_friendship_repo
                 .expect_new_request()
-                .with(eq(my_id), eq(does_not_know_me.id), eq(my_id))
+                .with(eq(ids), eq(my_id))
                 .once()
-                .return_once(|_, _, _| Ok(()));
+                .return_once(|_, _| Ok(()));
 
             let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_svc));
             let result = friendship_svc

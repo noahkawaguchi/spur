@@ -32,6 +32,7 @@ impl IntoResponse for ApiError {
                     }
                 },
                 DomainError::Friendship(err) => match err {
+                    FriendshipError::SelfFriendship => StatusCode::BAD_REQUEST,
                     FriendshipError::NonexistentUser => StatusCode::NOT_FOUND,
                     FriendshipError::AlreadyFriends | FriendshipError::AlreadyRequested => {
                         StatusCode::CONFLICT

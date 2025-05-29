@@ -1,5 +1,5 @@
 use crate::{
-    domain::friendship::{FriendshipStatus, repository::FriendshipStore},
+    domain::friendship::{FriendshipStatus, repository::FriendshipStore, user_id_pair::UserIdPair},
     technical_error::TechnicalError,
 };
 
@@ -13,20 +13,15 @@ impl FriendshipRepo {
 
 #[async_trait::async_trait]
 impl FriendshipStore for FriendshipRepo {
-    async fn new_request(
-        &self,
-        first_id: i32,
-        second_id: i32,
-        requester_id: i32,
-    ) -> Result<(), TechnicalError> {
+    async fn new_request(&self, ids: &UserIdPair, requester_id: i32) -> Result<(), TechnicalError> {
         let _ = sqlx::query!(
             "
             INSERT INTO friendships (first_id, second_id, requester_first) 
             VALUES ($1, $2, $3)
             ",
-            first_id,
-            second_id,
-            requester_id == first_id,
+            ids.lesser(),
+            ids.greater(),
+            requester_id == ids.lesser(),
         )
         .execute(&self.pool)
         .await?;
@@ -34,15 +29,15 @@ impl FriendshipStore for FriendshipRepo {
         Ok(())
     }
 
-    async fn accept_request(&self, first_id: i32, second_id: i32) -> Result<(), TechnicalError> {
+    async fn accept_request(&self, ids: &UserIdPair) -> Result<(), TechnicalError> {
         let _ = sqlx::query!(
             "
             UPDATE friendships
             SET confirmed = TRUE, confirmed_at = CURRENT_TIMESTAMP
             WHERE first_id = $1 AND second_id = $2
             ",
-            first_id,
-            second_id,
+            ids.lesser(),
+            ids.greater(),
         )
         .execute(&self.pool)
         .await?;
@@ -50,18 +45,14 @@ impl FriendshipStore for FriendshipRepo {
         Ok(())
     }
 
-    async fn get_status(
-        &self,
-        first_id: i32,
-        second_id: i32,
-    ) -> Result<FriendshipStatus, TechnicalError> {
+    async fn get_status(&self, ids: &UserIdPair) -> Result<FriendshipStatus, TechnicalError> {
         let row = sqlx::query!(
             "
             SELECT requester_first, confirmed FROM friendships
             WHERE first_id = $1 AND second_id = $2
             ",
-            first_id,
-            second_id,
+            ids.lesser(),
+            ids.greater(),
         )
         .fetch_optional(&self.pool)
         .await?;
@@ -69,8 +60,8 @@ impl FriendshipStore for FriendshipRepo {
         let status = match row {
             None => FriendshipStatus::Nil,
             Some(friends) if friends.confirmed => FriendshipStatus::Friends,
-            Some(pair) if pair.requester_first => FriendshipStatus::PendingFrom(first_id),
-            Some(_) => FriendshipStatus::PendingFrom(second_id),
+            Some(pair) if pair.requester_first => FriendshipStatus::PendingFrom(ids.lesser()),
+            Some(_) => FriendshipStatus::PendingFrom(ids.greater()),
         };
 
         Ok(status)
@@ -197,27 +188,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn rejects_improperly_ordered_ids() {
-        with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new(pool.clone());
-            must_seed_users(pool).await;
-
-            let result1 = repo.new_request(2, 1, 1).await;
-            let result2 = repo.new_request(2, 1, 2).await;
-
-            assert!(matches!(result1, Err(TechnicalError::Database(_))));
-            assert!(matches!(result2, Err(TechnicalError::Database(_))));
-        })
-        .await;
-    }
-
-    #[tokio::test]
     async fn sets_initial_values_on_insertion() {
         with_test_pool(|pool| async move {
             let repo = FriendshipRepo::new(pool.clone());
             must_seed_users(pool.clone()).await;
 
-            repo.new_request(1, 2, 1)
+            repo.new_request(&UserIdPair::new(1, 2).unwrap(), 1)
                 .await
                 .expect("failed to insert new request");
 
@@ -238,12 +214,13 @@ mod tests {
         with_test_pool(|pool| async move {
             let repo = FriendshipRepo::new(pool.clone());
             must_seed_users(pool.clone()).await;
+            let ids = UserIdPair::new(1, 3).unwrap();
 
-            repo.new_request(1, 3, 3)
+            repo.new_request(&ids, 3)
                 .await
                 .expect("failed to insert new request");
 
-            repo.accept_request(1, 3)
+            repo.accept_request(&ids)
                 .await
                 .expect("failed to accept request");
 
@@ -272,25 +249,28 @@ mod tests {
             let repo = FriendshipRepo::new(pool.clone());
             must_seed_users(pool).await;
 
-            let status = repo.get_status(2, 3).await.expect("failed to get status");
+            let ids1 = UserIdPair::new(1, 3).unwrap();
+            let ids2 = UserIdPair::new(2, 3).unwrap();
+
+            let status = repo.get_status(&ids2).await.expect("failed to get status");
             assert_eq!(status, FriendshipStatus::Nil);
 
-            repo.new_request(2, 3, 3)
+            repo.new_request(&ids2, 3)
                 .await
                 .expect("failed to create new request");
-            let status = repo.get_status(2, 3).await.expect("failed to get status");
+            let status = repo.get_status(&ids2).await.expect("failed to get status");
             assert_eq!(status, FriendshipStatus::PendingFrom(3));
 
-            repo.new_request(1, 3, 1)
+            repo.new_request(&ids1, 1)
                 .await
                 .expect("failed to create new request");
-            let status = repo.get_status(1, 3).await.expect("failed to get status");
+            let status = repo.get_status(&ids1).await.expect("failed to get status");
             assert_eq!(status, FriendshipStatus::PendingFrom(1));
 
-            repo.accept_request(2, 3)
+            repo.accept_request(&ids2)
                 .await
                 .expect("failed to accept request");
-            let status = repo.get_status(2, 3).await.expect("failed to get status");
+            let status = repo.get_status(&ids2).await.expect("failed to get status");
             assert_eq!(status, FriendshipStatus::Friends);
         })
         .await;
@@ -301,6 +281,9 @@ mod tests {
         with_test_pool(|pool| async move {
             let repo = FriendshipRepo::new(pool.clone());
             must_seed_users(pool).await;
+
+            let ids1 = UserIdPair::new(1, 3).unwrap();
+            let ids2 = UserIdPair::new(2, 3).unwrap();
 
             // No requests, no friends
             let requests = repo
@@ -315,10 +298,10 @@ mod tests {
             assert!(friends.is_empty());
 
             // Two requests, no friends
-            repo.new_request(1, 3, 1)
+            repo.new_request(&ids1, 1)
                 .await
                 .expect("failed to create new request");
-            repo.new_request(2, 3, 2)
+            repo.new_request(&ids2, 2)
                 .await
                 .expect("failed to create new request");
             let requests = repo.get_requests(3).await.expect("failed to get requests");
@@ -330,7 +313,7 @@ mod tests {
             assert!(friends.is_empty());
 
             // One request, one friend
-            repo.accept_request(1, 3)
+            repo.accept_request(&ids1)
                 .await
                 .expect("failed to accept request");
             let requests = repo
@@ -345,7 +328,7 @@ mod tests {
             assert_eq!(friends, vec![1]);
 
             // No requests, two friends
-            repo.accept_request(2, 3)
+            repo.accept_request(&ids2)
                 .await
                 .expect("failed to accept request");
             let requests = repo
