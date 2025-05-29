@@ -21,7 +21,7 @@ impl FriendshipStore for FriendshipRepo {
             ",
             ids.lesser(),
             ids.greater(),
-            requester_id == ids.lesser(),
+            ids.is_lesser(requester_id)?,
         )
         .execute(&self.pool)
         .await?;

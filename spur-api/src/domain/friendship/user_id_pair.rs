@@ -1,4 +1,5 @@
 use super::error::FriendshipError;
+use crate::technical_error::TechnicalError;
 use std::cmp::Ordering::{Equal, Greater, Less};
 
 /// A pair of user IDs that are guaranteed to be distinct.
@@ -6,7 +7,7 @@ use std::cmp::Ordering::{Equal, Greater, Less};
 pub struct UserIdPair(i32, i32);
 
 impl UserIdPair {
-    /// Creates a structured pair of user IDs, which can be provided in either order. Returns Err
+    /// Creates a structured pair of user IDs, which can be provided in either order. Returns `Err`
     /// if the two IDs are the same.
     pub fn new(id_a: i32, id_b: i32) -> Result<Self, FriendshipError> {
         match id_a.cmp(&id_b) {
@@ -21,6 +22,22 @@ impl UserIdPair {
 
     /// Gets the user ID of strictly greater numeric value.
     pub const fn greater(&self) -> i32 { self.1 }
+
+    /// Gets whether the provided ID is the lesser (true) or the greater (false) of the pair.
+    /// Returns `Err` if the provided ID is not one of the IDs in the pair.
+    pub fn is_lesser(&self, id: i32) -> Result<bool, TechnicalError> {
+        match (id == self.0, id == self.1) {
+            (true, true) => Err(TechnicalError::Unexpected(String::from(
+                "Internal logic error: UserIdPair distinct invariant broken",
+            ))),
+            (false, false) => Err(TechnicalError::Unexpected(String::from(
+                "Internal logic error: UserIdPair `is_lesser` \
+                was erroneously passed an irrelevant ID",
+            ))),
+            (true, false) => Ok(true),
+            (false, true) => Ok(false),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -31,15 +48,15 @@ mod tests {
     // used internally.
 
     #[test]
-    fn reorders_ids() {
-        let ids = UserIdPair::new(52, 14).expect("failed to create pair for distinct IDs");
+    fn reorders_out_of_order_ids() {
+        let ids = UserIdPair::new(52, 14).unwrap();
         assert_eq!(ids.lesser(), 14);
         assert_eq!(ids.greater(), 52);
     }
 
     #[test]
     fn keeps_already_ordered_ids() {
-        let ids = UserIdPair::new(4, 100).expect("failed to create pair for distinct IDs");
+        let ids = UserIdPair::new(4, 100).unwrap();
         assert_eq!(ids.lesser(), 4);
         assert_eq!(ids.greater(), 100);
     }
@@ -48,5 +65,24 @@ mod tests {
     fn rejects_equal_ids() {
         let result = UserIdPair::new(512, 512);
         assert!(matches!(result, Err(FriendshipError::SelfFriendship)));
+    }
+
+    #[test]
+    fn reports_position_of_provided_id() {
+        let ids = UserIdPair::new(88, 8).unwrap();
+        assert!(ids.is_lesser(8).unwrap());
+        assert!(!ids.is_lesser(88).unwrap());
+    }
+
+    #[test]
+    fn refuses_to_report_position_of_irrelevant_id() {
+        let ids = UserIdPair::new(24, 99_991).unwrap();
+        let result = ids.is_lesser(25);
+
+        assert!(matches!(result, Err(TechnicalError::Unexpected(_))));
+        assert!(result.is_err_and(|e| e.to_string().contains(
+            "Internal logic error: UserIdPair `is_lesser` \
+                was erroneously passed an irrelevant ID"
+        )));
     }
 }
