@@ -6,6 +6,11 @@ pub struct PromptRepo {
     pool: sqlx::PgPool,
 }
 
+impl PromptRepo {
+    pub const fn new(pool: sqlx::PgPool) -> Self { Self { pool } }
+}
+
+#[async_trait::async_trait]
 impl PromptStore for PromptRepo {
     async fn insert_new(&self, author_id: i32, body: &str) -> Result<i32, InsertionError> {
         let rec = sqlx::query!(

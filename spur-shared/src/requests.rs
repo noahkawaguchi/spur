@@ -36,3 +36,14 @@ pub struct AddFriendRequest {
 pub struct GetFriendsParam {
     pub pending: bool,
 }
+
+#[derive(Serialize, Deserialize, Validate)]
+pub struct CreatePromptRequest {
+    #[validate(length(min = 1, message = "prompt body cannot be empty"))]
+    pub body: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PromptsByAuthorParam {
+    pub author_username: Option<String>,
+}

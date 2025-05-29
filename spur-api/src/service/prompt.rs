@@ -2,7 +2,7 @@ use crate::{
     domain::{
         error::DomainError,
         friendship::{service::FriendshipManager, user_id_pair::UserIdPair},
-        prompt::{PromptError, PromptStore},
+        prompt::{PromptError, PromptManager, PromptStore},
         user::UserManager,
     },
     repository::insertion_error::InsertionError,
@@ -18,6 +18,17 @@ pub struct PromptSvc<S: PromptStore> {
 }
 
 impl<S: PromptStore> PromptSvc<S> {
+    pub const fn new(
+        store: S,
+        friendship_svc: Arc<dyn FriendshipManager>,
+        user_svc: Arc<dyn UserManager>,
+    ) -> Self {
+        Self { store, friendship_svc, user_svc }
+    }
+}
+
+#[async_trait::async_trait]
+impl<S: PromptStore> PromptManager for PromptSvc<S> {
     async fn create_new(&self, author_id: i32, body: &str) -> Result<i32, DomainError> {
         match self.store.insert_new(author_id, body).await {
             Ok(id) => Ok(id),
@@ -26,7 +37,7 @@ impl<S: PromptStore> PromptSvc<S> {
         }
     }
 
-    async fn get_with_author(
+    async fn get_by_id(
         &self,
         requester_id: i32,
         prompt_id: i32,
@@ -37,11 +48,12 @@ impl<S: PromptStore> PromptSvc<S> {
             .await?
             .ok_or(PromptError::NotFound)?;
 
-        // Must be friends to see someone's prompt
-        if self
-            .friendship_svc
-            .are_friends(&UserIdPair::new(requester_id, prompt.author_id)?)
-            .await?
+        // Only allow seeing prompts written by oneself or one's friends
+        if requester_id == prompt.author_id
+            || self
+                .friendship_svc
+                .are_friends(&UserIdPair::new(requester_id, prompt.author_id)?)
+                .await?
         {
             Ok(PromptWithAuthor {
                 id: prompt.id,
@@ -53,19 +65,28 @@ impl<S: PromptStore> PromptSvc<S> {
         }
     }
 
-    async fn get_user_prompts(
+    async fn own_prompts(&self, user_id: i32) -> Result<Vec<PromptWithAuthor>, DomainError> {
+        self.store
+            .get_user_prompts(user_id)
+            .await
+            .map_err(DomainError::from)
+    }
+
+    async fn specific_friend_prompts(
         &self,
         requester_id: i32,
-        target_id: i32,
+        friend_username: &str,
     ) -> Result<Vec<PromptWithAuthor>, DomainError> {
+        let friend_id = self.user_svc.get_by_username(friend_username).await?.id;
+
         // Must be friends to see someone's prompts
         if self
             .friendship_svc
-            .are_friends(&UserIdPair::new(requester_id, target_id)?)
+            .are_friends(&UserIdPair::new(requester_id, friend_id)?)
             .await?
         {
             self.store
-                .get_user_prompts(target_id)
+                .get_user_prompts(friend_id)
                 .await
                 .map_err(DomainError::from)
         } else {
@@ -73,7 +94,7 @@ impl<S: PromptStore> PromptSvc<S> {
         }
     }
 
-    async fn get_friend_prompts(&self, user_id: i32) -> Result<Vec<PromptWithAuthor>, DomainError> {
+    async fn all_friend_prompts(&self, user_id: i32) -> Result<Vec<PromptWithAuthor>, DomainError> {
         self.store
             .get_friend_prompts(user_id)
             .await

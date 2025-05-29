@@ -1,4 +1,6 @@
-use crate::domain::{friendship::service::FriendshipManager, user::UserManager};
+use crate::domain::{
+    friendship::service::FriendshipManager, prompt::PromptManager, user::UserManager,
+};
 use anyhow::{Context, Result};
 use axum::extract::FromRef;
 use std::{env, sync::Arc};
@@ -29,4 +31,5 @@ pub struct AppState {
     pub jwt_secret: String,
     pub user_svc: Arc<dyn UserManager>,
     pub friendship_svc: Arc<dyn FriendshipManager>,
+    pub prompt_svc: Arc<dyn PromptManager>,
 }

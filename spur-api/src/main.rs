@@ -19,10 +19,10 @@ use axum::{
     routing::{get, post},
 };
 use config::{AppConfig, AppState};
-use domain::user::UserManager;
-use handler::{auth, friendship};
-use repository::{friendship::FriendshipRepo, user::UserRepo};
-use service::{friendship::FriendshipSvc, user::UserSvc};
+use domain::{friendship::service::FriendshipManager, user::UserManager};
+use handler::{auth, friendship, prompt};
+use repository::{friendship::FriendshipRepo, prompt::PromptRepo, user::UserRepo};
+use service::{friendship::FriendshipSvc, prompt::PromptSvc, user::UserSvc};
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -39,11 +39,17 @@ async fn main() -> Result<()> {
     let user_svc = Arc::new(UserSvc::new(UserRepo::new(pool.clone()))) as Arc<dyn UserManager>;
 
     let friendship_svc = Arc::new(FriendshipSvc::new(
-        FriendshipRepo::new(pool),
+        FriendshipRepo::new(pool.clone()),
+        Arc::clone(&user_svc),
+    )) as Arc<dyn FriendshipManager>;
+
+    let prompt_svc = Arc::new(PromptSvc::new(
+        PromptRepo::new(pool),
+        Arc::clone(&friendship_svc),
         Arc::clone(&user_svc),
     ));
 
-    let state = AppState { jwt_secret: config.jwt_secret, user_svc, friendship_svc };
+    let state = AppState { jwt_secret: config.jwt_secret, user_svc, friendship_svc, prompt_svc };
 
     let app = Router::new()
         .route("/auth/signup", post(auth::signup))
@@ -51,6 +57,10 @@ async fn main() -> Result<()> {
         .route("/auth/check", get(auth::check))
         .route("/friends", post(friendship::add_friend))
         .route("/friends", get(friendship::get_friends))
+        .route("/prompts", post(prompt::new_prompt))
+        .route("/prompts/{prompt_id}", get(prompt::get_by_id))
+        .route("/prompts", get(prompt::get_by_author))
+        .route("/prompts/friends", get(prompt::all_friend_prompts))
         .with_state(state);
 
     let listener = TcpListener::bind(&config.bind_addr).await?;
