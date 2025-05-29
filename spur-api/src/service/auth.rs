@@ -1,31 +1,12 @@
 use crate::{
-    domain::{auth::AuthError, error::DomainError},
+    domain::{
+        auth::{AuthError, Claims},
+        error::DomainError,
+    },
     models::user::{NewUser, User, UserRegistration},
     technical_error::TechnicalError,
 };
-use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize)]
-struct Claims {
-    sub: String,
-    exp: u64,
-}
-
-impl Claims {
-    /// Initializes claims with an expiration 24 hours in the future.
-    fn new(id: i32) -> Result<Self, TechnicalError> {
-        let now = Utc::now();
-
-        let exp = (now + Duration::hours(24))
-            .timestamp()
-            .try_into()
-            .map_err(|_| TechnicalError::Pre1970(now))?;
-
-        Ok(Self { sub: id.to_string(), exp })
-    }
-}
 
 pub fn hash_pw(reg: UserRegistration) -> Result<NewUser, DomainError> {
     let pw_hash =
@@ -58,7 +39,7 @@ pub fn validate_jwt(token: &str, secret: &str) -> Result<i32, DomainError> {
         &DecodingKey::from_secret(secret.as_ref()),
         &Validation::default(),
     ) {
-        if let Ok(id) = token_data.claims.sub.parse() {
+        if let Ok(id) = token_data.claims.parse_sub() {
             return Ok(id);
         }
     }
@@ -69,8 +50,7 @@ pub fn validate_jwt(token: &str, secret: &str) -> Result<i32, DomainError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::within_one_second;
-    use chrono::{DateTime, Days};
+    use chrono::{Days, Utc};
     use colored::Colorize;
 
     fn make_bob(password: &str) -> User {
@@ -85,25 +65,6 @@ mod tests {
                 .checked_sub_days(Days::new(1))
                 .expect("failed to subtract a day from now"),
         }
-    }
-
-    #[test]
-    fn claims_converts_types_and_calculates_expiration() {
-        let id = 825;
-        let tomorrow = Utc::now()
-            .checked_add_days(Days::new(1))
-            .expect("failed to compute tomorrow");
-
-        let claims = Claims::new(id).expect("failed to create claims");
-
-        let exp = DateTime::from_timestamp(
-            claims.exp.try_into().expect("failed to convert u64 to i64"),
-            0,
-        )
-        .expect("failed to create datetime");
-
-        assert!(within_one_second(exp, tomorrow));
-        assert_eq!(claims.sub, id.to_string());
     }
 
     // Determined that testing hash_pw would be trivial
