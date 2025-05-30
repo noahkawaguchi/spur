@@ -1,8 +1,8 @@
 use crate::{
     domain::{
+        content::{error::ContentError, repository::PromptStore, service::ContentManager},
         error::DomainError,
         friendship::{service::FriendshipManager, user_id_pair::UserIdPair},
-        prompt::{ContentError, ContentManager, PromptStore},
         user::UserManager,
     },
     repository::insertion_error::InsertionError,

@@ -1,5 +1,8 @@
 use super::insertion_error::InsertionError;
-use crate::{domain::prompt::PromptStore, models::prompt::Prompt, technical_error::TechnicalError};
+use crate::{
+    domain::content::repository::PromptStore, models::prompt::Prompt,
+    technical_error::TechnicalError,
+};
 use spur_shared::models::PromptWithAuthor;
 
 pub struct PromptRepo {
@@ -50,6 +53,7 @@ impl PromptStore for PromptRepo {
             FROM prompts
             JOIN users ON prompts.author_id = users.id
             WHERE prompts.author_id = $1
+            ORDER BY prompts.created_at DESC
             ",
             user_id,
         )

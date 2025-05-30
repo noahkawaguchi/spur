@@ -1,5 +1,6 @@
 use super::{
-    auth::AuthError, friendship::error::FriendshipError, prompt::ContentError, user::UserError,
+    auth::AuthError, content::error::ContentError, friendship::error::FriendshipError,
+    user::UserError,
 };
 use crate::technical_error::TechnicalError;
 use thiserror::Error;

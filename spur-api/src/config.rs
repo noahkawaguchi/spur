@@ -1,5 +1,5 @@
 use crate::domain::{
-    friendship::service::FriendshipManager, prompt::ContentManager, user::UserManager,
+    content::service::ContentManager, friendship::service::FriendshipManager, user::UserManager,
 };
 use anyhow::{Context, Result};
 use axum::extract::FromRef;

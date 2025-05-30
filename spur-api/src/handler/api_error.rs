@@ -1,5 +1,6 @@
 use crate::domain::{
-    error::DomainError, friendship::error::FriendshipError, prompt::ContentError, user::UserError,
+    content::error::ContentError, error::DomainError, friendship::error::FriendshipError,
+    user::UserError,
 };
 use axum::{
     Json,

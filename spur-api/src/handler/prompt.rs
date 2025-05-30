@@ -1,5 +1,5 @@
 use super::{AuthBearer, api_error::ApiError, api_result};
-use crate::{domain::prompt::ContentManager, service};
+use crate::{domain::content::service::ContentManager, service};
 use axum::{
     Json,
     extract::{Path, Query, State},
