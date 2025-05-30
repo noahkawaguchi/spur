@@ -26,11 +26,6 @@ pub struct UsernamesResponse {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct CreatePromptResponse {
-    pub prompt_id: i32,
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct SinglePromptResponse {
     pub prompt: PromptWithAuthor,
 }

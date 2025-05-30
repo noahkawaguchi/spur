@@ -29,11 +29,19 @@ impl<S: PromptStore> PromptSvc<S> {
 
 #[async_trait::async_trait]
 impl<S: PromptStore> PromptManager for PromptSvc<S> {
-    async fn create_new(&self, author_id: i32, body: &str) -> Result<i32, DomainError> {
+    async fn create_new(
+        &self,
+        author_id: i32,
+        body: &str,
+    ) -> Result<PromptWithAuthor, DomainError> {
         match self.store.insert_new(author_id, body).await {
-            Ok(id) => Ok(id),
             Err(InsertionError::Technical(e)) => Err(TechnicalError::Database(e).into()),
             Err(InsertionError::UniqueViolation(_)) => Err(PromptError::Duplicate.into()),
+            Ok(id) => Ok(PromptWithAuthor {
+                id,
+                author_username: self.user_svc.get_by_id(author_id).await?.username,
+                body: body.to_string(),
+            }),
         }
     }
 

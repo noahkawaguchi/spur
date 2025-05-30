@@ -35,7 +35,8 @@ pub trait PromptStore: Send + Sync {
 
 #[async_trait::async_trait]
 pub trait PromptManager: Send + Sync {
-    async fn create_new(&self, author_id: i32, body: &str) -> Result<i32, DomainError>;
+    async fn create_new(&self, author_id: i32, body: &str)
+    -> Result<PromptWithAuthor, DomainError>;
 
     async fn get_by_id(
         &self,

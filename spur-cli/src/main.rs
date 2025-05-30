@@ -7,19 +7,18 @@ mod commands;
 mod format;
 mod friends;
 mod input_validators;
-mod prompt;
+mod interactive_auth;
+mod prompt_post;
 mod request;
 mod token_store;
 
 use anyhow::{Context, Result, anyhow};
 use auth::AuthCommand;
 use clap::Parser;
-use commands::{
-    Cli,
-    Commands::{Add, Check, Friends, Login, Signup},
-};
+use commands::{Cli, Cmd};
 use friends::FriendsCommand;
-use prompt::InteractiveAuthPrompt;
+use interactive_auth::InteractiveAuthPrompt;
+use prompt_post::PromptPostCommand;
 use request::ApiRequestClient;
 use std::env;
 use token_store::{LocalTokenStore, TokenStore};
@@ -42,23 +41,35 @@ async fn main() -> Result<()> {
     let command = Cli::parse().command;
 
     // Auth commands don't require the user to already have a token, while all others do
-    let result = if matches!(command, Signup | Login | Check) {
+    let result = if matches!(command, Cmd::Signup | Cmd::Login | Cmd::Check) {
         let auth = AuthCommand { prompt: InteractiveAuthPrompt, store, client };
 
         match command {
-            Signup => auth.signup().await,
-            Login => auth.login().await,
-            Check => auth.check().await,
+            Cmd::Signup => auth.signup().await,
+            Cmd::Login => auth.login().await,
+            Cmd::Check => auth.check().await,
             _ => unreachable!(),
         }
     } else {
         let token = &store.load()?;
-        let friends = FriendsCommand { client, token };
+        let friends = FriendsCommand { client: client.clone(), token };
+        let prompt_post = PromptPostCommand { client, token };
 
         match command {
-            Signup | Login | Check => unreachable!(),
-            Add { username } => friends.add_friend(username).await,
-            Friends { pending } => friends.list_friends(pending).await,
+            // Auth commands handled above
+            Cmd::Signup | Cmd::Login | Cmd::Check => unreachable!(),
+
+            // Friendship commands
+            Cmd::Add { username } => friends.add_friend(username).await,
+            Cmd::Friends => friends.list_friends(false).await,
+            Cmd::Requests => friends.list_friends(true).await,
+
+            // Prompt and post commands
+            Cmd::Prompt { body } => prompt_post.new_prompt(body).await,
+            Cmd::Write { prompt_id } => prompt_post.write_post(prompt_id).await,
+            Cmd::Profile { username } => prompt_post.profile(Some(username)).await,
+            Cmd::Me => prompt_post.profile(None).await,
+            Cmd::Feed => prompt_post.feed().await,
         }
     };
 

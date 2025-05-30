@@ -7,7 +7,7 @@ use axum::{
 };
 use spur_shared::{
     requests::{CreatePromptRequest, PromptsByAuthorParam},
-    responses::{CreatePromptResponse, MultiplePromptsResponse, SinglePromptResponse},
+    responses::{MultiplePromptsResponse, SinglePromptResponse},
 };
 use std::sync::Arc;
 use validator::Validate;
@@ -17,16 +17,13 @@ pub async fn new_prompt(
     prompt_svc: State<Arc<dyn PromptManager>>,
     bearer: AuthBearer,
     payload: Json<CreatePromptRequest>,
-) -> Result<(StatusCode, Json<CreatePromptResponse>), ApiError> {
+) -> Result<(StatusCode, Json<SinglePromptResponse>), ApiError> {
     payload.validate()?;
 
     let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-    let prompt_id = prompt_svc.create_new(requester_id, &payload.body).await?;
+    let prompt = prompt_svc.create_new(requester_id, &payload.body).await?;
 
-    Ok((
-        StatusCode::CREATED,
-        Json(CreatePromptResponse { prompt_id }),
-    ))
+    Ok((StatusCode::CREATED, Json(SinglePromptResponse { prompt })))
 }
 
 pub async fn get_by_id(
