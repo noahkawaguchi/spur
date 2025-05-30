@@ -7,11 +7,14 @@ use spur_shared::models::PromptWithAuthor;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum PromptError {
+pub enum ContentError {
     #[error("You have already created the same prompt")]
-    Duplicate,
+    DuplicatePrompt,
 
-    #[error("Prompt not found")]
+    #[error("You cannot write a post in response to your own prompt")]
+    OwnPrompt,
+
+    #[error("No content found")]
     NotFound,
 
     #[error("You must be friends to see someone's content")]
@@ -34,11 +37,11 @@ pub trait PromptStore: Send + Sync {
 }
 
 #[async_trait::async_trait]
-pub trait PromptManager: Send + Sync {
-    async fn create_new(&self, author_id: i32, body: &str)
+pub trait ContentManager: Send + Sync {
+    async fn new_prompt(&self, author_id: i32, body: &str)
     -> Result<PromptWithAuthor, DomainError>;
 
-    async fn get_by_id(
+    async fn get_prompt_for_writing(
         &self,
         requester_id: i32,
         prompt_id: i32,

@@ -22,7 +22,7 @@ use config::{AppConfig, AppState};
 use domain::{friendship::service::FriendshipManager, user::UserManager};
 use handler::{auth, friendship, prompt};
 use repository::{friendship::FriendshipRepo, prompt::PromptRepo, user::UserRepo};
-use service::{friendship::FriendshipSvc, prompt::PromptSvc, user::UserSvc};
+use service::{friendship::FriendshipSvc, prompt::ContentSvc, user::UserSvc};
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
         Arc::clone(&user_svc),
     )) as Arc<dyn FriendshipManager>;
 
-    let prompt_svc = Arc::new(PromptSvc::new(
+    let prompt_svc = Arc::new(ContentSvc::new(
         PromptRepo::new(pool),
         Arc::clone(&friendship_svc),
         Arc::clone(&user_svc),
@@ -58,7 +58,7 @@ async fn main() -> Result<()> {
         .route("/friends", post(friendship::add_friend))
         .route("/friends", get(friendship::get_friends))
         .route("/prompts", post(prompt::new_prompt))
-        .route("/prompts/{prompt_id}", get(prompt::get_by_id))
+        .route("/prompts/{prompt_id}", get(prompt::get_for_writing))
         .route("/prompts", get(prompt::get_by_author))
         .route("/prompts/friends", get(prompt::all_friend_prompts))
         .with_state(state);

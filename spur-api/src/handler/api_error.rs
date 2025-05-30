@@ -1,5 +1,5 @@
 use crate::domain::{
-    error::DomainError, friendship::error::FriendshipError, prompt::PromptError, user::UserError,
+    error::DomainError, friendship::error::FriendshipError, prompt::ContentError, user::UserError,
 };
 use axum::{
     Json,
@@ -38,10 +38,11 @@ impl IntoResponse for ApiError {
                         StatusCode::CONFLICT
                     }
                 },
-                DomainError::Prompt(err) => match err {
-                    PromptError::Duplicate => StatusCode::CONFLICT,
-                    PromptError::NotFound => StatusCode::NOT_FOUND,
-                    PromptError::NotFriends => StatusCode::FORBIDDEN,
+                DomainError::Content(err) => match err {
+                    ContentError::DuplicatePrompt => StatusCode::CONFLICT,
+                    ContentError::OwnPrompt => StatusCode::BAD_REQUEST,
+                    ContentError::NotFound => StatusCode::NOT_FOUND,
+                    ContentError::NotFriends => StatusCode::FORBIDDEN,
                 },
                 DomainError::Technical(_) => StatusCode::INTERNAL_SERVER_ERROR,
             },

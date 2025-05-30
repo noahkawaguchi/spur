@@ -2,7 +2,7 @@ use crate::{
     domain::{
         error::DomainError,
         friendship::{service::FriendshipManager, user_id_pair::UserIdPair},
-        prompt::{PromptError, PromptManager, PromptStore},
+        prompt::{ContentError, ContentManager, PromptStore},
         user::UserManager,
     },
     repository::insertion_error::InsertionError,
@@ -11,13 +11,13 @@ use crate::{
 use spur_shared::models::PromptWithAuthor;
 use std::sync::Arc;
 
-pub struct PromptSvc<S: PromptStore> {
+pub struct ContentSvc<S: PromptStore> {
     store: S,
     friendship_svc: Arc<dyn FriendshipManager>,
     user_svc: Arc<dyn UserManager>,
 }
 
-impl<S: PromptStore> PromptSvc<S> {
+impl<S: PromptStore> ContentSvc<S> {
     pub const fn new(
         store: S,
         friendship_svc: Arc<dyn FriendshipManager>,
@@ -28,15 +28,15 @@ impl<S: PromptStore> PromptSvc<S> {
 }
 
 #[async_trait::async_trait]
-impl<S: PromptStore> PromptManager for PromptSvc<S> {
-    async fn create_new(
+impl<S: PromptStore> ContentManager for ContentSvc<S> {
+    async fn new_prompt(
         &self,
         author_id: i32,
         body: &str,
     ) -> Result<PromptWithAuthor, DomainError> {
         match self.store.insert_new(author_id, body).await {
             Err(InsertionError::Technical(e)) => Err(TechnicalError::Database(e).into()),
-            Err(InsertionError::UniqueViolation(_)) => Err(PromptError::Duplicate.into()),
+            Err(InsertionError::UniqueViolation(_)) => Err(ContentError::DuplicatePrompt.into()),
             Ok(id) => Ok(PromptWithAuthor {
                 id,
                 author_username: self.user_svc.get_by_id(author_id).await?.username,
@@ -45,7 +45,7 @@ impl<S: PromptStore> PromptManager for PromptSvc<S> {
         }
     }
 
-    async fn get_by_id(
+    async fn get_prompt_for_writing(
         &self,
         requester_id: i32,
         prompt_id: i32,
@@ -54,14 +54,18 @@ impl<S: PromptStore> PromptManager for PromptSvc<S> {
             .store
             .get_by_id(prompt_id)
             .await?
-            .ok_or(PromptError::NotFound)?;
+            .ok_or(ContentError::NotFound)?;
 
-        // Only allow seeing prompts written by oneself or one's friends
-        if requester_id == prompt.author_id
-            || self
-                .friendship_svc
-                .are_friends(&UserIdPair::new(requester_id, prompt.author_id)?)
-                .await?
+        // Disallow writing a post in response to one's own prompt
+        if requester_id == prompt.author_id {
+            return Err(ContentError::OwnPrompt.into());
+        }
+
+        // Must be friends to see someone's prompts
+        if self
+            .friendship_svc
+            .are_friends(&UserIdPair::new(requester_id, prompt.author_id)?)
+            .await?
         {
             Ok(PromptWithAuthor {
                 id: prompt.id,
@@ -69,7 +73,7 @@ impl<S: PromptStore> PromptManager for PromptSvc<S> {
                 body: prompt.body,
             })
         } else {
-            Err(PromptError::NotFriends.into())
+            Err(ContentError::NotFriends.into())
         }
     }
 
@@ -98,7 +102,7 @@ impl<S: PromptStore> PromptManager for PromptSvc<S> {
                 .await
                 .map_err(DomainError::from)
         } else {
-            Err(PromptError::NotFriends.into())
+            Err(ContentError::NotFriends.into())
         }
     }
 

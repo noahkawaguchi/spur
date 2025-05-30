@@ -1,5 +1,5 @@
 use crate::domain::{
-    friendship::service::FriendshipManager, prompt::PromptManager, user::UserManager,
+    friendship::service::FriendshipManager, prompt::ContentManager, user::UserManager,
 };
 use anyhow::{Context, Result};
 use axum::extract::FromRef;
@@ -31,5 +31,5 @@ pub struct AppState {
     pub jwt_secret: String,
     pub user_svc: Arc<dyn UserManager>,
     pub friendship_svc: Arc<dyn FriendshipManager>,
-    pub prompt_svc: Arc<dyn PromptManager>,
+    pub prompt_svc: Arc<dyn ContentManager>,
 }
