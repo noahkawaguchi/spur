@@ -1,4 +1,4 @@
-use super::{AuthBearer, api_error::ApiError};
+use super::{AuthBearer, api_error::ApiError, api_result};
 use crate::{domain::friendship::service::FriendshipManager, service};
 use axum::{
     Json,
@@ -17,7 +17,7 @@ pub async fn add_friend(
     friendship_svc: State<Arc<dyn FriendshipManager>>,
     bearer: AuthBearer,
     payload: Json<AddFriendRequest>,
-) -> Result<(StatusCode, Json<SuccessResponse>), ApiError> {
+) -> api_result!(SuccessResponse) {
     // Ensure the request body content is valid
     payload.validate()?;
 
@@ -51,7 +51,7 @@ pub async fn get_friends(
     friendship_svc: State<Arc<dyn FriendshipManager>>,
     bearer: AuthBearer,
     param: Query<GetFriendsParam>,
-) -> Result<(StatusCode, Json<UsernamesResponse>), ApiError> {
+) -> api_result!(UsernamesResponse) {
     // User must be authorized
     let id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 

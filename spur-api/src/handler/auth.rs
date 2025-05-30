@@ -1,4 +1,4 @@
-use super::{AuthBearer, api_error::ApiError};
+use super::{AuthBearer, api_error::ApiError, api_result};
 use crate::{domain::user::UserManager, service};
 use anyhow::Result;
 use axum::{Json, extract::State, http::StatusCode};
@@ -12,7 +12,7 @@ use validator::Validate;
 pub async fn signup(
     user_svc: State<Arc<dyn UserManager>>,
     Json(payload): Json<SignupRequest>,
-) -> Result<StatusCode, ApiError> {
+) -> api_result!() {
     // Validate the request fields
     payload.validate()?;
 
@@ -29,7 +29,7 @@ pub async fn login(
     jwt_secret: State<String>,
     user_svc: State<Arc<dyn UserManager>>,
     payload: Json<LoginRequest>,
-) -> Result<(StatusCode, Json<LoginResponse>), ApiError> {
+) -> api_result!(LoginResponse) {
     // Validate the request fields
     payload.validate()?;
 
@@ -42,7 +42,7 @@ pub async fn login(
     Ok((StatusCode::OK, Json(LoginResponse { token })))
 }
 
-pub async fn check(jwt_secret: State<String>, bearer: AuthBearer) -> Result<StatusCode, ApiError> {
+pub async fn check(jwt_secret: State<String>, bearer: AuthBearer) -> api_result!() {
     service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
     Ok(StatusCode::NO_CONTENT)
 }

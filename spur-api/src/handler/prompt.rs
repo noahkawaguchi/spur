@@ -1,4 +1,4 @@
-use super::{AuthBearer, api_error::ApiError};
+use super::{AuthBearer, api_error::ApiError, api_result};
 use crate::{domain::prompt::PromptManager, service};
 use axum::{
     Json,
@@ -17,7 +17,7 @@ pub async fn new_prompt(
     prompt_svc: State<Arc<dyn PromptManager>>,
     bearer: AuthBearer,
     payload: Json<CreatePromptRequest>,
-) -> Result<(StatusCode, Json<SinglePromptResponse>), ApiError> {
+) -> api_result!(SinglePromptResponse) {
     payload.validate()?;
 
     let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
@@ -31,7 +31,7 @@ pub async fn get_by_id(
     prompt_svc: State<Arc<dyn PromptManager>>,
     bearer: AuthBearer,
     Path(prompt_id): Path<i32>,
-) -> Result<(StatusCode, Json<SinglePromptResponse>), ApiError> {
+) -> api_result!(SinglePromptResponse) {
     let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 
     let prompt = prompt_svc.get_by_id(requester_id, prompt_id).await?;
@@ -44,7 +44,7 @@ pub async fn get_by_author(
     prompt_svc: State<Arc<dyn PromptManager>>,
     bearer: AuthBearer,
     param: Query<PromptsByAuthorParam>,
-) -> Result<(StatusCode, Json<MultiplePromptsResponse>), ApiError> {
+) -> api_result!(MultiplePromptsResponse) {
     let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 
     let prompts = if let Some(ref friend_username) = param.author_username {
@@ -62,7 +62,7 @@ pub async fn all_friend_prompts(
     jwt_secret: State<String>,
     prompt_svc: State<Arc<dyn PromptManager>>,
     bearer: AuthBearer,
-) -> Result<(StatusCode, Json<MultiplePromptsResponse>), ApiError> {
+) -> api_result!(MultiplePromptsResponse) {
     let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 
     let prompts = prompt_svc.all_friend_prompts(requester_id).await?;
