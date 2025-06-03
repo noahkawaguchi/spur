@@ -2,22 +2,18 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
-mod auth;
 mod commands;
-mod content;
 mod format;
-mod friends;
+mod handler;
 mod input_validators;
 mod interactive;
 mod request;
 mod token_store;
 
 use anyhow::{Context, Result, anyhow};
-use auth::AuthCommand;
 use clap::Parser;
 use commands::{Cli, Cmd};
-use content::ContentCommand;
-use friends::FriendsCommand;
+use handler::{auth::AuthCommand, content::ContentCommand, friends::FriendsCommand};
 use request::ApiRequestClient;
 use std::env;
 use token_store::{LocalTokenStore, TokenStore};
