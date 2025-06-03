@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::models::PromptWithAuthor;
+use crate::models::{PostWithPrompt, PromptWithAuthor};
 
 /// A general-purpose error response body.
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -31,6 +31,12 @@ pub struct SinglePromptResponse {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct MultiplePromptsResponse {
+pub struct PromptsAndPostsResponse {
     pub prompts: Vec<PromptWithAuthor>,
+    pub posts: Vec<PostWithPrompt>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SinglePostResponse {
+    pub post: PostWithPrompt,
 }

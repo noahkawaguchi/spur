@@ -47,3 +47,12 @@ pub struct CreatePromptRequest {
 pub struct PromptsByAuthorParam {
     pub author_username: Option<String>,
 }
+
+#[derive(Serialize, Deserialize, Validate)]
+pub struct CreatePostRequest {
+    #[validate(range(min = 1, message = "prompt ID must be positive"))]
+    pub prompt_id: i32,
+
+    #[validate(length(min = 1, message = "prompt body cannot be empty"))]
+    pub body: String,
+}

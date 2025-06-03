@@ -1,6 +1,8 @@
 pub mod api_error;
 pub mod auth;
+pub mod content;
 pub mod friendship;
+pub mod post;
 pub mod prompt;
 
 type AuthBearer = axum_extra::TypedHeader<
@@ -9,14 +11,17 @@ type AuthBearer = axum_extra::TypedHeader<
 
 /// Expands to a handler function return type.
 ///
-/// - `api_result!(T)` expands to `Result<(StatusCode, Json<T>), ApiError>`.
-/// - `api_result!()` expands to `Result<StatusCode, ApiError>`.
+/// - `api_result!(T)` expands to
+///   `Result<(axum::http::StatusCode, axum::Json<T>), crate::handler::api_error::ApiError>`.
+///
+/// - `api_result!()` expands to
+///   `Result<axum::http::StatusCode, crate::handler::api_error::ApiError>`.
 macro_rules! api_result {
     ($t:ty) => {
-        Result<(StatusCode, axum::Json<$t>), ApiError>
+        Result<(axum::http::StatusCode, axum::Json<$t>), crate::handler::api_error::ApiError>
     };
     () => {
-        Result<StatusCode, ApiError>
+        Result<axum::http::StatusCode, crate::handler::api_error::ApiError>
     };
 }
 

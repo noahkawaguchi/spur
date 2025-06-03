@@ -40,7 +40,9 @@ impl IntoResponse for ApiError {
                     }
                 },
                 DomainError::Content(err) => match err {
-                    ContentError::DuplicatePrompt => StatusCode::CONFLICT,
+                    ContentError::DuplicatePrompt | ContentError::DuplicatePost => {
+                        StatusCode::CONFLICT
+                    }
                     ContentError::OwnPrompt => StatusCode::BAD_REQUEST,
                     ContentError::NotFound => StatusCode::NOT_FOUND,
                     ContentError::NotFriends => StatusCode::FORBIDDEN,

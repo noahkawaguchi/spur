@@ -1,73 +1,37 @@
-use super::{AuthBearer, api_error::ApiError, api_result};
-use crate::{domain::content::service::ContentManager, service};
+use super::{AuthBearer, api_result};
+use crate::{domain::content::service::PromptManager, service};
 use axum::{
     Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::StatusCode,
 };
-use spur_shared::{
-    requests::{CreatePromptRequest, PromptsByAuthorParam},
-    responses::{MultiplePromptsResponse, SinglePromptResponse},
-};
+use spur_shared::{requests::CreatePromptRequest, responses::SinglePromptResponse};
 use std::sync::Arc;
 use validator::Validate;
 
-pub async fn new_prompt(
+pub async fn create_new(
     jwt_secret: State<String>,
-    prompt_svc: State<Arc<dyn ContentManager>>,
+    prompt_svc: State<Arc<dyn PromptManager>>,
     bearer: AuthBearer,
     payload: Json<CreatePromptRequest>,
 ) -> api_result!(SinglePromptResponse) {
     payload.validate()?;
 
     let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-    let prompt = prompt_svc.new_prompt(requester_id, &payload.body).await?;
+    let prompt = prompt_svc.create_new(requester_id, &payload.body).await?;
 
     Ok((StatusCode::CREATED, Json(SinglePromptResponse { prompt })))
 }
 
 pub async fn get_for_writing(
     jwt_secret: State<String>,
-    prompt_svc: State<Arc<dyn ContentManager>>,
+    prompt_svc: State<Arc<dyn PromptManager>>,
     bearer: AuthBearer,
     Path(prompt_id): Path<i32>,
 ) -> api_result!(SinglePromptResponse) {
     let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 
-    let prompt = prompt_svc
-        .get_prompt_for_writing(requester_id, prompt_id)
-        .await?;
+    let prompt = prompt_svc.get_for_writing(requester_id, prompt_id).await?;
 
     Ok((StatusCode::OK, Json(SinglePromptResponse { prompt })))
-}
-
-pub async fn get_by_author(
-    jwt_secret: State<String>,
-    prompt_svc: State<Arc<dyn ContentManager>>,
-    bearer: AuthBearer,
-    param: Query<PromptsByAuthorParam>,
-) -> api_result!(MultiplePromptsResponse) {
-    let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-
-    let prompts = if let Some(ref friend_username) = param.author_username {
-        prompt_svc
-            .specific_friend_prompts(requester_id, friend_username)
-            .await?
-    } else {
-        prompt_svc.own_prompts(requester_id).await?
-    };
-
-    Ok((StatusCode::OK, Json(MultiplePromptsResponse { prompts })))
-}
-
-pub async fn all_friend_prompts(
-    jwt_secret: State<String>,
-    prompt_svc: State<Arc<dyn ContentManager>>,
-    bearer: AuthBearer,
-) -> api_result!(MultiplePromptsResponse) {
-    let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-
-    let prompts = prompt_svc.all_friend_prompts(requester_id).await?;
-
-    Ok((StatusCode::OK, Json(MultiplePromptsResponse { prompts })))
 }

@@ -1,10 +1,17 @@
 use super::insertion_error::InsertionError;
 use crate::{
-    domain::content::repository::PostStore, models::post::Post, technical_error::TechnicalError,
+    domain::content::repository::PostStore,
+    models::post::{Post, PostWithPromptRow},
+    technical_error::TechnicalError,
 };
+use spur_shared::models::PostWithPrompt;
 
 pub struct PostRepo {
     pool: sqlx::PgPool,
+}
+
+impl PostRepo {
+    pub const fn new(pool: sqlx::PgPool) -> Self { Self { pool } }
 }
 
 #[async_trait::async_trait]
@@ -35,24 +42,52 @@ impl PostStore for PostRepo {
         Ok(maybe_post)
     }
 
-    async fn get_user_posts(&self, author_id: i32) -> Result<Vec<Post>, TechnicalError> {
+    async fn single_user_posts(
+        &self,
+        author_id: i32,
+    ) -> Result<Vec<PostWithPrompt>, TechnicalError> {
         let posts = sqlx::query_as!(
-            Post,
-            "SELECT * FROM posts WHERE posts.author_id = $1",
+            PostWithPromptRow,
+            "
+            SELECT
+                posts.id AS post_id,
+                u1.username AS post_author_username,
+                posts.body AS post_body,
+
+                prompts.id AS prompt_id,
+                u2.username AS prompt_author_username,
+                prompts.body AS prompt_body
+            FROM posts
+
+            JOIN prompts ON posts.prompt_id = prompts.id
+            JOIN users u1 ON posts.author_id = u1.id
+            JOIN users u2 ON prompts.author_id = u2.id
+
+            WHERE posts.author_id = $1
+            ORDER BY posts.created_at DESC
+            ",
             author_id,
         )
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(posts)
+        Ok(posts.into_iter().map(Into::into).collect())
     }
 
-    async fn get_friend_posts(&self, user_id: i32) -> Result<Vec<Post>, TechnicalError> {
+    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostWithPrompt>, TechnicalError> {
         let posts = sqlx::query_as!(
-            Post,
+            PostWithPromptRow,
             "
-            SELECT p.*
-            FROM posts p
+            SELECT
+                posts.id AS post_id,
+                u1.username AS post_author_username,
+                posts.body AS post_body,
+
+                prompts.id AS prompt_id,
+                u2.username AS prompt_author_username,
+                prompts.body AS prompt_body
+            FROM posts
+
             JOIN (
                 SELECT
                     CASE
@@ -62,15 +97,19 @@ impl PostStore for PostRepo {
                 FROM friendships f
                 WHERE f.confirmed
                 AND ($1 = f.first_id OR $1 = f.second_id)
-            ) AS friends
-            ON p.author_id = friends.friend_id
-            ORDER BY p.created_at DESC;
+            ) AS friends ON posts.author_id = friends.friend_id
+
+            JOIN prompts ON posts.prompt_id = prompts.id
+            JOIN users u1 ON posts.author_id = u1.id
+            JOIN users u2 ON prompts.author_id = u2.id
+
+            ORDER BY posts.created_at DESC
             ",
             user_id,
         )
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(posts)
+        Ok(posts.into_iter().map(Into::into).collect())
     }
 }

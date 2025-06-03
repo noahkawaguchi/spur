@@ -3,7 +3,7 @@ use crate::{
     repository::insertion_error::InsertionError,
     technical_error::TechnicalError,
 };
-use spur_shared::models::PromptWithAuthor;
+use spur_shared::models::{PostWithPrompt, PromptWithAuthor};
 
 #[async_trait::async_trait]
 pub trait PromptStore: Send + Sync {
@@ -11,10 +11,12 @@ pub trait PromptStore: Send + Sync {
 
     async fn get_by_id(&self, id: i32) -> Result<Option<Prompt>, TechnicalError>;
 
-    async fn get_user_prompts(&self, user_id: i32)
-    -> Result<Vec<PromptWithAuthor>, TechnicalError>;
+    async fn single_user_prompts(
+        &self,
+        user_id: i32,
+    ) -> Result<Vec<PromptWithAuthor>, TechnicalError>;
 
-    async fn get_friend_prompts(
+    async fn all_friend_prompts(
         &self,
         user_id: i32,
     ) -> Result<Vec<PromptWithAuthor>, TechnicalError>;
@@ -31,7 +33,10 @@ pub trait PostStore: Send + Sync {
 
     async fn get_by_id(&self, id: i32) -> Result<Option<Post>, TechnicalError>;
 
-    async fn get_user_posts(&self, author_id: i32) -> Result<Vec<Post>, TechnicalError>;
+    async fn single_user_posts(
+        &self,
+        author_id: i32,
+    ) -> Result<Vec<PostWithPrompt>, TechnicalError>;
 
-    async fn get_friend_posts(&self, user_id: i32) -> Result<Vec<Post>, TechnicalError>;
+    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostWithPrompt>, TechnicalError>;
 }

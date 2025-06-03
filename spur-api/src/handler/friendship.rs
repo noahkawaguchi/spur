@@ -1,4 +1,4 @@
-use super::{AuthBearer, api_error::ApiError, api_result};
+use super::{AuthBearer, api_result};
 use crate::{domain::friendship::service::FriendshipManager, service};
 use axum::{
     Json,

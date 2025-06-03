@@ -39,7 +39,7 @@ impl PromptStore for PromptRepo {
         Ok(maybe_prompt)
     }
 
-    async fn get_user_prompts(
+    async fn single_user_prompts(
         &self,
         user_id: i32,
     ) -> Result<Vec<PromptWithAuthor>, TechnicalError> {
@@ -63,7 +63,7 @@ impl PromptStore for PromptRepo {
         Ok(prompts)
     }
 
-    async fn get_friend_prompts(
+    async fn all_friend_prompts(
         &self,
         user_id: i32,
     ) -> Result<Vec<PromptWithAuthor>, TechnicalError> {
