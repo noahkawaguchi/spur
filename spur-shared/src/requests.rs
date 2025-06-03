@@ -44,7 +44,7 @@ pub struct CreatePromptRequest {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct PromptsByAuthorParam {
+pub struct UserContentParam {
     pub author_username: Option<String>,
 }
 

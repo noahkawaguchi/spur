@@ -4,11 +4,11 @@
 
 mod auth;
 mod commands;
+mod content;
 mod format;
 mod friends;
 mod input_validators;
 mod interactive_auth;
-mod prompt_post;
 mod request;
 mod token_store;
 
@@ -16,9 +16,9 @@ use anyhow::{Context, Result, anyhow};
 use auth::AuthCommand;
 use clap::Parser;
 use commands::{Cli, Cmd};
+use content::ContentCommand;
 use friends::FriendsCommand;
 use interactive_auth::InteractiveAuthPrompt;
-use prompt_post::PromptPostCommand;
 use request::ApiRequestClient;
 use std::env;
 use token_store::{LocalTokenStore, TokenStore};
@@ -53,7 +53,7 @@ async fn main() -> Result<()> {
     } else {
         let token = &store.load()?;
         let friends = FriendsCommand { client: client.clone(), token };
-        let prompt_post = PromptPostCommand { client, token };
+        let content = ContentCommand { client, token };
 
         match command {
             // Auth commands handled above
@@ -65,11 +65,12 @@ async fn main() -> Result<()> {
             Cmd::Requests => friends.list_friends(true).await,
 
             // Prompt and post commands
-            Cmd::Prompt { body } => prompt_post.new_prompt(body).await,
-            Cmd::Write { prompt_id } => prompt_post.write_post(prompt_id).await,
-            Cmd::Profile { username } => prompt_post.profile(Some(username)).await,
-            Cmd::Me => prompt_post.profile(None).await,
-            Cmd::Feed => prompt_post.feed().await,
+            Cmd::Prompt { body } => content.new_prompt(body).await,
+            Cmd::Write { prompt_id } => content.write_post(prompt_id).await,
+            Cmd::Read { post_id } => content.read_post(post_id).await,
+            Cmd::Profile { username } => content.user_content(Some(username)).await,
+            Cmd::Me => content.user_content(None).await,
+            Cmd::Feed => content.feed().await,
         }
     };
 

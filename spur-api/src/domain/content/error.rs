@@ -12,7 +12,7 @@ pub enum ContentError {
     #[error("Cannot write a post in response to one's own prompt")]
     OwnPrompt,
 
-    #[error("Content not found")]
+    #[error("No content found")]
     NotFound,
 
     #[error("Must be friends to see someone's content")]

@@ -5,14 +5,14 @@ use axum::{
     extract::{Query, State},
     http::StatusCode,
 };
-use spur_shared::{requests::PromptsByAuthorParam, responses::PromptsAndPostsResponse};
+use spur_shared::{requests::UserContentParam, responses::PromptsAndPostsResponse};
 use std::sync::Arc;
 
 pub async fn user_content(
     jwt_secret: State<String>,
     content_svc: State<Arc<dyn ContentManager>>,
     bearer: AuthBearer,
-    param: Query<PromptsByAuthorParam>,
+    param: Query<UserContentParam>,
 ) -> api_result!(PromptsAndPostsResponse) {
     let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 

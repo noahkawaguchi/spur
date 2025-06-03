@@ -1,7 +1,7 @@
 use anyhow::{Error, Result, anyhow};
 use colored::{ColoredString, Colorize};
 use reqwest::Response;
-use spur_shared::responses::ErrorResponse;
+use spur_shared::responses::{ErrorResponse, PromptsAndPostsResponse};
 
 /// Parses the body as an error response and returns the error message, or the status if the
 /// parsing fails.
@@ -33,4 +33,18 @@ pub fn color_first_line(result: Result<String, Error>) -> Result<ColoredString, 
             }
         }
     }
+}
+
+/// Formats prompts and posts for pretty printing.
+pub fn pretty_content(content: &PromptsAndPostsResponse) -> String {
+    content
+        .prompts
+        .iter()
+        .map(ToString::to_string)
+        .collect::<String>()
+        + &content
+            .posts
+            .iter()
+            .map(ToString::to_string)
+            .collect::<String>()
 }

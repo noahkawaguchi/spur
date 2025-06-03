@@ -87,9 +87,9 @@ async fn main() -> Result<()> {
         .route("/prompts", post(prompt::create_new))
         .route("/prompts/{prompt_id}", get(prompt::get_for_writing))
         .route("/posts", post(post::create_new))
-        .route("/posts", get(post::get_for_reading))
-        .route("/content/profile", get(content::user_content))
-        .route("/content/feed", get(content::friends_content))
+        .route("/posts/{post_id}", get(post::get_for_reading))
+        .route("/content", get(content::user_content))
+        .route("/content/friends", get(content::friends_content))
         .with_state(state);
 
     let listener = TcpListener::bind(&config.bind_addr).await?;

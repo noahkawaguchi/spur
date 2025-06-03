@@ -35,6 +35,9 @@ pub enum Cmd {
     #[command(about = "Create a new post in response to a prompt")]
     Write { prompt_id: i32 },
 
+    #[command(about = "Read a friend's post")]
+    Read { post_id: i32 },
+
     #[command(about = "List a friend's prompts and posts")]
     Profile { username: String },
 
