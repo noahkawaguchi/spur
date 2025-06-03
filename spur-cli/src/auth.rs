@@ -1,38 +1,24 @@
-use crate::{format, request::RequestClient, token_store::TokenStore};
+use crate::{format, interactive, request::RequestClient, token_store::TokenStore};
 use anyhow::{Result, anyhow};
-use inquire::error::InquireResult;
 use reqwest::StatusCode;
-use spur_shared::{
-    requests::{LoginRequest, SignupRequest},
-    responses::LoginResponse,
-};
+use spur_shared::responses::LoginResponse;
 
-pub trait AuthPrompt: Send + Sync {
-    /// Prompts the user for name, email, username, and password.
-    fn signup(&self) -> InquireResult<SignupRequest>;
-    /// Prompts the user for email and password.
-    fn login(&self) -> InquireResult<LoginRequest>;
-}
-
-pub struct AuthCommand<P, S, C>
+pub struct AuthCommand<S, C>
 where
-    P: AuthPrompt,
     S: TokenStore,
     C: RequestClient,
 {
-    pub prompt: P,
     pub store: S,
     pub client: C,
 }
 
-impl<P, S, C> AuthCommand<P, S, C>
+impl<S, C> AuthCommand<S, C>
 where
-    P: AuthPrompt,
     S: TokenStore,
     C: RequestClient,
 {
     pub async fn signup(&self) -> Result<String> {
-        let body = self.prompt.signup()?;
+        let body = interactive::signup()?;
         let response = self.client.post("auth/signup", body, None).await?;
 
         if response.status() == StatusCode::CREATED {
@@ -43,7 +29,7 @@ where
     }
 
     pub async fn login(&self) -> Result<String> {
-        let body = self.prompt.login()?;
+        let body = interactive::login()?;
         let response = self.client.post("auth/login", body, None).await?;
 
         if response.status() == StatusCode::OK {

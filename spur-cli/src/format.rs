@@ -23,13 +23,13 @@ pub fn color_first_line(result: Result<String, Error>) -> Result<ColoredString, 
     match result {
         Ok(message) => match message.split_once('\n') {
             Some((first, rest)) => Ok(format!("{}\n{}", first.green(), rest).into()),
-            None => Ok(message.green()),
+            None => Ok(message.bright_green()),
         },
         Err(e) => {
             let err = e.to_string();
             match err.split_once('\n') {
                 Some((first, rest)) => Err(anyhow!(format!("{}\n{}", first.red(), rest))),
-                None => Err(anyhow!(err.red())),
+                None => Err(anyhow!(err.bright_red())),
             }
         }
     }
@@ -41,10 +41,13 @@ pub fn pretty_content(content: &PromptsAndPostsResponse) -> String {
         .prompts
         .iter()
         .map(ToString::to_string)
-        .collect::<String>()
+        .collect::<Vec<String>>()
+        .join("\n\n")
+        + "\n\n"
         + &content
             .posts
             .iter()
             .map(ToString::to_string)
-            .collect::<String>()
+            .collect::<Vec<String>>()
+            .join("\n\n")
 }

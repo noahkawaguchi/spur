@@ -8,7 +8,7 @@ mod content;
 mod format;
 mod friends;
 mod input_validators;
-mod interactive_auth;
+mod interactive;
 mod request;
 mod token_store;
 
@@ -18,7 +18,6 @@ use clap::Parser;
 use commands::{Cli, Cmd};
 use content::ContentCommand;
 use friends::FriendsCommand;
-use interactive_auth::InteractiveAuthPrompt;
 use request::ApiRequestClient;
 use std::env;
 use token_store::{LocalTokenStore, TokenStore};
@@ -42,7 +41,7 @@ async fn main() -> Result<()> {
 
     // Auth commands don't require the user to already have a token, while all others do
     let result = if matches!(command, Cmd::Signup | Cmd::Login | Cmd::Check) {
-        let auth = AuthCommand { prompt: InteractiveAuthPrompt, store, client };
+        let auth = AuthCommand { store, client };
 
         match command {
             Cmd::Signup => auth.signup().await,
@@ -66,7 +65,7 @@ async fn main() -> Result<()> {
 
             // Prompt and post commands
             Cmd::Prompt { body } => content.new_prompt(body).await,
-            Cmd::Write { prompt_id } => content.write_post(prompt_id).await,
+            Cmd::Write(args) => content.write_post(args).await,
             Cmd::Read { post_id } => content.read_post(post_id).await,
             Cmd::Profile { username } => content.user_content(Some(username)).await,
             Cmd::Me => content.user_content(None).await,

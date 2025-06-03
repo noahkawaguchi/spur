@@ -32,8 +32,8 @@ pub enum Cmd {
     #[command(about = "Create a new prompt")]
     Prompt { body: String },
 
-    #[command(about = "Create a new post in response to a prompt")]
-    Write { prompt_id: i32 },
+    #[command(about = "Create a new post")]
+    Write(WriteArgs),
 
     #[command(about = "Read a friend's post")]
     Read { post_id: i32 },
@@ -46,4 +46,13 @@ pub enum Cmd {
 
     #[command(about = "List prompts and posts from all your friends")]
     Feed,
+}
+
+#[derive(Parser)]
+pub struct WriteArgs {
+    #[arg(help = "The ID of the prompt to respond to")]
+    pub prompt_id: i32,
+
+    #[arg(short, long, help = "Text editor to use")]
+    pub editor: Option<String>,
 }

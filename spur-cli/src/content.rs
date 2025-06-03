@@ -1,8 +1,8 @@
-use crate::{format, request::RequestClient};
+use crate::{commands::WriteArgs, format, interactive, request::RequestClient};
 use anyhow::{Result, anyhow};
 use reqwest::StatusCode;
 use spur_shared::{
-    requests::{CreatePromptRequest, UserContentParam},
+    requests::{CreatePostRequest, CreatePromptRequest, UserContentParam},
     responses::{PromptsAndPostsResponse, SinglePostResponse, SinglePromptResponse},
 };
 use validator::Validate;
@@ -30,10 +30,10 @@ impl<C: RequestClient> ContentCommand<'_, C> {
         }
     }
 
-    pub async fn write_post(&self, prompt_id: i32) -> Result<String> {
+    pub async fn write_post(&self, args: WriteArgs) -> Result<String> {
         let prompt_response = self
             .client
-            .get::<()>(&format!("prompts/{prompt_id}"), self.token, None)
+            .get::<()>(&format!("prompts/{}", args.prompt_id), self.token, None)
             .await?;
 
         if prompt_response.status() != StatusCode::OK {
@@ -41,9 +41,20 @@ impl<C: RequestClient> ContentCommand<'_, C> {
         }
 
         let prompt = prompt_response.json::<SinglePromptResponse>().await?.prompt;
+        let post_body = interactive::post_body(&prompt, args.editor.as_deref())?;
+        let req_body = CreatePostRequest { prompt_id: prompt.id, body: post_body };
 
-        // TODO: actually write a post here and make another request
-        Ok(format!("PLACEHOLDER: write a post here for:\n    {prompt}"))
+        let post_response = self
+            .client
+            .post("posts", req_body, Some(self.token))
+            .await?;
+
+        if post_response.status() == StatusCode::CREATED {
+            let post = post_response.json::<SinglePostResponse>().await?.post;
+            Ok(format!("Successfully posted:\n{post}"))
+        } else {
+            Err(anyhow!(format::err_resp(post_response).await))
+        }
     }
 
     pub async fn read_post(&self, post_id: i32) -> Result<String> {
@@ -54,10 +65,7 @@ impl<C: RequestClient> ContentCommand<'_, C> {
 
         if response.status() == StatusCode::OK {
             let post = response.json::<SinglePostResponse>().await?.post;
-            Ok(format!(
-                "PLACEHOLDER: Here is the post and its body for now:\n    {post}\n\n{}",
-                post.body
-            ))
+            Ok(format!("Retrieved post:\n{post}\n"))
         } else {
             Err(anyhow!(format::err_resp(response).await))
         }
@@ -79,7 +87,7 @@ impl<C: RequestClient> ContentCommand<'_, C> {
             let author =
                 username.map_or_else(|| String::from("you"), |friend_username| friend_username);
 
-            Ok(format!("Prompts and posts by {author}:\n    {content}"))
+            Ok(format!("Prompts and posts by {author}:\n\n{content}"))
         } else {
             Err(anyhow!(format::err_resp(response).await))
         }
@@ -94,7 +102,8 @@ impl<C: RequestClient> ContentCommand<'_, C> {
         if response.status() == StatusCode::OK {
             let content =
                 format::pretty_content(&response.json::<PromptsAndPostsResponse>().await?);
-            Ok(format!("Prompts and posts by your friends:\n    {content}"))
+
+            Ok(format!("Prompts and posts by your friends:\n\n{content}"))
         } else {
             Err(anyhow!(format::err_resp(response).await))
         }
