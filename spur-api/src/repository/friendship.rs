@@ -14,7 +14,7 @@ impl FriendshipRepo {
 #[async_trait::async_trait]
 impl FriendshipStore for FriendshipRepo {
     async fn new_request(&self, ids: &UserIdPair, requester_id: i32) -> Result<(), TechnicalError> {
-        let _ = sqlx::query!(
+        sqlx::query!(
             "
             INSERT INTO friendships (first_id, second_id, requester_first) 
             VALUES ($1, $2, $3)
@@ -30,7 +30,7 @@ impl FriendshipStore for FriendshipRepo {
     }
 
     async fn accept_request(&self, ids: &UserIdPair) -> Result<(), TechnicalError> {
-        let _ = sqlx::query!(
+        sqlx::query!(
             "
             UPDATE friendships
             SET confirmed = TRUE, confirmed_at = CURRENT_TIMESTAMP

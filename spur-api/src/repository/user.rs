@@ -17,7 +17,7 @@ impl UserRepo {
 #[async_trait::async_trait]
 impl UserStore for UserRepo {
     async fn insert_new(&self, new_user: &NewUser) -> Result<(), InsertionError> {
-        let _ = sqlx::query!(
+        sqlx::query!(
             "INSERT INTO users (name, email, username, password_hash) VALUES ($1, $2, $3, $4)",
             new_user.name,
             new_user.email,
