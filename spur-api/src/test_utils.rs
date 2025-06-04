@@ -1,3 +1,4 @@
+use crate::{domain::user::UserStore, models::user::NewUser, repository::user::UserRepo};
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use std::{env, future};
@@ -72,4 +73,64 @@ fn assert_alphanumeric_identifier(s: &str) -> &str {
     assert!(chars.next().is_some_and(|c| c.is_ascii_alphabetic()));
     assert!(chars.all(|c| c.is_ascii_alphanumeric()));
     s
+}
+
+/// Inserts four new users into the test database and returns them as they were inserted.
+/// They will automatically be given IDs 1, 2, 3, and 4 if there are no other existing users.
+///
+/// # Panics
+///
+/// Panics if any of the insertions fail. This function should only be used in testing.
+pub async fn must_seed_users(pool: PgPool) -> (NewUser, NewUser, NewUser, NewUser) {
+    let user_repo = UserRepo::new(pool);
+
+    let drake = NewUser {
+        name: String::from("Drake"),
+        email: String::from("drake@mail.cool"),
+        username: String::from("drake_conan"),
+        password_hash: String::from("ab45%2$#lLS"),
+    };
+
+    let eunice = NewUser {
+        name: String::from("Eunice Lee"),
+        email: String::from("eunice@lee.eee"),
+        username: String::from("you_n_15"),
+        password_hash: String::from("UNE$@$_b08088"),
+    };
+
+    let felipe = NewUser {
+        name: String::from("Felipe Hall"),
+        email: String::from("f.hall@mail-cloud.net"),
+        username: String::from("fe_to_the_lip_to_the_e"),
+        password_hash: String::from("ppaPpA44245$$$$"),
+    };
+
+    let gillian = NewUser {
+        name: String::from("Gillian Lee"),
+        email: String::from("gillian@lee.eee"),
+        username: String::from("jill_e_ian_12345"),
+        password_hash: String::from("these are not actually valid bcrypt hashes"),
+    };
+
+    user_repo
+        .insert_new(&drake)
+        .await
+        .expect("failed to insert Drake");
+
+    user_repo
+        .insert_new(&eunice)
+        .await
+        .expect("failed to insert Eunice");
+
+    user_repo
+        .insert_new(&felipe)
+        .await
+        .expect("failed to insert Felipe");
+
+    user_repo
+        .insert_new(&gillian)
+        .await
+        .expect("failed to insert Gillian");
+
+    (drake, eunice, felipe, gillian)
 }

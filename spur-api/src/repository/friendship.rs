@@ -117,12 +117,7 @@ impl FriendshipStore for FriendshipRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        domain::user::UserStore,
-        models::user::NewUser,
-        repository::user::UserRepo,
-        test_utils::{with_test_pool, within_one_second},
-    };
+    use crate::test_utils::{must_seed_users, with_test_pool, within_one_second};
     use chrono::{DateTime, Utc};
     use sqlx::PgPool;
 
@@ -145,46 +140,6 @@ mod tests {
         .fetch_one(&pool)
         .await
         .expect("failed to get friendship")
-    }
-
-    async fn must_seed_users(pool: PgPool) {
-        let user_repo = UserRepo::new(pool);
-
-        let drake = NewUser {
-            name: String::from("Drake"),
-            email: String::from("drake@mail.cool"),
-            username: String::from("drake_conan"),
-            password_hash: String::from("ab45%2$#lLS"),
-        };
-
-        let eunice = NewUser {
-            name: String::from("Eunice Lee"),
-            email: String::from("eunice@lee.eee"),
-            username: String::from("you_n_15"),
-            password_hash: String::from("UNE$@$_b08088"),
-        };
-
-        let felipe = NewUser {
-            name: String::from("Felipe Hall"),
-            email: String::from("f.hall@mail-cloud.net"),
-            username: String::from("fe_to_the_lip_to_the_e"),
-            password_hash: String::from("ppaPpA44245$$$$"),
-        };
-
-        user_repo
-            .insert_new(&drake)
-            .await
-            .expect("failed to insert Drake");
-
-        user_repo
-            .insert_new(&eunice)
-            .await
-            .expect("failed to insert Eunice");
-
-        user_repo
-            .insert_new(&felipe)
-            .await
-            .expect("failed to insert Felipe");
     }
 
     #[tokio::test]
