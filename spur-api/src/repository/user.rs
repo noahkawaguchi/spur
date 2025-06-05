@@ -58,7 +58,7 @@ impl UserStore for UserRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{with_test_pool, within_one_second};
+    use crate::test_util::{temp_db::with_test_pool, within_one_second};
     use chrono::Utc;
 
     fn make_test_users() -> Vec<NewUser> {

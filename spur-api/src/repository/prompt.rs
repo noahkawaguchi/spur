@@ -99,10 +99,10 @@ impl PromptStore for PromptRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        domain::friendship::{repository::FriendshipStore, user_id_pair::UserIdPair},
-        repository::friendship::FriendshipRepo,
-        test_utils::{must_seed_users, with_test_pool, within_one_second},
+    use crate::test_util::{
+        seed_data::{seed_friends, seed_prompts, seed_users},
+        temp_db::with_test_pool,
+        within_one_second,
     };
     use chrono::Utc;
 
@@ -110,7 +110,7 @@ mod tests {
     async fn inserts_and_gets_correct_data() {
         with_test_pool(|pool| async move {
             // Authors must be existing users
-            must_seed_users(pool.clone()).await;
+            seed_users(pool.clone()).await;
 
             let repo = PromptRepo::new(pool);
 
@@ -151,28 +151,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn returns_none_for_nonexistent_prompts() {
-        with_test_pool(|pool| async move {
-            must_seed_users(pool.clone()).await;
-            let repo = PromptRepo::new(pool);
-
-            repo.insert_new(1, "Anything here")
-                .await
-                .expect("failed to insert prompt 1");
-            repo.insert_new(2, "Anything there")
-                .await
-                .expect("failed to insert prompt 2");
-
-            assert!(matches!(repo.get_by_id(3).await, Ok(None)));
-            assert!(matches!(repo.get_by_id(4).await, Ok(None)));
-        })
-        .await;
-    }
-
-    #[tokio::test]
     async fn rejects_duplicate_prompts_from_the_same_author() {
         with_test_pool(|pool| async move {
-            must_seed_users(pool.clone()).await;
+            seed_users(pool.clone()).await;
             let repo = PromptRepo::new(pool);
 
             let prompt_body = "Repetition legitimizes";
@@ -189,7 +170,7 @@ mod tests {
     #[tokio::test]
     async fn allows_duplicate_prompts_from_different_authors() {
         with_test_pool(|pool| async move {
-            must_seed_users(pool.clone()).await;
+            seed_users(pool.clone()).await;
             let repo = PromptRepo::new(pool);
 
             let prompt_body = "Somebody said repetition legitimizes";
@@ -204,9 +185,28 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn returns_none_for_nonexistent_prompts() {
+        with_test_pool(|pool| async move {
+            seed_users(pool.clone()).await;
+            let repo = PromptRepo::new(pool);
+
+            repo.insert_new(1, "Anything here")
+                .await
+                .expect("failed to insert prompt 1");
+            repo.insert_new(2, "Anything there")
+                .await
+                .expect("failed to insert prompt 2");
+
+            assert!(matches!(repo.get_by_id(3).await, Ok(None)));
+            assert!(matches!(repo.get_by_id(4).await, Ok(None)));
+        })
+        .await;
+    }
+
+    #[tokio::test]
     async fn gets_only_prompts_by_a_specific_user() {
         with_test_pool(|pool| async move {
-            let (_, user2, _, _) = must_seed_users(pool.clone()).await;
+            let [_, user2, _, _] = seed_users(pool.clone()).await;
             let repo = PromptRepo::new(pool);
 
             let user2prompt1 = "Hello from the database";
@@ -252,102 +252,17 @@ mod tests {
     #[tokio::test]
     async fn gets_only_prompts_by_friends_of_a_user() {
         with_test_pool(|pool| async move {
-            let (_, u2, u3, u4) = must_seed_users(pool.clone()).await;
-            let friendship_repo = FriendshipRepo::new(pool.clone());
-            let prompt_repo = PromptRepo::new(pool);
+            let users = seed_users(pool.clone()).await;
+            seed_friends(pool.clone()).await;
 
-            /*
-             * 1 & 2 => no relation
-             * 1 & 3 => requested, unconfirmed
-             * 1 & 4 => no relation
-             * 2 & 3 => confirmed friends
-             * 2 & 4 => confirmed friends
-             * 3 & 4 => requested, unconfirmed
-             *
-             * 1 => no friends
-             * 2 => friends with 3 and 4
-             * 3 => friends with 2
-             * 4 => friends with 2
-             */
-            let two_and_three = UserIdPair::new(2, 3).unwrap();
-            let two_and_four = UserIdPair::new(4, 2).unwrap();
-            friendship_repo
-                .new_request(&two_and_three, 2)
-                .await
-                .unwrap();
-            friendship_repo.new_request(&two_and_four, 4).await.unwrap();
-            friendship_repo
-                .accept_request(&two_and_three)
-                .await
-                .unwrap();
-            friendship_repo.accept_request(&two_and_four).await.unwrap();
-            friendship_repo
-                .new_request(&UserIdPair::new(1, 3).unwrap(), 3)
-                .await
-                .unwrap();
-            friendship_repo
-                .new_request(&UserIdPair::new(4, 3).unwrap(), 3)
-                .await
-                .unwrap();
+            let [.., u2p1, u2p2, u3p1, u3p2, u4p1, u4p2] = seed_prompts(pool.clone(), &users).await;
 
-            let u1p1 = "User one prompt one";
-            let u1p2 = "User one prompt two";
-            let u2p1 = "User two prompt one";
-            let u2p2 = "User two prompt two";
-            let u3p1 = "User three prompt one";
-            let u3p2 = "User three prompt two";
-            let u4p1 = "User four prompt one";
-            let u4p2 = "User four prompt two";
+            let repo = PromptRepo::new(pool);
 
-            prompt_repo.insert_new(1, u1p1).await.unwrap();
-            prompt_repo.insert_new(1, u1p2).await.unwrap();
-            let u2p1id = prompt_repo.insert_new(2, u2p1).await.unwrap();
-            let u2p2id = prompt_repo.insert_new(2, u2p2).await.unwrap();
-            let u3p1id = prompt_repo.insert_new(3, u3p1).await.unwrap();
-            let u3p2id = prompt_repo.insert_new(3, u3p2).await.unwrap();
-            let u4p1id = prompt_repo.insert_new(4, u4p1).await.unwrap();
-            let u4p2id = prompt_repo.insert_new(4, u4p2).await.unwrap();
-
-            let u2p1_expected = PromptWithAuthor {
-                id: u2p1id,
-                author_username: u2.username.clone(),
-                body: u2p1.to_string(),
-            };
-
-            let u2p2_expected = PromptWithAuthor {
-                id: u2p2id,
-                author_username: u2.username,
-                body: u2p2.to_string(),
-            };
-
-            let u3p1_expected = PromptWithAuthor {
-                id: u3p1id,
-                author_username: u3.username.clone(),
-                body: u3p1.to_string(),
-            };
-
-            let u3p2_expected = PromptWithAuthor {
-                id: u3p2id,
-                author_username: u3.username,
-                body: u3p2.to_string(),
-            };
-
-            let u4p1_expected = PromptWithAuthor {
-                id: u4p1id,
-                author_username: u4.username.clone(),
-                body: u4p1.to_string(),
-            };
-
-            let u4p2_expected = PromptWithAuthor {
-                id: u4p2id,
-                author_username: u4.username,
-                body: u4p2.to_string(),
-            };
-
-            let u1_friend_prompts = prompt_repo.all_friend_prompts(1).await.unwrap();
-            let mut u2_friend_prompts = prompt_repo.all_friend_prompts(2).await.unwrap();
-            let mut u3_friend_prompts = prompt_repo.all_friend_prompts(3).await.unwrap();
-            let mut u4_friend_prompts = prompt_repo.all_friend_prompts(4).await.unwrap();
+            let u1_friend_prompts = repo.all_friend_prompts(1).await.unwrap();
+            let mut u2_friend_prompts = repo.all_friend_prompts(2).await.unwrap();
+            let mut u3_friend_prompts = repo.all_friend_prompts(3).await.unwrap();
+            let mut u4_friend_prompts = repo.all_friend_prompts(4).await.unwrap();
 
             // Reverse because they should have been sorted by created_at in descending order
             u2_friend_prompts.reverse();
@@ -359,20 +274,20 @@ mod tests {
 
             // 2 is friends with both 3 and 4
             assert_eq!(u2_friend_prompts.len(), 4);
-            assert_eq!(u2_friend_prompts[0], u3p1_expected);
-            assert_eq!(u2_friend_prompts[1], u3p2_expected);
-            assert_eq!(u2_friend_prompts[2], u4p1_expected);
-            assert_eq!(u2_friend_prompts[3], u4p2_expected);
+            assert_eq!(u2_friend_prompts[0], u3p1);
+            assert_eq!(u2_friend_prompts[1], u3p2);
+            assert_eq!(u2_friend_prompts[2], u4p1);
+            assert_eq!(u2_friend_prompts[3], u4p2);
 
             // 3 is only friends with 2
             assert_eq!(u3_friend_prompts.len(), 2);
-            assert_eq!(u3_friend_prompts[0], u2p1_expected);
-            assert_eq!(u3_friend_prompts[1], u2p2_expected);
+            assert_eq!(u3_friend_prompts[0], u2p1);
+            assert_eq!(u3_friend_prompts[1], u2p2);
 
             // 4 is also only friends with 2
             assert_eq!(u4_friend_prompts.len(), 2);
-            assert_eq!(u4_friend_prompts[0], u2p1_expected);
-            assert_eq!(u4_friend_prompts[1], u2p2_expected);
+            assert_eq!(u4_friend_prompts[0], u2p1);
+            assert_eq!(u4_friend_prompts[1], u2p2);
         })
         .await;
     }

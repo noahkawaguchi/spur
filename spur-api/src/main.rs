@@ -11,7 +11,7 @@ mod service;
 mod technical_error;
 
 #[cfg(test)]
-mod test_utils;
+mod test_util;
 
 use anyhow::Result;
 use axum::{

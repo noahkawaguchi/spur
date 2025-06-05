@@ -117,7 +117,7 @@ impl FriendshipStore for FriendshipRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{must_seed_users, with_test_pool, within_one_second};
+    use crate::test_util::{seed_data::seed_users, temp_db::with_test_pool, within_one_second};
     use chrono::{DateTime, Utc};
     use sqlx::PgPool;
 
@@ -146,7 +146,7 @@ mod tests {
     async fn sets_initial_values_on_insertion() {
         with_test_pool(|pool| async move {
             let repo = FriendshipRepo::new(pool.clone());
-            must_seed_users(pool.clone()).await;
+            seed_users(pool.clone()).await;
 
             repo.new_request(&UserIdPair::new(1, 2).unwrap(), 1)
                 .await
@@ -168,7 +168,7 @@ mod tests {
     async fn updates_values_for_accepted_request() {
         with_test_pool(|pool| async move {
             let repo = FriendshipRepo::new(pool.clone());
-            must_seed_users(pool.clone()).await;
+            seed_users(pool.clone()).await;
             let ids = UserIdPair::new(1, 3).unwrap();
 
             repo.new_request(&ids, 3)
@@ -202,7 +202,7 @@ mod tests {
     async fn gets_all_four_possible_statuses() {
         with_test_pool(|pool| async move {
             let repo = FriendshipRepo::new(pool.clone());
-            must_seed_users(pool).await;
+            seed_users(pool).await;
 
             let ids1 = UserIdPair::new(1, 3).unwrap();
             let ids2 = UserIdPair::new(2, 3).unwrap();
@@ -235,7 +235,7 @@ mod tests {
     async fn gets_all_requests_and_friends() {
         with_test_pool(|pool| async move {
             let repo = FriendshipRepo::new(pool.clone());
-            must_seed_users(pool).await;
+            seed_users(pool).await;
 
             let ids1 = UserIdPair::new(1, 3).unwrap();
             let ids2 = UserIdPair::new(2, 3).unwrap();

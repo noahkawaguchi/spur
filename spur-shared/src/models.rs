@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct PromptWithAuthor {
     pub id: i32,
     pub author_username: String,
@@ -18,7 +18,7 @@ impl fmt::Display for PromptWithAuthor {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PostWithPrompt {
     pub id: i32,
     pub author_username: String,
