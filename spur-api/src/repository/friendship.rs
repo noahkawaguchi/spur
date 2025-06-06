@@ -117,7 +117,7 @@ impl FriendshipStore for FriendshipRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_util::{seed_data::seed_users, temp_db::with_test_pool, within_one_second};
+    use crate::test_utils::{seed_data::seed_users, temp_db::with_test_pool, within_one_second};
     use chrono::{DateTime, Utc};
     use sqlx::PgPool;
 

@@ -5,13 +5,14 @@
 mod config;
 mod domain;
 mod handler;
+mod utils;
 mod models;
 mod repository;
 mod service;
 mod technical_error;
 
 #[cfg(test)]
-mod test_util;
+mod test_utils;
 
 use anyhow::Result;
 use axum::{
@@ -51,7 +52,6 @@ async fn main() -> Result<()> {
 
     let prompt_svc = Arc::new(PromptSvc::new(
         PromptRepo::new(pool.clone()),
-        Arc::clone(&user_svc),
         Arc::clone(&friendship_svc),
     )) as Arc<dyn PromptManager>;
 

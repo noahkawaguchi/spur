@@ -3,27 +3,22 @@ use crate::{
         content::{error::ContentError, repository::PromptStore, service::PromptManager},
         error::DomainError,
         friendship::{service::FriendshipManager, user_id_pair::UserIdPair},
-        user::UserManager,
     },
     repository::insertion_error::InsertionError,
     technical_error::TechnicalError,
+    utils::vec_into,
 };
 use spur_shared::models::PromptWithAuthor;
 use std::sync::Arc;
 
 pub struct PromptSvc<S: PromptStore> {
     store: S,
-    user_svc: Arc<dyn UserManager>,
     friendship_svc: Arc<dyn FriendshipManager>,
 }
 
 impl<S: PromptStore> PromptSvc<S> {
-    pub const fn new(
-        store: S,
-        user_svc: Arc<dyn UserManager>,
-        friendship_svc: Arc<dyn FriendshipManager>,
-    ) -> Self {
-        Self { store, user_svc, friendship_svc }
+    pub const fn new(store: S, friendship_svc: Arc<dyn FriendshipManager>) -> Self {
+        Self { store, friendship_svc }
     }
 }
 
@@ -37,11 +32,7 @@ impl<S: PromptStore> PromptManager for PromptSvc<S> {
         match self.store.insert_new(author_id, body).await {
             Err(InsertionError::Technical(e)) => Err(TechnicalError::Database(e).into()),
             Err(InsertionError::UniqueViolation(_)) => Err(ContentError::DuplicatePrompt.into()),
-            Ok(id) => Ok(PromptWithAuthor {
-                id,
-                author_username: self.user_svc.get_by_id(author_id).await?.username,
-                body: body.to_string(),
-            }),
+            Ok(prompt_info) => Ok(prompt_info.into()),
         }
     }
 
@@ -50,6 +41,7 @@ impl<S: PromptStore> PromptManager for PromptSvc<S> {
         requester_id: i32,
         prompt_id: i32,
     ) -> Result<PromptWithAuthor, DomainError> {
+        // Prompt must exist
         let prompt = self
             .store
             .get_by_id(prompt_id)
@@ -62,19 +54,11 @@ impl<S: PromptStore> PromptManager for PromptSvc<S> {
         }
 
         // Must be friends to see someone's prompts
-        if self
-            .friendship_svc
+        self.friendship_svc
             .are_friends(&UserIdPair::new(requester_id, prompt.author_id)?)
             .await?
-        {
-            Ok(PromptWithAuthor {
-                id: prompt.id,
-                author_username: self.user_svc.get_by_id(prompt.author_id).await?.username,
-                body: prompt.body,
-            })
-        } else {
-            Err(ContentError::NotFriends.into())
-        }
+            .then_some(prompt.into())
+            .ok_or_else(|| ContentError::NotFriends.into())
     }
 
     async fn single_user_prompts(
@@ -84,27 +68,30 @@ impl<S: PromptStore> PromptManager for PromptSvc<S> {
         self.store
             .single_user_prompts(user_id)
             .await
-            .map_err(DomainError::from)
+            .map_err(Into::into)
+            .map(vec_into)
     }
 
     async fn all_friend_prompts(&self, user_id: i32) -> Result<Vec<PromptWithAuthor>, DomainError> {
         self.store
             .all_friend_prompts(user_id)
             .await
-            .map_err(DomainError::from)
+            .map_err(Into::into)
+            .map(vec_into)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::prompt::PromptInfo;
     use crate::{
         domain::{
             content::repository::MockPromptStore, friendship::service::MockFriendshipManager,
-            user::MockUserManager,
         },
-        test_util::dummy_data::make_user,
+        test_utils::dummy_data::make_user,
     };
+    use chrono::Utc;
     use mockall::predicate::eq;
 
     mod create_new {
@@ -136,11 +123,8 @@ mod tests {
                     )))
                 });
 
-            let prompt_svc = PromptSvc::new(
-                mock_prompt_repo,
-                Arc::new(MockUserManager::new()),
-                Arc::new(MockFriendshipManager::new()),
-            );
+            let prompt_svc =
+                PromptSvc::new(mock_prompt_repo, Arc::new(MockFriendshipManager::new()));
 
             let result1 = prompt_svc.create_new(author_id_1, prompt_body_1).await;
             let result2 = prompt_svc.create_new(author_id_2, prompt_body_2).await;
@@ -165,29 +149,33 @@ mod tests {
             let (prompt_body_1, prompt_body_2) = ("Prompt body one!", "Prompt body two?");
             let (prompt_id_1, prompt_id_2) = (354, 355);
 
+            let prompt_info_1 = PromptInfo {
+                id: prompt_id_1,
+                author_id: user1_id,
+                author_username: user1.username.clone(),
+                body: prompt_body_1.to_string(),
+                created_at: Utc::now(),
+            };
+
+            let prompt_info_2 = PromptInfo {
+                id: prompt_id_2,
+                author_id: user2_id,
+                author_username: user2_username.clone(),
+                body: prompt_body_2.to_string(),
+                created_at: Utc::now(),
+            };
+
             let mut mock_prompt_repo = MockPromptStore::new();
             mock_prompt_repo
                 .expect_insert_new()
                 .with(eq(user1.id), eq(prompt_body_1))
                 .once()
-                .return_once(move |_, _| Ok(prompt_id_1));
+                .return_once(move |_, _| Ok(prompt_info_1));
             mock_prompt_repo
                 .expect_insert_new()
                 .with(eq(user2.id), eq(prompt_body_2))
                 .once()
-                .return_once(move |_, _| Ok(prompt_id_2));
-
-            let mut mock_user_svc = MockUserManager::new();
-            mock_user_svc
-                .expect_get_by_id()
-                .with(eq(user1.id))
-                .once()
-                .return_once(|_| Ok(user1));
-            mock_user_svc
-                .expect_get_by_id()
-                .with(eq(user2.id))
-                .once()
-                .return_once(|_| Ok(user2));
+                .return_once(move |_, _| Ok(prompt_info_2));
 
             let expected1 = PromptWithAuthor {
                 id: prompt_id_1,
@@ -200,11 +188,8 @@ mod tests {
                 body: prompt_body_2.to_string(),
             };
 
-            let prompt_svc = PromptSvc::new(
-                mock_prompt_repo,
-                Arc::new(mock_user_svc),
-                Arc::new(MockFriendshipManager::new()),
-            );
+            let prompt_svc =
+                PromptSvc::new(mock_prompt_repo, Arc::new(MockFriendshipManager::new()));
 
             let actual1 = prompt_svc
                 .create_new(user1_id, prompt_body_1)

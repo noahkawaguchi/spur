@@ -84,12 +84,12 @@ mod tests {
     use super::*;
     use crate::{
         domain::{friendship::repository::MockFriendshipStore, user::MockUserManager},
-        test_util::dummy_data::make_user,
+        test_utils::dummy_data::make_user,
     };
     use mockall::predicate::eq;
 
     mod add_friend {
-        use crate::test_util::dummy_data::make_user;
+        use crate::test_utils::dummy_data::make_user;
 
         use super::*;
 

@@ -117,7 +117,7 @@ impl PostStore for PostRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_util::{
+    use crate::test_utils::{
         seed_data::{seed_friends, seed_prompts, seed_users},
         temp_db::with_test_pool,
         within_one_second,
@@ -128,8 +128,8 @@ mod tests {
     async fn inserts_and_gets_correct_data() {
         with_test_pool(|pool| async move {
             // Relevant users and prompts must exist for posts to work
-            let users = seed_users(pool.clone()).await;
-            let prompts = seed_prompts(pool.clone(), &users).await;
+            seed_users(pool.clone()).await;
+            let prompts = seed_prompts(pool.clone()).await;
 
             let repo = PostRepo::new(pool);
 
@@ -194,8 +194,8 @@ mod tests {
     #[tokio::test]
     async fn rejects_multiple_posts_by_the_same_author_responding_to_the_same_prompt() {
         with_test_pool(|pool| async move {
-            let users = seed_users(pool.clone()).await;
-            let prompts = seed_prompts(pool.clone(), &users).await;
+            seed_users(pool.clone()).await;
+            let prompts = seed_prompts(pool.clone()).await;
 
             let repo = PostRepo::new(pool);
 
@@ -219,8 +219,8 @@ mod tests {
     #[tokio::test]
     async fn returns_none_for_nonexistent_posts() {
         with_test_pool(|pool| async move {
-            let users = seed_users(pool.clone()).await;
-            let prompts = seed_prompts(pool.clone(), &users).await;
+            seed_users(pool.clone()).await;
+            let prompts = seed_prompts(pool.clone()).await;
 
             let repo = PostRepo::new(pool);
 
@@ -239,7 +239,7 @@ mod tests {
     async fn gets_only_posts_by_a_specific_user() {
         with_test_pool(|pool| async move {
             let users = seed_users(pool.clone()).await;
-            let prompts = seed_prompts(pool.clone(), &users).await;
+            let prompts = seed_prompts(pool.clone()).await;
 
             let repo = PostRepo::new(pool);
 
@@ -284,7 +284,7 @@ mod tests {
     async fn gets_only_posts_by_friends_of_a_user() {
         with_test_pool(|pool| async move {
             let users = seed_users(pool.clone()).await;
-            let prompts = seed_prompts(pool.clone(), &users).await;
+            let prompts = seed_prompts(pool.clone()).await;
             let [_, u2, u3, u4] = users;
             seed_friends(pool.clone()).await;
 

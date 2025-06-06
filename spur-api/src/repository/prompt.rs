@@ -1,9 +1,8 @@
 use super::insertion_error::InsertionError;
 use crate::{
-    domain::content::repository::PromptStore, models::prompt::Prompt,
+    domain::content::repository::PromptStore, models::prompt::PromptInfo,
     technical_error::TechnicalError,
 };
-use spur_shared::models::PromptWithAuthor;
 
 pub struct PromptRepo {
     pool: sqlx::PgPool,
@@ -15,65 +14,70 @@ impl PromptRepo {
 
 #[async_trait::async_trait]
 impl PromptStore for PromptRepo {
-    async fn insert_new(&self, author_id: i32, body: &str) -> Result<i32, InsertionError> {
-        let rec = sqlx::query!(
-            "INSERT INTO prompts (author_id, body) VALUES ($1, $2) RETURNING id",
+    async fn insert_new(&self, author_id: i32, body: &str) -> Result<PromptInfo, InsertionError> {
+        sqlx::query_as!(
+            PromptInfo,
+            "
+            WITH inserted AS (
+                INSERT INTO prompts (author_id, body)
+                VALUES ($1, $2)
+                RETURNING id, author_id, body, created_at
+            )
+            SELECT
+                inserted.id,
+                inserted.author_id,
+                u.username AS author_username,
+                inserted.body,
+                inserted.created_at
+            FROM inserted
+            JOIN users u ON u.id = inserted.author_id
+            ",
             author_id,
             body,
         )
         .fetch_one(&self.pool)
-        .await?;
-
-        Ok(rec.id)
+        .await
+        .map_err(InsertionError::from)
     }
 
-    async fn get_by_id(&self, id: i32) -> Result<Option<Prompt>, TechnicalError> {
-        let maybe_prompt = sqlx::query_as!(
-            Prompt,
-            "SELECT id, author_id, body, created_at FROM prompts WHERE prompts.id = $1",
+    async fn get_by_id(&self, id: i32) -> Result<Option<PromptInfo>, TechnicalError> {
+        sqlx::query_as!(
+            PromptInfo,
+            "
+            SELECT p.id, p.author_id, u.username AS author_username, p.body, p.created_at
+            FROM prompts p
+            JOIN users u ON p.author_id = u.id
+            WHERE p.id = $1
+            ",
             id,
         )
         .fetch_optional(&self.pool)
-        .await?;
-
-        Ok(maybe_prompt)
+        .await
+        .map_err(TechnicalError::from)
     }
 
-    async fn single_user_prompts(
-        &self,
-        user_id: i32,
-    ) -> Result<Vec<PromptWithAuthor>, TechnicalError> {
-        let prompts = sqlx::query_as!(
-            PromptWithAuthor,
+    async fn single_user_prompts(&self, user_id: i32) -> Result<Vec<PromptInfo>, TechnicalError> {
+        sqlx::query_as!(
+            PromptInfo,
             "
-            SELECT
-                prompts.id, 
-                users.username AS author_username,
-                prompts.body
-            FROM prompts
-            JOIN users ON prompts.author_id = users.id
-            WHERE prompts.author_id = $1
-            ORDER BY prompts.created_at DESC
+            SELECT p.id, p.author_id, u.username AS author_username, p.body, p.created_at
+            FROM prompts p
+            JOIN users u ON p.author_id = u.id
+            WHERE p.author_id = $1
+            ORDER BY p.created_at DESC
             ",
             user_id,
         )
         .fetch_all(&self.pool)
-        .await?;
-
-        Ok(prompts)
+        .await
+        .map_err(TechnicalError::from)
     }
 
-    async fn all_friend_prompts(
-        &self,
-        user_id: i32,
-    ) -> Result<Vec<PromptWithAuthor>, TechnicalError> {
-        let prompts = sqlx::query_as!(
-            PromptWithAuthor,
+    async fn all_friend_prompts(&self, user_id: i32) -> Result<Vec<PromptInfo>, TechnicalError> {
+        sqlx::query_as!(
+            PromptInfo,
             "
-            SELECT
-                p.id, 
-                u.username AS author_username,
-                p.body
+            SELECT p.id, p.author_id, u.username AS author_username, p.body, p.created_at
             FROM prompts p
             JOIN users u ON p.author_id = u.id
             JOIN (
@@ -90,21 +94,21 @@ impl PromptStore for PromptRepo {
             user_id,
         )
         .fetch_all(&self.pool)
-        .await?;
-
-        Ok(prompts)
+        .await
+        .map_err(TechnicalError::from)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_util::{
+    use crate::test_utils::{
         seed_data::{seed_friends, seed_prompts, seed_users},
         temp_db::with_test_pool,
         within_one_second,
     };
     use chrono::Utc;
+    use spur_shared::models::PromptWithAuthor;
 
     #[tokio::test]
     async fn inserts_and_gets_correct_data() {
@@ -117,35 +121,35 @@ mod tests {
             let prompt_body_1 = "This is a test prompt. This is only a test prompt";
             let prompt_body_2 = "What was it like when you wrote your first prompt?";
 
-            let prompt_id_1 = repo
+            let prompt_1_insert = repo
                 .insert_new(1, prompt_body_1)
                 .await
                 .expect("failed to insert prompt 1");
-            let prompt_id_2 = repo
+            let prompt_2_insert = repo
                 .insert_new(2, prompt_body_2)
                 .await
                 .expect("failed to insert prompt 2");
 
-            let prompt1 = repo
-                .get_by_id(prompt_id_1)
+            let prompt_1_select = repo
+                .get_by_id(prompt_1_insert.id)
                 .await
                 .expect("failed to get prompt 1")
                 .expect("prompt 1 was None");
-            let prompt2 = repo
-                .get_by_id(prompt_id_2)
+            let prompt_2_select = repo
+                .get_by_id(prompt_2_insert.id)
                 .await
                 .expect("failed to get prompt 2")
                 .expect("prompt 2 was None");
 
-            assert_eq!(prompt1.id, prompt_id_1);
-            assert_eq!(prompt1.author_id, 1);
-            assert_eq!(prompt1.body, prompt_body_1);
-            assert!(within_one_second(prompt1.created_at, Utc::now()));
+            assert_eq!(prompt_1_select.id, prompt_1_insert.id);
+            assert_eq!(prompt_1_select.author_id, 1);
+            assert_eq!(prompt_1_select.body, prompt_body_1);
+            assert!(within_one_second(prompt_1_select.created_at, Utc::now()));
 
-            assert_eq!(prompt2.id, prompt_id_2);
-            assert_eq!(prompt2.author_id, 2);
-            assert_eq!(prompt2.body, prompt_body_2);
-            assert!(within_one_second(prompt2.created_at, Utc::now()));
+            assert_eq!(prompt_2_select.id, prompt_2_insert.id);
+            assert_eq!(prompt_2_select.author_id, 2);
+            assert_eq!(prompt_2_select.body, prompt_body_2);
+            assert!(within_one_second(prompt_2_select.created_at, Utc::now()));
         })
         .await;
     }
@@ -170,16 +174,24 @@ mod tests {
     #[tokio::test]
     async fn allows_duplicate_prompts_from_different_authors() {
         with_test_pool(|pool| async move {
-            seed_users(pool.clone()).await;
+            let [_, user2, _, _] = seed_users(pool.clone()).await;
             let repo = PromptRepo::new(pool);
 
             let prompt_body = "Somebody said repetition legitimizes";
-            repo.insert_new(1, prompt_body)
+            repo.insert_new(3, prompt_body)
                 .await
                 .expect("failed to insert prompt the first time");
 
-            let result = repo.insert_new(2, prompt_body).await;
-            assert!(matches!(result, Ok(2)));
+            let actual = repo
+                .insert_new(2, prompt_body)
+                .await
+                .expect("failed to insert duplicate prompt by a different author");
+
+            assert_eq!(actual.id, 2);
+            assert_eq!(actual.author_id, 2);
+            assert_eq!(actual.author_username, user2.username);
+            assert_eq!(actual.body, prompt_body);
+            assert!(within_one_second(actual.created_at, Utc::now()));
         })
         .await;
     }
@@ -206,7 +218,7 @@ mod tests {
     #[tokio::test]
     async fn gets_only_prompts_by_a_specific_user() {
         with_test_pool(|pool| async move {
-            let [_, user2, _, _] = seed_users(pool.clone()).await;
+            seed_users(pool.clone()).await;
             let repo = PromptRepo::new(pool);
 
             let user2prompt1 = "Hello from the database";
@@ -216,8 +228,8 @@ mod tests {
             repo.insert_new(1, "Should not get this one either")
                 .await
                 .unwrap();
-            let user2prompt1id = repo.insert_new(2, user2prompt1).await.unwrap();
-            let user2prompt2id = repo.insert_new(2, user2prompt2).await.unwrap();
+            let user2prompt1info = repo.insert_new(2, user2prompt1).await.unwrap();
+            let user2prompt2info = repo.insert_new(2, user2prompt2).await.unwrap();
             repo.insert_new(3, "Finally, this one should not come up either")
                 .await
                 .unwrap();
@@ -230,21 +242,9 @@ mod tests {
             // Reverse because they should have been sorted by created_at in descending order
             got_prompts.reverse();
 
-            let expected1 = PromptWithAuthor {
-                id: user2prompt1id,
-                author_username: user2.username.clone(),
-                body: user2prompt1.to_string(),
-            };
-
-            let expected2 = PromptWithAuthor {
-                id: user2prompt2id,
-                author_username: user2.username,
-                body: user2prompt2.to_string(),
-            };
-
             assert_eq!(got_prompts.len(), 2);
-            assert_eq!(got_prompts[0], expected1);
-            assert_eq!(got_prompts[1], expected2);
+            assert_eq!(got_prompts[0], user2prompt1info);
+            assert_eq!(got_prompts[1], user2prompt2info);
         })
         .await;
     }
@@ -252,10 +252,10 @@ mod tests {
     #[tokio::test]
     async fn gets_only_prompts_by_friends_of_a_user() {
         with_test_pool(|pool| async move {
-            let users = seed_users(pool.clone()).await;
+            seed_users(pool.clone()).await;
             seed_friends(pool.clone()).await;
 
-            let [.., u2p1, u2p2, u3p1, u3p2, u4p1, u4p2] = seed_prompts(pool.clone(), &users).await;
+            let [.., u2p1, u2p2, u3p1, u3p2, u4p1, u4p2] = seed_prompts(pool.clone()).await;
 
             let repo = PromptRepo::new(pool);
 
@@ -274,20 +274,20 @@ mod tests {
 
             // 2 is friends with both 3 and 4
             assert_eq!(u2_friend_prompts.len(), 4);
-            assert_eq!(u2_friend_prompts[0], u3p1);
-            assert_eq!(u2_friend_prompts[1], u3p2);
-            assert_eq!(u2_friend_prompts[2], u4p1);
-            assert_eq!(u2_friend_prompts[3], u4p2);
+            assert_eq!(PromptWithAuthor::from(u2_friend_prompts[0].clone()), u3p1);
+            assert_eq!(PromptWithAuthor::from(u2_friend_prompts[1].clone()), u3p2);
+            assert_eq!(PromptWithAuthor::from(u2_friend_prompts[2].clone()), u4p1);
+            assert_eq!(PromptWithAuthor::from(u2_friend_prompts[3].clone()), u4p2);
 
             // 3 is only friends with 2
             assert_eq!(u3_friend_prompts.len(), 2);
-            assert_eq!(u3_friend_prompts[0], u2p1);
-            assert_eq!(u3_friend_prompts[1], u2p2);
+            assert_eq!(PromptWithAuthor::from(u3_friend_prompts[0].clone()), u2p1);
+            assert_eq!(PromptWithAuthor::from(u3_friend_prompts[1].clone()), u2p2);
 
             // 4 is also only friends with 2
             assert_eq!(u4_friend_prompts.len(), 2);
-            assert_eq!(u4_friend_prompts[0], u2p1);
-            assert_eq!(u4_friend_prompts[1], u2p2);
+            assert_eq!(PromptWithAuthor::from(u4_friend_prompts[0].clone()), u2p1);
+            assert_eq!(PromptWithAuthor::from(u4_friend_prompts[1].clone()), u2p2);
         })
         .await;
     }

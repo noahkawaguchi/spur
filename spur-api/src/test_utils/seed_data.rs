@@ -112,91 +112,47 @@ pub async fn seed_friends(pool: sqlx::PgPool) {
         .unwrap();
 }
 
-/// Inserts eight prompts into the test database, two by each of the four provided users, and
-/// returns them in `PromptWithAuthor` form. The users are assumed to have IDs 1, 2, 3, and 4.
+/// Inserts eight prompts into the test database, two by each of four users assumed to have IDs 1,
+/// 2, 3, and 4, and returns the Prompts in `PromptWithAuthor` form.
 ///
 /// # Panics
 ///
 /// Panics if any of the insertions fail. This function should only be used in testing.
-pub async fn seed_prompts(pool: sqlx::PgPool, users: &[NewUser; 4]) -> [PromptWithAuthor; 8] {
-    let [u1, u2, u3, u4] = users;
-
-    let u1p1 = "User one prompt one";
-    let u1p2 = "User one prompt two";
-    let u2p1 = "User two prompt one";
-    let u2p2 = "User two prompt two";
-    let u3p1 = "User three prompt one";
-    let u3p2 = "User three prompt two";
-    let u4p1 = "User four prompt one";
-    let u4p2 = "User four prompt two";
-
+pub async fn seed_prompts(pool: sqlx::PgPool) -> [PromptWithAuthor; 8] {
     let repo = PromptRepo::new(pool);
 
-    let u1p1id = repo.insert_new(1, u1p1).await.unwrap();
-    let u1p2id = repo.insert_new(1, u1p2).await.unwrap();
-    let u2p1id = repo.insert_new(2, u2p1).await.unwrap();
-    let u2p2id = repo.insert_new(2, u2p2).await.unwrap();
-    let u3p1id = repo.insert_new(3, u3p1).await.unwrap();
-    let u3p2id = repo.insert_new(3, u3p2).await.unwrap();
-    let u4p1id = repo.insert_new(4, u4p1).await.unwrap();
-    let u4p2id = repo.insert_new(4, u4p2).await.unwrap();
-
-    let u1p1_with_author = PromptWithAuthor {
-        id: u1p1id,
-        author_username: u1.username.clone(),
-        body: u1p1.to_string(),
-    };
-
-    let u1p2_with_author = PromptWithAuthor {
-        id: u1p2id,
-        author_username: u1.username.clone(),
-        body: u1p2.to_string(),
-    };
-
-    let u2p1_with_author = PromptWithAuthor {
-        id: u2p1id,
-        author_username: u2.username.clone(),
-        body: u2p1.to_string(),
-    };
-
-    let u2p2_with_author = PromptWithAuthor {
-        id: u2p2id,
-        author_username: u2.username.clone(),
-        body: u2p2.to_string(),
-    };
-
-    let u3p1_with_author = PromptWithAuthor {
-        id: u3p1id,
-        author_username: u3.username.clone(),
-        body: u3p1.to_string(),
-    };
-
-    let u3p2_with_author = PromptWithAuthor {
-        id: u3p2id,
-        author_username: u3.username.clone(),
-        body: u3p2.to_string(),
-    };
-
-    let u4p1_with_author = PromptWithAuthor {
-        id: u4p1id,
-        author_username: u4.username.clone(),
-        body: u4p1.to_string(),
-    };
-
-    let u4p2_with_author = PromptWithAuthor {
-        id: u4p2id,
-        author_username: u4.username.clone(),
-        body: u4p2.to_string(),
-    };
-
     [
-        u1p1_with_author,
-        u1p2_with_author,
-        u2p1_with_author,
-        u2p2_with_author,
-        u3p1_with_author,
-        u3p2_with_author,
-        u4p1_with_author,
-        u4p2_with_author,
+        repo.insert_new(1, "User one prompt one")
+            .await
+            .unwrap()
+            .into(),
+        repo.insert_new(1, "User one prompt two")
+            .await
+            .unwrap()
+            .into(),
+        repo.insert_new(2, "User two prompt one")
+            .await
+            .unwrap()
+            .into(),
+        repo.insert_new(2, "User two prompt two")
+            .await
+            .unwrap()
+            .into(),
+        repo.insert_new(3, "User three prompt one")
+            .await
+            .unwrap()
+            .into(),
+        repo.insert_new(3, "User three prompt two")
+            .await
+            .unwrap()
+            .into(),
+        repo.insert_new(4, "User four prompt one")
+            .await
+            .unwrap()
+            .into(),
+        repo.insert_new(4, "User four prompt two")
+            .await
+            .unwrap()
+            .into(),
     ]
 }
