@@ -1,6 +1,7 @@
 use super::user_id_pair::UserIdPair;
 use crate::domain::error::DomainError;
 
+#[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait FriendshipManager: Send + Sync {
     /// Attempts to add a friendship between the two users, returning whether or not they are now

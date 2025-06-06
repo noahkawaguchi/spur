@@ -94,3 +94,145 @@ impl<S: PromptStore> PromptManager for PromptSvc<S> {
             .map_err(DomainError::from)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        domain::{
+            content::repository::MockPromptStore, friendship::service::MockFriendshipManager,
+            user::MockUserManager,
+        },
+        test_util::dummy_data::make_user,
+    };
+    use mockall::predicate::eq;
+
+    mod create_new {
+        use super::*;
+
+        #[tokio::test]
+        async fn converts_insertion_errors_into_domain_errors() {
+            let mut mock_prompt_repo = MockPromptStore::new();
+
+            let author_id_1 = 442;
+            let prompt_body_1 = "any body";
+
+            mock_prompt_repo
+                .expect_insert_new()
+                .with(eq(author_id_1), eq(prompt_body_1))
+                .once()
+                .return_once(|_, _| Err(InsertionError::Technical(sqlx::Error::WorkerCrashed)));
+
+            let author_id_2 = 443;
+            let prompt_body_2 = "some other body";
+
+            mock_prompt_repo
+                .expect_insert_new()
+                .with(eq(author_id_2), eq(prompt_body_2))
+                .once()
+                .return_once(|_, _| {
+                    Err(InsertionError::UniqueViolation(String::from(
+                        "any uniqueness constraint violation here",
+                    )))
+                });
+
+            let prompt_svc = PromptSvc::new(
+                mock_prompt_repo,
+                Arc::new(MockUserManager::new()),
+                Arc::new(MockFriendshipManager::new()),
+            );
+
+            let result1 = prompt_svc.create_new(author_id_1, prompt_body_1).await;
+            let result2 = prompt_svc.create_new(author_id_2, prompt_body_2).await;
+
+            assert!(matches!(
+                result1,
+                Err(DomainError::Technical(TechnicalError::Database(
+                    sqlx::Error::WorkerCrashed
+                )))
+            ));
+            assert!(matches!(
+                result2,
+                Err(DomainError::Content(ContentError::DuplicatePrompt))
+            ));
+        }
+
+        #[tokio::test]
+        async fn creates_prompt_with_author_for_successful_insertion() {
+            let (user1, user2) = (make_user::number1(), make_user::number2());
+            let (user1_id, user2_id) = (user1.id, user2.id);
+            let (user1_username, user2_username) = (user1.username.clone(), user2.username.clone());
+            let (prompt_body_1, prompt_body_2) = ("Prompt body one!", "Prompt body two?");
+            let (prompt_id_1, prompt_id_2) = (354, 355);
+
+            let mut mock_prompt_repo = MockPromptStore::new();
+            mock_prompt_repo
+                .expect_insert_new()
+                .with(eq(user1.id), eq(prompt_body_1))
+                .once()
+                .return_once(move |_, _| Ok(prompt_id_1));
+            mock_prompt_repo
+                .expect_insert_new()
+                .with(eq(user2.id), eq(prompt_body_2))
+                .once()
+                .return_once(move |_, _| Ok(prompt_id_2));
+
+            let mut mock_user_svc = MockUserManager::new();
+            mock_user_svc
+                .expect_get_by_id()
+                .with(eq(user1.id))
+                .once()
+                .return_once(|_| Ok(user1));
+            mock_user_svc
+                .expect_get_by_id()
+                .with(eq(user2.id))
+                .once()
+                .return_once(|_| Ok(user2));
+
+            let expected1 = PromptWithAuthor {
+                id: prompt_id_1,
+                author_username: user1_username,
+                body: prompt_body_1.to_string(),
+            };
+            let expected2 = PromptWithAuthor {
+                id: prompt_id_2,
+                author_username: user2_username,
+                body: prompt_body_2.to_string(),
+            };
+
+            let prompt_svc = PromptSvc::new(
+                mock_prompt_repo,
+                Arc::new(mock_user_svc),
+                Arc::new(MockFriendshipManager::new()),
+            );
+
+            let actual1 = prompt_svc
+                .create_new(user1_id, prompt_body_1)
+                .await
+                .expect("failed to create prompt 1");
+            let actual2 = prompt_svc
+                .create_new(user2_id, prompt_body_2)
+                .await
+                .expect("failed to create prompt 2");
+
+            assert_eq!(actual1, expected1);
+            assert_eq!(actual2, expected2);
+        }
+    }
+
+    // mod get_for_writing {
+    //     use super::*;
+
+    //     #[tokio::test]
+    //     async fn errors_for_nonexistent_prompt() { todo!() }
+
+    //     #[tokio::test]
+    //     async fn disallows_responding_to_ones_own_prompt() { todo!() }
+
+    //     #[tokio::test]
+    //     async fn requires_confirmed_friendship_to_see_prompts() { todo!() }
+
+    //     #[tokio::test]
+    //     async fn creates_prompt_with_author_for_a_friends_existing_prompt() { todo!() }
+    // }
+}

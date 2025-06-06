@@ -5,6 +5,7 @@ use crate::{
 };
 use spur_shared::models::{PostWithPrompt, PromptWithAuthor};
 
+#[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait PromptStore: Send + Sync {
     /// Attempts to insert a new prompt into the database, returning the ID of the newly created
