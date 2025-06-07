@@ -37,7 +37,7 @@ impl PromptStore for PromptRepo {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(InsertionError::from)
+        .map_err(Into::into)
     }
 
     async fn get_by_id(&self, id: i32) -> Result<Option<PromptInfo>, TechnicalError> {
@@ -53,7 +53,7 @@ impl PromptStore for PromptRepo {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(TechnicalError::from)
+        .map_err(Into::into)
     }
 
     async fn single_user_prompts(&self, user_id: i32) -> Result<Vec<PromptInfo>, TechnicalError> {
@@ -70,7 +70,7 @@ impl PromptStore for PromptRepo {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(TechnicalError::from)
+        .map_err(Into::into)
     }
 
     async fn all_friend_prompts(&self, user_id: i32) -> Result<Vec<PromptInfo>, TechnicalError> {
@@ -95,7 +95,7 @@ impl PromptStore for PromptRepo {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(TechnicalError::from)
+        .map_err(Into::into)
     }
 }
 

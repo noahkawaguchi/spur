@@ -24,9 +24,9 @@ impl FriendshipStore for FriendshipRepo {
             ids.is_lesser(requester_id)?,
         )
         .execute(&self.pool)
-        .await?;
-
-        Ok(())
+        .await
+        .map_err(Into::into)
+        .map(|_| ())
     }
 
     async fn accept_request(&self, ids: &UserIdPair) -> Result<(), TechnicalError> {
@@ -40,13 +40,13 @@ impl FriendshipStore for FriendshipRepo {
             ids.greater(),
         )
         .execute(&self.pool)
-        .await?;
-
-        Ok(())
+        .await
+        .map_err(Into::into)
+        .map(|_| ())
     }
 
     async fn get_status(&self, ids: &UserIdPair) -> Result<FriendshipStatus, TechnicalError> {
-        let row = sqlx::query!(
+        sqlx::query!(
             "
             SELECT requester_first, confirmed FROM friendships
             WHERE first_id = $1 AND second_id = $2
@@ -55,20 +55,18 @@ impl FriendshipStore for FriendshipRepo {
             ids.greater(),
         )
         .fetch_optional(&self.pool)
-        .await?;
-
-        let status = match row {
+        .await
+        .map_err(Into::into)
+        .map(|row| match row {
             None => FriendshipStatus::Nil,
             Some(friends) if friends.confirmed => FriendshipStatus::Friends,
             Some(pair) if pair.requester_first => FriendshipStatus::PendingFrom(ids.lesser()),
             Some(_) => FriendshipStatus::PendingFrom(ids.greater()),
-        };
-
-        Ok(status)
+        })
     }
 
     async fn get_friends(&self, id: i32) -> Result<Vec<i32>, TechnicalError> {
-        let friends = sqlx::query!(
+        sqlx::query_scalar!(
             "
             SELECT
                 CASE
@@ -82,13 +80,13 @@ impl FriendshipStore for FriendshipRepo {
             id,
         )
         .fetch_all(&self.pool)
-        .await?;
-
-        Ok(friends.into_iter().filter_map(|f| f.friend_id).collect())
+        .await
+        .map_err(Into::into)
+        .map(|friends| friends.into_iter().flatten().collect())
     }
 
     async fn get_requests(&self, id: i32) -> Result<Vec<i32>, TechnicalError> {
-        let requesters = sqlx::query!(
+        sqlx::query_scalar!(
             "
             SELECT first_id AS requester_id FROM friendships
             WHERE NOT confirmed
@@ -105,12 +103,9 @@ impl FriendshipStore for FriendshipRepo {
             id,
         )
         .fetch_all(&self.pool)
-        .await?;
-
-        Ok(requesters
-            .into_iter()
-            .filter_map(|r| r.requester_id)
-            .collect())
+        .await
+        .map_err(Into::into)
+        .map(|requesters| requesters.into_iter().flatten().collect())
     }
 }
 

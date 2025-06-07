@@ -25,33 +25,30 @@ impl UserStore for UserRepo {
             new_user.password_hash,
         )
         .execute(&self.pool)
-        .await?;
-
-        Ok(())
+        .await
+        .map_err(Into::into)
+        .map(|_| ())
     }
 
     async fn get_by_id(&self, id: i32) -> Result<Option<User>, TechnicalError> {
-        let maybe_user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", id)
+        sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", id)
             .fetch_optional(&self.pool)
-            .await?;
-
-        Ok(maybe_user)
+            .await
+            .map_err(Into::into)
     }
 
     async fn get_by_email(&self, email: &str) -> Result<Option<User>, TechnicalError> {
-        let maybe_user = sqlx::query_as!(User, "SELECT * FROM users WHERE email = $1", email)
+        sqlx::query_as!(User, "SELECT * FROM users WHERE email = $1", email)
             .fetch_optional(&self.pool)
-            .await?;
-
-        Ok(maybe_user)
+            .await
+            .map_err(Into::into)
     }
 
     async fn get_by_username(&self, username: &str) -> Result<Option<User>, TechnicalError> {
-        let maybe_user = sqlx::query_as!(User, "SELECT * FROM users WHERE username = $1", username)
+        sqlx::query_as!(User, "SELECT * FROM users WHERE username = $1", username)
             .fetch_optional(&self.pool)
-            .await?;
-
-        Ok(maybe_user)
+            .await
+            .map_err(Into::into)
     }
 }
 

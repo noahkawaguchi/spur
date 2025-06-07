@@ -1,7 +1,6 @@
 use super::insertion_error::InsertionError;
 use crate::{
-    domain::content::repository::PostStore, models::post::PostInfo,
-    technical_error::TechnicalError, utils::vec_into,
+    domain::content::repository::PostStore, models::post::PostInfo, technical_error::TechnicalError,
 };
 
 pub struct PostRepo {
@@ -113,7 +112,6 @@ impl PostStore for PostRepo {
         .fetch_all(&self.pool)
         .await
         .map_err(Into::into)
-        .map(vec_into)
     }
 
     async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostInfo>, TechnicalError> {
@@ -155,17 +153,19 @@ impl PostStore for PostRepo {
         .fetch_all(&self.pool)
         .await
         .map_err(Into::into)
-        .map(vec_into)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{
-        seed_data::{seed_friends, seed_prompts, seed_users},
-        temp_db::with_test_pool,
-        within_one_second,
+    use crate::{
+        test_utils::{
+            seed_data::{seed_friends, seed_prompts, seed_users},
+            temp_db::with_test_pool,
+            within_one_second,
+        },
+        utils::vec_into,
     };
     use chrono::Utc;
     use spur_shared::models::PostWithPrompt;

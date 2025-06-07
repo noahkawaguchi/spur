@@ -19,19 +19,18 @@ impl<S: UserStore> UserSvc<S> {
 #[async_trait::async_trait]
 impl<S: UserStore> UserManager for UserSvc<S> {
     async fn insert_new(&self, new_user: &NewUser) -> Result<(), DomainError> {
-        match self.store.insert_new(new_user).await {
-            Ok(()) => Ok(()),
-            Err(InsertionError::UniqueViolation(v)) if v.contains("email") => {
-                Err(UserError::DuplicateEmail.into())
+        self.store.insert_new(new_user).await.map_err(|e| match e {
+            InsertionError::UniqueViolation(v) if v.contains("email") => {
+                UserError::DuplicateEmail.into()
             }
-            Err(InsertionError::UniqueViolation(v)) if v.contains("username") => {
-                Err(UserError::DuplicateUsername.into())
+            InsertionError::UniqueViolation(v) if v.contains("username") => {
+                UserError::DuplicateUsername.into()
             }
-            Err(InsertionError::UniqueViolation(v)) => {
-                Err(TechnicalError::Unexpected(format!("Unexpected unique violation: {v}")).into())
+            InsertionError::UniqueViolation(v) => {
+                TechnicalError::Unexpected(format!("Unexpected unique violation: {v}")).into()
             }
-            Err(InsertionError::Technical(e)) => Err(TechnicalError::Database(e).into()),
-        }
+            InsertionError::Technical(e) => TechnicalError::Database(e).into(),
+        })
     }
 
     async fn get_by_id(&self, id: i32) -> Result<User, DomainError> {

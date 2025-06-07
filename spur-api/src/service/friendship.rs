@@ -89,9 +89,8 @@ mod tests {
     use mockall::predicate::eq;
 
     mod add_friend {
-        use crate::test_utils::dummy_data::make_user;
-
         use super::*;
+        use crate::test_utils::dummy_data::make_user;
 
         #[tokio::test]
         async fn disallows_sending_a_friend_request_to_a_friend() {

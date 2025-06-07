@@ -23,14 +23,12 @@ pub fn jwt_if_valid_pw(user: &User, password: &str, secret: &str) -> Result<Stri
         .ok_or(AuthError::InvalidPassword)?;
 
     // Create the JWT
-    let token = jsonwebtoken::encode(
+    jsonwebtoken::encode(
         &Header::default(),
         &Claims::new(user.id)?,
         &EncodingKey::from_secret(secret.as_ref()),
     )
-    .map_err(TechnicalError::from)?;
-
-    Ok(token)
+    .map_err(|e| TechnicalError::from(e).into())
 }
 
 pub fn validate_jwt(token: &str, secret: &str) -> Result<i32, DomainError> {
