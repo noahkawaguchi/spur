@@ -5,11 +5,11 @@
 mod config;
 mod domain;
 mod handler;
-mod utils;
 mod models;
 mod repository;
 mod service;
 mod technical_error;
+mod utils;
 
 #[cfg(test)]
 mod test_utils;
@@ -57,7 +57,6 @@ async fn main() -> Result<()> {
 
     let post_svc = Arc::new(PostSvc::new(
         PostRepo::new(pool.clone()),
-        Arc::clone(&user_svc),
         Arc::clone(&friendship_svc),
         Arc::clone(&prompt_svc),
     )) as Arc<dyn PostManager>;

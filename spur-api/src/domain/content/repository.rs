@@ -1,9 +1,8 @@
 use crate::{
-    models::{post::Post, prompt::PromptInfo},
+    models::{post::PostInfo, prompt::PromptInfo},
     repository::insertion_error::InsertionError,
     technical_error::TechnicalError,
 };
-use spur_shared::models::PostWithPrompt;
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
@@ -18,30 +17,27 @@ pub trait PromptStore: Send + Sync {
     /// Retrieves all prompts written by a specific user.
     async fn single_user_prompts(&self, user_id: i32) -> Result<Vec<PromptInfo>, TechnicalError>;
 
-    /// Retrieves all prompts written by friends of a specific user
+    /// Retrieves all prompts written by friends of a specific user.
     async fn all_friend_prompts(&self, user_id: i32) -> Result<Vec<PromptInfo>, TechnicalError>;
 }
 
 #[async_trait::async_trait]
 pub trait PostStore: Send + Sync {
-    /// Attempts to insert a new post into the database, returning the ID of the newly created
-    /// post.
+    /// Attempts to insert a new post into the database, returning the `PostInfo` of the newly
+    /// created post.
     async fn insert_new(
         &self,
         author_id: i32,
         prompt_id: i32,
         body: &str,
-    ) -> Result<i32, InsertionError>;
+    ) -> Result<PostInfo, InsertionError>;
 
-    /// Retrieves a post from the database by its ID, returning None if no post is found.
-    async fn get_by_id(&self, id: i32) -> Result<Option<Post>, TechnicalError>;
+    /// Retrieves a post by its ID, returning None if no post is found.
+    async fn get_by_id(&self, id: i32) -> Result<Option<PostInfo>, TechnicalError>;
 
     /// Retrieves all posts written by a specific user.
-    async fn single_user_posts(
-        &self,
-        author_id: i32,
-    ) -> Result<Vec<PostWithPrompt>, TechnicalError>;
+    async fn single_user_posts(&self, author_id: i32) -> Result<Vec<PostInfo>, TechnicalError>;
 
-    /// Retrieves all posts written by friends of a specific user
-    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostWithPrompt>, TechnicalError>;
+    /// Retrieves all posts written by friends of a specific user.
+    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostInfo>, TechnicalError>;
 }
