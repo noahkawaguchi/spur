@@ -94,6 +94,16 @@ mod tests {
     use chrono::Utc;
     use mockall::predicate::eq;
 
+    fn make_prompt() -> PromptInfo {
+        PromptInfo {
+            id: 14_852,
+            author_id: 558,
+            author_username: String::from("kenny_kane_jan"),
+            body: String::from("Tell me about a time"),
+            created_at: Utc::now(),
+        }
+    }
+
     mod create_new {
         use super::*;
 
@@ -205,19 +215,111 @@ mod tests {
         }
     }
 
-    // mod get_for_writing {
-    //     use super::*;
+    mod get_for_writing {
+        use super::*;
 
-    //     #[tokio::test]
-    //     async fn errors_for_nonexistent_prompt() { todo!() }
+        #[tokio::test]
+        async fn errors_for_nonexistent_prompt() {
+            let prompt_id = 992;
 
-    //     #[tokio::test]
-    //     async fn disallows_responding_to_ones_own_prompt() { todo!() }
+            let mut mock_repo = MockPromptStore::new();
+            mock_repo
+                .expect_get_by_id()
+                .with(eq(prompt_id))
+                .once()
+                .return_once(|_| Ok(None));
 
-    //     #[tokio::test]
-    //     async fn requires_confirmed_friendship_to_see_prompts() { todo!() }
+            let prompt_svc = PromptSvc::new(mock_repo, Arc::new(MockFriendshipManager::new()));
+            let result = prompt_svc.get_for_writing(9921, prompt_id).await;
 
-    //     #[tokio::test]
-    //     async fn creates_prompt_with_author_for_a_friends_existing_prompt() { todo!() }
-    // }
+            assert!(matches!(
+                result,
+                Err(DomainError::Content(ContentError::NotFound))
+            ));
+        }
+
+        #[tokio::test]
+        async fn disallows_responding_to_ones_own_prompt() {
+            let prompt = make_prompt();
+            let prompt_clone = prompt.clone();
+
+            let mut mock_repo = MockPromptStore::new();
+            mock_repo
+                .expect_get_by_id()
+                .with(eq(prompt.id))
+                .once()
+                .return_once(|_| Ok(Some(prompt_clone)));
+
+            let prompt_svc = PromptSvc::new(mock_repo, Arc::new(MockFriendshipManager::new()));
+            let result = prompt_svc
+                .get_for_writing(prompt.author_id, prompt.id)
+                .await;
+
+            assert!(matches!(
+                result,
+                Err(DomainError::Content(ContentError::OwnPrompt))
+            ));
+        }
+
+        #[tokio::test]
+        async fn requires_confirmed_friendship_to_see_prompts() {
+            let prompt = make_prompt();
+            let prompt_clone = prompt.clone();
+            let requester_id = prompt.author_id + 10;
+
+            let mut mock_repo = MockPromptStore::new();
+            mock_repo
+                .expect_get_by_id()
+                .with(eq(prompt.id))
+                .once()
+                .return_once(|_| Ok(Some(prompt_clone)));
+
+            let mut mock_friendship_svc = MockFriendshipManager::new();
+            mock_friendship_svc
+                .expect_are_friends()
+                .with(eq(UserIdPair::new(prompt.author_id, requester_id).unwrap()))
+                .once()
+                .return_once(|_| Ok(false));
+
+            let prompt_svc = PromptSvc::new(mock_repo, Arc::new(mock_friendship_svc));
+            let result = prompt_svc.get_for_writing(requester_id, prompt.id).await;
+
+            assert!(matches!(
+                result,
+                Err(DomainError::Content(ContentError::NotFriends))
+            ));
+        }
+
+        #[tokio::test]
+        async fn creates_prompt_with_author_for_a_friends_existing_prompt() {
+            let prompt = make_prompt();
+            let prompt_clone = prompt.clone();
+            let requester_id = prompt.author_id + 15;
+
+            let mut mock_repo = MockPromptStore::new();
+            mock_repo
+                .expect_get_by_id()
+                .with(eq(prompt.id))
+                .once()
+                .return_once(|_| Ok(Some(prompt_clone)));
+
+            let mut mock_friendship_svc = MockFriendshipManager::new();
+            mock_friendship_svc
+                .expect_are_friends()
+                .with(eq(UserIdPair::new(prompt.author_id, requester_id).unwrap()))
+                .once()
+                .return_once(|_| Ok(true));
+
+            let prompt_svc = PromptSvc::new(mock_repo, Arc::new(mock_friendship_svc));
+            let result = prompt_svc
+                .get_for_writing(requester_id, prompt.id)
+                .await
+                .expect("failed to get friend's existing prompt");
+
+            assert_eq!(result, prompt.into());
+        }
+    }
+
+    // Determined that testing `single_user_prompts` and `all_friend_prompts` would be trivial
+    // because they just wrap the repository functions and call `into`
 }
