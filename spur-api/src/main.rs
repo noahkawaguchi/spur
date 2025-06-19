@@ -93,9 +93,8 @@ async fn main() -> Result<()> {
 
     let listener = TcpListener::bind(&config.bind_addr).await?;
 
-    if cfg!(debug_assertions) {
-        println!("Listening on http://{}...", &config.bind_addr);
-    }
+    #[cfg(debug_assertions)]
+    println!("Listening on http://{}...", &config.bind_addr);
 
     axum::serve(listener, app).await?;
 
