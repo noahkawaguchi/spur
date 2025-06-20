@@ -18,7 +18,7 @@ impl fmt::Display for PromptWithAuthor {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct PostWithPrompt {
     pub id: i32,
     pub author_username: String,

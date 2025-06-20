@@ -89,7 +89,7 @@ mod tests {
         domain::{
             content::repository::MockPromptStore, friendship::service::MockFriendshipManager,
         },
-        test_utils::dummy_data::make_user,
+        test_utils::dummy_data,
     };
     use chrono::Utc;
     use mockall::predicate::eq;
@@ -153,7 +153,7 @@ mod tests {
 
         #[tokio::test]
         async fn converts_to_prompt_with_author_for_successful_insertion() {
-            let (user1, user2) = (make_user::number1(), make_user::number2());
+            let (user1, user2) = (dummy_data::user::number1(), dummy_data::user::number2());
             let (user1_id, user2_id) = (user1.id, user2.id);
             let (user1_username, user2_username) = (user1.username.clone(), user2.username.clone());
             let (prompt_body_1, prompt_body_2) = ("Prompt body one!", "Prompt body two?");

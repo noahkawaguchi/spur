@@ -102,18 +102,10 @@ mod tests {
             friendship::service::MockFriendshipManager,
         },
         models::post::PostInfo,
+        test_utils::dummy_data,
     };
     use chrono::Utc;
     use mockall::predicate::eq;
-    use spur_shared::models::PromptWithAuthor;
-
-    fn make_prompt_with_author() -> PromptWithAuthor {
-        PromptWithAuthor {
-            id: 444,
-            author_username: String::from("any_username"),
-            body: String::from("any body here"),
-        }
-    }
 
     fn make_post_info() -> PostInfo {
         PostInfo {
@@ -173,12 +165,12 @@ mod tests {
                 .expect_get_for_writing()
                 .with(eq(author_id_1), eq(prompt_id_1))
                 .once()
-                .return_once(|_, _| Ok(make_prompt_with_author()));
+                .return_once(|_, _| Ok(dummy_data::prompt_with_author::number1()));
             mock_prompt_svc
                 .expect_get_for_writing()
                 .with(eq(author_id_2), eq(prompt_id_2))
                 .once()
-                .return_once(|_, _| Ok(make_prompt_with_author()));
+                .return_once(|_, _| Ok(dummy_data::prompt_with_author::number2()));
 
             let mut mock_post_repo = MockPostStore::new();
             mock_post_repo
@@ -232,7 +224,7 @@ mod tests {
                 .expect_get_for_writing()
                 .with(eq(post_info.author_id), eq(post_info.prompt_id))
                 .once()
-                .return_once(|_, _| Ok(make_prompt_with_author()));
+                .return_once(|_, _| Ok(dummy_data::prompt_with_author::number3()));
 
             let mut mock_post_repo = MockPostStore::new();
             mock_post_repo

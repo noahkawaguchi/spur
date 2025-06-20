@@ -24,6 +24,7 @@ pub trait PromptManager: Send + Sync {
     async fn all_friend_prompts(&self, user_id: i32) -> Result<Vec<PromptWithAuthor>, DomainError>;
 }
 
+#[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait PostManager: Send + Sync {
     /// Attempts to create a new post, returning it as a `PostWithPrompt` if successful.

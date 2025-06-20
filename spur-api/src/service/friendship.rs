@@ -84,17 +84,16 @@ mod tests {
     use super::*;
     use crate::{
         domain::{friendship::repository::MockFriendshipStore, user::MockUserManager},
-        test_utils::dummy_data::make_user,
+        test_utils::dummy_data,
     };
     use mockall::predicate::eq;
 
     mod add_friend {
         use super::*;
-        use crate::test_utils::dummy_data::make_user;
 
         #[tokio::test]
         async fn disallows_sending_a_friend_request_to_a_friend() {
-            let my_friend = make_user::number1();
+            let my_friend = dummy_data::user::number1();
             let my_friend_clone = my_friend.clone();
             let my_id = my_friend.id - 1;
             let ids = UserIdPair::new(my_id, my_friend.id).unwrap();
@@ -124,7 +123,7 @@ mod tests {
 
         #[tokio::test]
         async fn disallows_duplicate_friend_requests() {
-            let desired_friend = make_user::number2();
+            let desired_friend = dummy_data::user::number2();
             let desired_friend_clone = desired_friend.clone();
             let my_id = desired_friend.id + 3;
             let ids = UserIdPair::new(my_id, desired_friend.id).unwrap();
@@ -156,7 +155,7 @@ mod tests {
 
         #[tokio::test]
         async fn accepts_a_friend_request_in_the_opposite_direction() {
-            let added_me = make_user::number3();
+            let added_me = dummy_data::user::number3();
             let added_me_clone = added_me.clone();
             let my_id = added_me.id + 100;
             let ids = UserIdPair::new(my_id, added_me.id).unwrap();
@@ -188,7 +187,7 @@ mod tests {
 
         #[tokio::test]
         async fn creates_a_request_if_no_relationship() {
-            let does_not_know_me = make_user::number4();
+            let does_not_know_me = dummy_data::user::number4();
             let does_not_know_me_clone = does_not_know_me.clone();
             let my_id = does_not_know_me.id - 7;
             let ids = UserIdPair::new(my_id, does_not_know_me.id).unwrap();
@@ -224,7 +223,7 @@ mod tests {
 
     #[tokio::test]
     async fn gets_all_friends_usernames() {
-        let [friend1, me, friend2, friend3] = make_user::all4();
+        let [friend1, me, friend2, friend3] = dummy_data::user::all();
 
         let friend_usernames = vec![
             friend1.username.clone(),
@@ -267,7 +266,7 @@ mod tests {
 
     #[tokio::test]
     async fn gets_pending_request_usernames() {
-        let [requester3, requester2, requester1, me] = make_user::all4();
+        let [requester3, requester2, requester1, me] = dummy_data::user::all();
 
         let requester_usernames = vec![
             requester1.username.clone(),

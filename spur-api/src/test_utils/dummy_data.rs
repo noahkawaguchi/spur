@@ -1,4 +1,4 @@
-pub mod make_user {
+pub mod user {
     use crate::models::user::User;
     use chrono::{Days, Months, Utc};
 
@@ -52,5 +52,80 @@ pub mod make_user {
         }
     }
 
-    pub fn all4() -> [User; 4] { [number1(), number2(), number3(), number4()] }
+    pub fn all() -> [User; 4] { [number1(), number2(), number3(), number4()] }
+}
+
+pub mod prompt_with_author {
+    use spur_shared::models::PromptWithAuthor;
+
+    pub fn number1() -> PromptWithAuthor {
+        PromptWithAuthor {
+            id: 444,
+            author_username: String::from("any_username"),
+            body: String::from("any body here"),
+        }
+    }
+
+    pub fn number2() -> PromptWithAuthor {
+        PromptWithAuthor {
+            id: 6,
+            author_username: String::from("some_username123"),
+            body: String::from("How is it going?"),
+        }
+    }
+
+    pub fn number3() -> PromptWithAuthor {
+        PromptWithAuthor {
+            id: 554_258,
+            author_username: String::from("bobby_bob7"),
+            body: String::from("Hello whirled"),
+        }
+    }
+
+    pub fn all() -> [PromptWithAuthor; 3] { [number1(), number2(), number3()] }
+}
+
+pub mod post_with_prompt {
+    use spur_shared::models::{PostWithPrompt, PromptWithAuthor};
+
+    pub fn number1() -> PostWithPrompt {
+        PostWithPrompt {
+            id: 8,
+            author_username: String::from("hellman"),
+            prompt: PromptWithAuthor {
+                id: 25,
+                author_username: String::from("janice"),
+                body: String::from("Hello man"),
+            },
+            body: String::from("Hello man, what's up?"),
+        }
+    }
+
+    pub fn number2() -> PostWithPrompt {
+        PostWithPrompt {
+            id: 222,
+            author_username: String::from("abc321"),
+            prompt: PromptWithAuthor {
+                id: 2552,
+                author_username: String::from("another_username"),
+                body: String::from("Another prompt body"),
+            },
+            body: String::from("Another post body"),
+        }
+    }
+
+    pub fn number3() -> PostWithPrompt {
+        PostWithPrompt {
+            id: 7,
+            author_username: String::from("creative_person"),
+            prompt: PromptWithAuthor {
+                id: 9990,
+                author_username: String::from("somewhat_creative"),
+                body: String::from("What makes you creative?"),
+            },
+            body: String::from("I'm always creative"),
+        }
+    }
+
+    pub fn all() -> [PostWithPrompt; 3] { [number1(), number2(), number3()] }
 }
