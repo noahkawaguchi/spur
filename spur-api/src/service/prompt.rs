@@ -152,7 +152,7 @@ mod tests {
         }
 
         #[tokio::test]
-        async fn creates_prompt_with_author_for_successful_insertion() {
+        async fn converts_to_prompt_with_author_for_successful_insertion() {
             let (user1, user2) = (make_user::number1(), make_user::number2());
             let (user1_id, user2_id) = (user1.id, user2.id);
             let (user1_username, user2_username) = (user1.username.clone(), user2.username.clone());
@@ -320,6 +320,6 @@ mod tests {
         }
     }
 
-    // Determined that testing `single_user_prompts` and `all_friend_prompts` would be trivial
-    // because they just wrap the repository functions and call `into`
+    // Determined that `single_user_prompts` and `all_friend_prompts` do not need to be tested at
+    // this point because they just wrap the repository functions and call `into`.
 }

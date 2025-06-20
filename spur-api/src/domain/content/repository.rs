@@ -21,6 +21,7 @@ pub trait PromptStore: Send + Sync {
     async fn all_friend_prompts(&self, user_id: i32) -> Result<Vec<PromptInfo>, TechnicalError>;
 }
 
+#[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait PostStore: Send + Sync {
     /// Attempts to insert a new post into the database, returning the `PostInfo` of the newly

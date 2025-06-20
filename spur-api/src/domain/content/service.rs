@@ -1,6 +1,7 @@
 use crate::domain::error::DomainError;
 use spur_shared::models::{PostWithPrompt, PromptWithAuthor};
 
+#[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait PromptManager: Send + Sync {
     /// Attempts to create a new prompt, returning it as a `PromptWithAuthor` if successful.
