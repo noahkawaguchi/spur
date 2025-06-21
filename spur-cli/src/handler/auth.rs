@@ -47,7 +47,7 @@ where
 
     pub async fn check(&self) -> Result<String> {
         let token = self.store.load()?;
-        let response = self.client.get::<()>("auth/check", &token, None).await?;
+        let response = self.client.get("auth/check", &token, None::<()>).await?;
 
         if response.status() == StatusCode::NO_CONTENT {
             Ok(String::from("Your token is valid"))

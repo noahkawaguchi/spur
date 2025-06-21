@@ -33,7 +33,11 @@ impl<C: RequestClient> ContentCommand<'_, C> {
     pub async fn write_post(&self, args: WriteArgs) -> Result<String> {
         let prompt_response = self
             .client
-            .get::<()>(&format!("prompts/{}", args.prompt_id), self.token, None)
+            .get(
+                &format!("prompts/{}", args.prompt_id),
+                self.token,
+                None::<()>,
+            )
             .await?;
 
         if prompt_response.status() != StatusCode::OK {
@@ -60,7 +64,7 @@ impl<C: RequestClient> ContentCommand<'_, C> {
     pub async fn read_post(&self, post_id: i32) -> Result<String> {
         let response = self
             .client
-            .get::<()>(&format!("posts/{post_id}"), self.token, None)
+            .get(&format!("posts/{post_id}"), self.token, None::<()>)
             .await?;
 
         if response.status() == StatusCode::OK {
@@ -96,7 +100,7 @@ impl<C: RequestClient> ContentCommand<'_, C> {
     pub async fn feed(&self) -> Result<String> {
         let response = self
             .client
-            .get::<()>("content/friends", self.token, None)
+            .get("content/friends", self.token, None::<()>)
             .await?;
 
         if response.status() == StatusCode::OK {

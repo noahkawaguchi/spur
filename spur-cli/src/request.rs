@@ -7,17 +7,17 @@ const BUILD_FAILED: &str = "Failed to build request.\nThis can be due to a malfo
                             Try using the `login` command to get a new token.";
 
 pub trait RequestClient: Send + Sync {
-    async fn get<Q: Serialize>(
+    async fn get(
         &self,
         endpoint: &str,
         token: &str,
-        query_params: Option<Q>,
+        query_params: Option<impl Serialize>,
     ) -> Result<Response>;
 
-    async fn post<B: Serialize>(
+    async fn post(
         &self,
         endpoint: &str,
-        body: B,
+        body: impl Serialize,
         token: Option<&str>,
     ) -> Result<Response>;
 }
@@ -36,11 +36,11 @@ impl ApiRequestClient {
 }
 
 impl RequestClient for ApiRequestClient {
-    async fn get<Q: Serialize>(
+    async fn get(
         &self,
         endpoint: &str,
         token: &str,
-        query_params: Option<Q>,
+        query_params: Option<impl Serialize>,
     ) -> Result<Response> {
         let url = self.base_url.join(endpoint)?;
         let mut request = self.client.get(url.as_str()).bearer_auth(token);
@@ -57,10 +57,10 @@ impl RequestClient for ApiRequestClient {
             .with_context(|| format!("GET request to {url} failed"))
     }
 
-    async fn post<B: Serialize>(
+    async fn post(
         &self,
         endpoint: &str,
-        body: B,
+        body: impl Serialize,
         token: Option<&str>,
     ) -> Result<Response> {
         let url = self.base_url.join(endpoint)?;
