@@ -23,7 +23,7 @@ pub enum ApiError {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let status = match &self {
-            Self::Request(_) => StatusCode::BAD_REQUEST,
+            Self::Request(_) => StatusCode::UNPROCESSABLE_ENTITY,
             Self::Domain(e) => match e {
                 DomainError::Auth(_) => StatusCode::UNAUTHORIZED,
                 DomainError::User(err) => match err {
@@ -33,7 +33,7 @@ impl IntoResponse for ApiError {
                     }
                 },
                 DomainError::Friendship(err) => match err {
-                    FriendshipError::SelfFriendship => StatusCode::BAD_REQUEST,
+                    FriendshipError::SelfFriendship => StatusCode::UNPROCESSABLE_ENTITY,
                     FriendshipError::NonexistentUser => StatusCode::NOT_FOUND,
                     FriendshipError::AlreadyFriends | FriendshipError::AlreadyRequested => {
                         StatusCode::CONFLICT
@@ -43,7 +43,7 @@ impl IntoResponse for ApiError {
                     ContentError::DuplicatePrompt | ContentError::DuplicatePost => {
                         StatusCode::CONFLICT
                     }
-                    ContentError::OwnPrompt => StatusCode::BAD_REQUEST,
+                    ContentError::OwnPrompt => StatusCode::UNPROCESSABLE_ENTITY,
                     ContentError::NotFound => StatusCode::NOT_FOUND,
                     ContentError::NotFriends => StatusCode::FORBIDDEN,
                 },
