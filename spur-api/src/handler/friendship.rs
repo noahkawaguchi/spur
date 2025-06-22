@@ -1,4 +1,4 @@
-use super::{AuthBearer, api_result};
+use super::{AuthBearer, api_result, validated_json::ValidatedJson};
 use crate::{domain::friendship::service::FriendshipManager, service};
 use axum::{
     Json,
@@ -10,17 +10,13 @@ use spur_shared::{
     responses::{SuccessResponse, UsernamesResponse},
 };
 use std::sync::Arc;
-use validator::Validate;
 
 pub async fn add_friend(
     jwt_secret: State<String>,
     friendship_svc: State<Arc<dyn FriendshipManager>>,
     bearer: AuthBearer,
-    payload: Json<AddFriendRequest>,
+    payload: ValidatedJson<AddFriendRequest>,
 ) -> api_result!(SuccessResponse) {
-    // Ensure the request body content is valid
-    payload.validate()?;
-
     // User must have a valid token to add a friend
     let sender_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 

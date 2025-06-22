@@ -4,6 +4,7 @@ pub mod content;
 pub mod friendship;
 pub mod post;
 pub mod prompt;
+pub mod validated_json;
 
 type AuthBearer = axum_extra::TypedHeader<
     axum_extra::headers::Authorization<axum_extra::headers::authorization::Bearer>,

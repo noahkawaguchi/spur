@@ -1,4 +1,4 @@
-use super::{AuthBearer, api_result};
+use super::{AuthBearer, api_result, validated_json::ValidatedJson};
 use crate::{domain::content::service::PostManager, service};
 use axum::{
     Json,
@@ -7,16 +7,13 @@ use axum::{
 };
 use spur_shared::{requests::CreatePostRequest, responses::SinglePostResponse};
 use std::sync::Arc;
-use validator::Validate;
 
 pub async fn create_new(
     jwt_secret: State<String>,
     post_svc: State<Arc<dyn PostManager>>,
     bearer: AuthBearer,
-    payload: Json<CreatePostRequest>,
+    payload: ValidatedJson<CreatePostRequest>,
 ) -> api_result!(SinglePostResponse) {
-    payload.validate()?;
-
     let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
 
     let post = post_svc

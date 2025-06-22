@@ -1,4 +1,4 @@
-use super::{AuthBearer, api_result};
+use super::{AuthBearer, api_result, validated_json::ValidatedJson};
 use crate::{domain::user::UserManager, service};
 use anyhow::Result;
 use axum::{Json, extract::State, http::StatusCode};
@@ -7,15 +7,11 @@ use spur_shared::{
     responses::LoginResponse,
 };
 use std::sync::Arc;
-use validator::Validate;
 
 pub async fn signup(
     user_svc: State<Arc<dyn UserManager>>,
-    Json(payload): Json<SignupRequest>,
+    ValidatedJson(payload): ValidatedJson<SignupRequest>,
 ) -> api_result!() {
-    // Validate the request fields
-    payload.validate()?;
-
     // Hash the password
     let new_user = service::auth::hash_pw(payload.into())?;
 
@@ -28,11 +24,8 @@ pub async fn signup(
 pub async fn login(
     jwt_secret: State<String>,
     user_svc: State<Arc<dyn UserManager>>,
-    payload: Json<LoginRequest>,
+    payload: ValidatedJson<LoginRequest>,
 ) -> api_result!(LoginResponse) {
-    // Validate the request fields
-    payload.validate()?;
-
     // Try to get the user
     let user = user_svc.get_by_email(&payload.email).await?;
 

@@ -1,4 +1,4 @@
-use super::{AuthBearer, api_result};
+use super::{AuthBearer, api_result, validated_json::ValidatedJson};
 use crate::{domain::content::service::PromptManager, service};
 use axum::{
     Json,
@@ -7,16 +7,13 @@ use axum::{
 };
 use spur_shared::{requests::CreatePromptRequest, responses::SinglePromptResponse};
 use std::sync::Arc;
-use validator::Validate;
 
 pub async fn create_new(
     jwt_secret: State<String>,
     prompt_svc: State<Arc<dyn PromptManager>>,
     bearer: AuthBearer,
-    payload: Json<CreatePromptRequest>,
+    payload: ValidatedJson<CreatePromptRequest>,
 ) -> api_result!(SinglePromptResponse) {
-    payload.validate()?;
-
     let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
     let prompt = prompt_svc.create_new(requester_id, &payload.body).await?;
 
