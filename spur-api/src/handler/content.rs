@@ -1,21 +1,25 @@
-use super::{AuthBearer, api_result};
-use crate::{domain::content::service::ContentManager, service};
+use super::api_result;
+use crate::{config::AppState, domain::content::service::ContentManager};
 use axum::{
-    Json,
+    Extension, Json, Router,
     extract::{Query, State},
     http::StatusCode,
+    routing::get,
 };
 use spur_shared::{requests::UserContentParam, responses::PromptsAndPostsResponse};
 use std::sync::Arc;
 
-pub async fn user_content(
-    jwt_secret: State<String>,
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(user_content))
+        .route("/friends", get(friends_content))
+}
+
+async fn user_content(
     content_svc: State<Arc<dyn ContentManager>>,
-    bearer: AuthBearer,
+    Extension(requester_id): Extension<i32>,
     param: Query<UserContentParam>,
 ) -> api_result!(PromptsAndPostsResponse) {
-    let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-
     let (prompts, posts) = if let Some(ref friend_username) = param.author_username {
         content_svc
             .specific_friend_content(requester_id, friend_username)
@@ -30,13 +34,10 @@ pub async fn user_content(
     ))
 }
 
-pub async fn friends_content(
-    jwt_secret: State<String>,
+async fn friends_content(
     prompt_svc: State<Arc<dyn ContentManager>>,
-    bearer: AuthBearer,
+    Extension(requester_id): Extension<i32>,
 ) -> api_result!(PromptsAndPostsResponse) {
-    let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-
     let (prompts, posts) = prompt_svc.all_friend_content(requester_id).await?;
 
     Ok((

@@ -5,8 +5,10 @@
 mod config;
 mod domain;
 mod handler;
+mod middleware;
 mod models;
 mod repository;
+mod router;
 mod service;
 mod technical_error;
 mod utils;
@@ -15,17 +17,12 @@ mod utils;
 mod test_utils;
 
 use anyhow::Result;
-use axum::{
-    Router,
-    routing::{get, post},
-};
 use config::{AppConfig, AppState};
 use domain::{
     content::service::{PostManager, PromptManager},
     friendship::service::FriendshipManager,
     user::UserManager,
 };
-use handler::{auth, content, friendship, post, prompt};
 use repository::{friendship::FriendshipRepo, post::PostRepo, prompt::PromptRepo, user::UserRepo};
 use service::{
     content::ContentSvc, friendship::FriendshipSvc, post::PostSvc, prompt::PromptSvc, user::UserSvc,
@@ -77,20 +74,7 @@ async fn main() -> Result<()> {
         content_svc,
     };
 
-    let app = Router::new()
-        .route("/auth/signup", post(auth::signup))
-        .route("/auth/login", post(auth::login))
-        .route("/auth/check", get(auth::check))
-        .route("/friends", post(friendship::add_friend))
-        .route("/friends", get(friendship::get_friends))
-        .route("/prompts", post(prompt::create_new))
-        .route("/prompts/{prompt_id}", get(prompt::get_for_writing))
-        .route("/posts", post(post::create_new))
-        .route("/posts/{post_id}", get(post::get_for_reading))
-        .route("/content", get(content::user_content))
-        .route("/content/friends", get(content::friends_content))
-        .with_state(state);
-
+    let app = router::create(state);
     let listener = TcpListener::bind(&config.bind_addr).await?;
 
     #[cfg(debug_assertions)]

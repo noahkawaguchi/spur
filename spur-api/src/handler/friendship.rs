@@ -1,9 +1,10 @@
-use super::{AuthBearer, api_result, validated_json::ValidatedJson};
-use crate::{domain::friendship::service::FriendshipManager, service};
+use super::{api_result, validated_json::ValidatedJson};
+use crate::{config::AppState, domain::friendship::service::FriendshipManager};
 use axum::{
-    Json,
+    Extension, Json, Router,
     extract::{Query, State},
     http::StatusCode,
+    routing::post,
 };
 use spur_shared::{
     requests::{AddFriendRequest, GetFriendsParam},
@@ -11,18 +12,16 @@ use spur_shared::{
 };
 use std::sync::Arc;
 
-pub async fn add_friend(
-    jwt_secret: State<String>,
+pub fn routes() -> Router<AppState> { Router::new().route("/", post(add_friend).get(get_friends)) }
+
+async fn add_friend(
     friendship_svc: State<Arc<dyn FriendshipManager>>,
-    bearer: AuthBearer,
+    Extension(requester_id): Extension<i32>,
     payload: ValidatedJson<AddFriendRequest>,
 ) -> api_result!(SuccessResponse) {
-    // User must have a valid token to add a friend
-    let sender_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-
     // Try to add the friend
     let became_friends = friendship_svc
-        .add_friend(sender_id, &payload.recipient_username)
+        .add_friend(requester_id, &payload.recipient_username)
         .await?;
 
     if became_friends {
@@ -42,21 +41,17 @@ pub async fn add_friend(
     }
 }
 
-pub async fn get_friends(
-    jwt_secret: State<String>,
+async fn get_friends(
     friendship_svc: State<Arc<dyn FriendshipManager>>,
-    bearer: AuthBearer,
+    Extension(requester_id): Extension<i32>,
     param: Query<GetFriendsParam>,
 ) -> api_result!(UsernamesResponse) {
-    // User must be authorized
-    let id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-
     let usernames = if param.pending {
         // List pending requests to this user
-        friendship_svc.get_requests(id).await?
+        friendship_svc.get_requests(requester_id).await?
     } else {
         // List this user's confirmed friends
-        friendship_svc.get_friends(id).await?
+        friendship_svc.get_friends(requester_id).await?
     };
 
     Ok((StatusCode::OK, Json(UsernamesResponse { usernames })))

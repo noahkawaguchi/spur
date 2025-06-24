@@ -1,34 +1,34 @@
-use super::{AuthBearer, api_result, validated_json::ValidatedJson};
-use crate::{domain::content::service::PromptManager, service};
+use super::{api_result, validated_json::ValidatedJson};
+use crate::{config::AppState, domain::content::service::PromptManager};
 use axum::{
-    Json,
+    Extension, Json, Router,
     extract::{Path, State},
     http::StatusCode,
+    routing::{get, post},
 };
 use spur_shared::{requests::CreatePromptRequest, responses::SinglePromptResponse};
 use std::sync::Arc;
 
-pub async fn create_new(
-    jwt_secret: State<String>,
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route("/", post(create_new))
+        .route("/{prompt_id}", get(get_for_writing))
+}
+
+async fn create_new(
     prompt_svc: State<Arc<dyn PromptManager>>,
-    bearer: AuthBearer,
+    Extension(requester_id): Extension<i32>,
     payload: ValidatedJson<CreatePromptRequest>,
 ) -> api_result!(SinglePromptResponse) {
-    let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
     let prompt = prompt_svc.create_new(requester_id, &payload.body).await?;
-
     Ok((StatusCode::CREATED, Json(SinglePromptResponse { prompt })))
 }
 
-pub async fn get_for_writing(
-    jwt_secret: State<String>,
+async fn get_for_writing(
     prompt_svc: State<Arc<dyn PromptManager>>,
-    bearer: AuthBearer,
+    Extension(requester_id): Extension<i32>,
     Path(prompt_id): Path<i32>,
 ) -> api_result!(SinglePromptResponse) {
-    let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-
     let prompt = prompt_svc.get_for_writing(requester_id, prompt_id).await?;
-
     Ok((StatusCode::OK, Json(SinglePromptResponse { prompt })))
 }

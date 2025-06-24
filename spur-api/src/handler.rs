@@ -6,10 +6,6 @@ pub mod post;
 pub mod prompt;
 pub mod validated_json;
 
-type AuthBearer = axum_extra::TypedHeader<
-    axum_extra::headers::Authorization<axum_extra::headers::authorization::Bearer>,
->;
-
 /// Expands to a handler function return type.
 ///
 /// - `api_result!(T)` expands to
@@ -26,4 +22,4 @@ macro_rules! api_result {
     };
 }
 
-pub(crate) use api_result;
+use api_result;

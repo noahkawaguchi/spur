@@ -1,14 +1,20 @@
-use super::{AuthBearer, api_result, validated_json::ValidatedJson};
-use crate::{domain::user::UserManager, service};
+use super::{api_result, validated_json::ValidatedJson};
+use crate::{config::AppState, domain::user::UserManager, service};
 use anyhow::Result;
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use spur_shared::{
     requests::{LoginRequest, SignupRequest},
     responses::LoginResponse,
 };
 use std::sync::Arc;
 
-pub async fn signup(
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route("/signup", post(signup))
+        .route("/login", post(login))
+}
+
+async fn signup(
     user_svc: State<Arc<dyn UserManager>>,
     ValidatedJson(payload): ValidatedJson<SignupRequest>,
 ) -> api_result!() {
@@ -21,7 +27,7 @@ pub async fn signup(
     Ok(StatusCode::CREATED)
 }
 
-pub async fn login(
+async fn login(
     jwt_secret: State<String>,
     user_svc: State<Arc<dyn UserManager>>,
     payload: ValidatedJson<LoginRequest>,
@@ -33,9 +39,4 @@ pub async fn login(
     let token = service::auth::jwt_if_valid_pw(&user, &payload.password, &jwt_secret)?;
 
     Ok((StatusCode::OK, Json(LoginResponse { token })))
-}
-
-pub async fn check(jwt_secret: State<String>, bearer: AuthBearer) -> api_result!() {
-    service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-    Ok(StatusCode::NO_CONTENT)
 }

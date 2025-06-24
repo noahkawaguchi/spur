@@ -1,37 +1,36 @@
-use super::{AuthBearer, api_result, validated_json::ValidatedJson};
-use crate::{domain::content::service::PostManager, service};
+use super::{api_result, validated_json::ValidatedJson};
+use crate::{config::AppState, domain::content::service::PostManager};
 use axum::{
-    Json,
+    Extension, Json, Router,
     extract::{Path, State},
     http::StatusCode,
+    routing::{get, post},
 };
 use spur_shared::{requests::CreatePostRequest, responses::SinglePostResponse};
 use std::sync::Arc;
 
-pub async fn create_new(
-    jwt_secret: State<String>,
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route("/", post(create_new))
+        .route("/{post_id}", get(get_for_reading))
+}
+
+async fn create_new(
     post_svc: State<Arc<dyn PostManager>>,
-    bearer: AuthBearer,
+    Extension(requester_id): Extension<i32>,
     payload: ValidatedJson<CreatePostRequest>,
 ) -> api_result!(SinglePostResponse) {
-    let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-
     let post = post_svc
         .create_new(requester_id, payload.prompt_id, &payload.body)
         .await?;
-
     Ok((StatusCode::CREATED, Json(SinglePostResponse { post })))
 }
 
-pub async fn get_for_reading(
-    jwt_secret: State<String>,
+async fn get_for_reading(
     post_svc: State<Arc<dyn PostManager>>,
-    bearer: AuthBearer,
+    Extension(requester_id): Extension<i32>,
     Path(post_id): Path<i32>,
 ) -> api_result!(SinglePostResponse) {
-    let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
-
     let post = post_svc.get_for_reading(requester_id, post_id).await?;
-
     Ok((StatusCode::OK, Json(SinglePostResponse { post })))
 }
