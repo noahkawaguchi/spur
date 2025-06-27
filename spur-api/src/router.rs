@@ -1,7 +1,7 @@
 use crate::{
-    config::AppState,
     handler::{auth, content, friendship, post, prompt},
     middleware::validate_jwt,
+    state::AppState,
 };
 use axum::{Router, http::StatusCode, middleware, routing::get};
 

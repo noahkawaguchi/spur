@@ -10,6 +10,7 @@ mod models;
 mod repository;
 mod router;
 mod service;
+mod state;
 mod technical_error;
 mod utils;
 
@@ -17,18 +18,9 @@ mod utils;
 mod test_utils;
 
 use anyhow::Result;
-use config::{AppConfig, AppState};
-use domain::{
-    content::service::{PostManager, PromptManager},
-    friendship::service::FriendshipManager,
-    user::UserManager,
-};
-use repository::{friendship::FriendshipRepo, post::PostRepo, prompt::PromptRepo, user::UserRepo};
-use service::{
-    content::ContentSvc, friendship::FriendshipSvc, post::PostSvc, prompt::PromptSvc, user::UserSvc,
-};
+use config::AppConfig;
 use sqlx::postgres::PgPoolOptions;
-use std::sync::Arc;
+use state::AppState;
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -40,40 +32,7 @@ async fn main() -> Result<()> {
         .connect(&config.database_url)
         .await?;
 
-    let user_svc = Arc::new(UserSvc::new(UserRepo::new(pool.clone()))) as Arc<dyn UserManager>;
-
-    let friendship_svc = Arc::new(FriendshipSvc::new(
-        FriendshipRepo::new(pool.clone()),
-        Arc::clone(&user_svc),
-    )) as Arc<dyn FriendshipManager>;
-
-    let prompt_svc = Arc::new(PromptSvc::new(
-        PromptRepo::new(pool.clone()),
-        Arc::clone(&friendship_svc),
-    )) as Arc<dyn PromptManager>;
-
-    let post_svc = Arc::new(PostSvc::new(
-        PostRepo::new(pool.clone()),
-        Arc::clone(&friendship_svc),
-        Arc::clone(&prompt_svc),
-    )) as Arc<dyn PostManager>;
-
-    let content_svc = Arc::new(ContentSvc::new(
-        Arc::clone(&user_svc),
-        Arc::clone(&friendship_svc),
-        Arc::clone(&prompt_svc),
-        Arc::clone(&post_svc),
-    ));
-
-    let state = AppState {
-        jwt_secret: config.jwt_secret,
-        user_svc,
-        friendship_svc,
-        prompt_svc,
-        post_svc,
-        content_svc,
-    };
-
+    let state = AppState::build(pool, config.jwt_secret);
     let app = router::create(state);
     let listener = TcpListener::bind(&config.bind_addr).await?;
 

@@ -1,11 +1,5 @@
-use crate::domain::{
-    content::service::{ContentManager, PostManager, PromptManager},
-    friendship::service::FriendshipManager,
-    user::UserManager,
-};
 use anyhow::{Context, Result};
-use axum::extract::FromRef;
-use std::{env, sync::Arc};
+use std::env;
 
 pub struct AppConfig {
     pub database_url: String,
@@ -14,6 +8,7 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
+    /// Attempts to load the required configuration data from environment variables.
     pub fn load() -> Result<Self> {
         // Expect a .env file in development only
         #[cfg(debug_assertions)]
@@ -25,14 +20,4 @@ impl AppConfig {
 
         Ok(Self { database_url, bind_addr, jwt_secret })
     }
-}
-
-#[derive(Clone, FromRef)]
-pub struct AppState {
-    pub jwt_secret: String,
-    pub user_svc: Arc<dyn UserManager>,
-    pub friendship_svc: Arc<dyn FriendshipManager>,
-    pub prompt_svc: Arc<dyn PromptManager>,
-    pub post_svc: Arc<dyn PostManager>,
-    pub content_svc: Arc<dyn ContentManager>,
 }

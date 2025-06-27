@@ -1,5 +1,5 @@
 use super::{api_result, validated_json::ValidatedJson};
-use crate::{config::AppState, domain::user::UserManager, service};
+use crate::{domain::user::UserManager, service, state::AppState};
 use anyhow::Result;
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use spur_shared::{

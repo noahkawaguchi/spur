@@ -1,5 +1,5 @@
 use super::{api_result, validated_json::ValidatedJson};
-use crate::{config::AppState, domain::friendship::service::FriendshipManager};
+use crate::{domain::friendship::service::FriendshipManager, state::AppState};
 use axum::{
     Extension, Json, Router,
     extract::{Query, State},

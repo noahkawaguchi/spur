@@ -1,5 +1,5 @@
 use super::api_result;
-use crate::{config::AppState, domain::content::service::ContentManager};
+use crate::{domain::content::service::ContentManager, state::AppState};
 use axum::{
     Extension, Json, Router,
     extract::{Query, State},

@@ -1,5 +1,5 @@
 use super::{api_result, validated_json::ValidatedJson};
-use crate::{config::AppState, domain::content::service::PostManager};
+use crate::{domain::content::service::PostManager, state::AppState};
 use axum::{
     Extension, Json, Router,
     extract::{Path, State},
