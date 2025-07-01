@@ -38,14 +38,14 @@ pub enum Cmd {
     #[command(about = "Read a friend's post")]
     Read { post_id: i32 },
 
-    #[command(about = "List a friend's prompts and posts")]
+    #[command(about = "List prompts and posts from all your friends")]
+    Feed,
+
+    #[command(about = "List a specific friend's prompts and posts")]
     Profile { username: String },
 
     #[command(about = "List your own prompts and posts")]
     Me,
-
-    #[command(about = "List prompts and posts from all your friends")]
-    Feed,
 }
 
 #[derive(Parser)]

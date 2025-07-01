@@ -55,16 +55,16 @@ async fn main() -> Result<()> {
 
             // Friendship commands
             Cmd::Add { username } => friends.add_friend(username).await,
-            Cmd::Friends => friends.list_friends(false).await,
-            Cmd::Requests => friends.list_friends(true).await,
+            Cmd::Friends => friends.list_friends().await,
+            Cmd::Requests => friends.list_requests().await,
 
             // Prompt and post commands
             Cmd::Prompt { body } => content.new_prompt(body).await,
             Cmd::Write(args) => content.write_post(args).await,
             Cmd::Read { post_id } => content.read_post(post_id).await,
-            Cmd::Profile { username } => content.user_content(Some(username)).await,
-            Cmd::Me => content.user_content(None).await,
-            Cmd::Feed => content.feed().await,
+            Cmd::Feed => content.all_friend_content().await,
+            Cmd::Profile { username } => content.specific_friend_content(username).await,
+            Cmd::Me => content.own_content().await,
         }
     };
 

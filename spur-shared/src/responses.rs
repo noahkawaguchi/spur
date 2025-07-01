@@ -31,12 +31,12 @@ pub struct SinglePromptResponse {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct PromptsAndPostsResponse {
-    pub prompts: Vec<PromptWithAuthor>,
-    pub posts: Vec<PostWithPrompt>,
+pub struct SinglePostResponse {
+    pub post: PostWithPrompt,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SinglePostResponse {
-    pub post: PostWithPrompt,
+pub struct PromptsAndPostsResponse {
+    pub prompts: Vec<PromptWithAuthor>,
+    pub posts: Vec<PostWithPrompt>,
 }

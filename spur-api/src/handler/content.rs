@@ -2,31 +2,25 @@ use super::api_result;
 use crate::{domain::content::service::ContentManager, state::AppState};
 use axum::{
     Extension, Json, Router,
-    extract::{Query, State},
+    extract::{Path, State},
     http::StatusCode,
     routing::get,
 };
-use spur_shared::{requests::UserContentParam, responses::PromptsAndPostsResponse};
+use spur_shared::responses::PromptsAndPostsResponse;
 use std::sync::Arc;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/", get(user_content))
-        .route("/friends", get(friends_content))
+        .route("/", get(all_friend_content))
+        .route("/friend/{username}", get(specific_friend_content))
+        .route("/me", get(own_content))
 }
 
-async fn user_content(
+async fn all_friend_content(
     content_svc: State<Arc<dyn ContentManager>>,
     Extension(requester_id): Extension<i32>,
-    param: Query<UserContentParam>,
 ) -> api_result!(PromptsAndPostsResponse) {
-    let (prompts, posts) = if let Some(ref friend_username) = param.author_username {
-        content_svc
-            .specific_friend_content(requester_id, friend_username)
-            .await?
-    } else {
-        content_svc.own_content(requester_id).await?
-    };
+    let (prompts, posts) = content_svc.all_friend_content(requester_id).await?;
 
     Ok((
         StatusCode::OK,
@@ -34,11 +28,26 @@ async fn user_content(
     ))
 }
 
-async fn friends_content(
-    prompt_svc: State<Arc<dyn ContentManager>>,
+async fn specific_friend_content(
+    content_svc: State<Arc<dyn ContentManager>>,
+    Extension(requester_id): Extension<i32>,
+    Path(friend_username): Path<String>,
+) -> api_result!(PromptsAndPostsResponse) {
+    let (prompts, posts) = content_svc
+        .specific_friend_content(requester_id, &friend_username)
+        .await?;
+
+    Ok((
+        StatusCode::OK,
+        Json(PromptsAndPostsResponse { prompts, posts }),
+    ))
+}
+
+async fn own_content(
+    content_svc: State<Arc<dyn ContentManager>>,
     Extension(requester_id): Extension<i32>,
 ) -> api_result!(PromptsAndPostsResponse) {
-    let (prompts, posts) = prompt_svc.all_friend_content(requester_id).await?;
+    let (prompts, posts) = content_svc.own_content(requester_id).await?;
 
     Ok((
         StatusCode::OK,

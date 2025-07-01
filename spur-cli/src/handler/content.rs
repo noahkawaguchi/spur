@@ -2,7 +2,7 @@ use crate::{commands::WriteArgs, format, interactive, request::RequestClient};
 use anyhow::{Result, anyhow};
 use reqwest::StatusCode;
 use spur_shared::{
-    requests::{CreatePostRequest, CreatePromptRequest, UserContentParam},
+    requests::{CreatePostRequest, CreatePromptRequest},
     responses::{PromptsAndPostsResponse, SinglePostResponse, SinglePromptResponse},
 };
 use validator::Validate;
@@ -75,39 +75,50 @@ impl<C: RequestClient> ContentCommand<'_, C> {
         }
     }
 
-    pub async fn user_content(&self, username: Option<String>) -> Result<String> {
-        let response = self
-            .client
-            .get(
-                "content",
-                self.token,
-                Some(UserContentParam { author_username: username.clone() }),
-            )
-            .await?;
-
-        if response.status() == StatusCode::OK {
-            let content =
-                format::pretty_content(&response.json::<PromptsAndPostsResponse>().await?);
-            let author =
-                username.map_or_else(|| String::from("you"), |friend_username| friend_username);
-
-            Ok(format!("Prompts and posts by {author}:\n\n{content}"))
-        } else {
-            Err(anyhow!(format::err_resp(response).await))
-        }
-    }
-
-    pub async fn feed(&self) -> Result<String> {
-        let response = self
-            .client
-            .get("content/friends", self.token, None::<()>)
-            .await?;
+    pub async fn all_friend_content(&self) -> Result<String> {
+        let response = self.client.get("content", self.token, None::<()>).await?;
 
         if response.status() == StatusCode::OK {
             let content =
                 format::pretty_content(&response.json::<PromptsAndPostsResponse>().await?);
 
             Ok(format!("Prompts and posts by your friends:\n\n{content}"))
+        } else {
+            Err(anyhow!(format::err_resp(response).await))
+        }
+    }
+
+    pub async fn specific_friend_content(&self, username: String) -> Result<String> {
+        let response = self
+            .client
+            .get(
+                &format!("content/friend/{username}"),
+                self.token,
+                None::<()>,
+            )
+            .await?;
+
+        if response.status() == StatusCode::OK {
+            let content =
+                format::pretty_content(&response.json::<PromptsAndPostsResponse>().await?);
+
+            Ok(format!("Prompts and posts by {username}:\n\n{content}"))
+        } else {
+            Err(anyhow!(format::err_resp(response).await))
+        }
+    }
+
+    pub async fn own_content(&self) -> Result<String> {
+        let response = self
+            .client
+            .get("content/me", self.token, None::<()>)
+            .await?;
+
+        if response.status() == StatusCode::OK {
+            let content =
+                format::pretty_content(&response.json::<PromptsAndPostsResponse>().await?);
+
+            Ok(format!("Prompts and posts by you:\n\n{content}"))
         } else {
             Err(anyhow!(format::err_resp(response).await))
         }
