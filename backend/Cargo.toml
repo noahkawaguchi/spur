@@ -1,0 +1,27 @@
+[package]
+name = "spur-api"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.98"
+async-trait = "0.1.88"
+axum = { version = "0.8.4", features = ["macros"] }
+axum-extra = { version = "0.10.1", features = ["typed-header"] }
+bcrypt = "0.17.0"
+chrono = "0.4.41"
+colored = "3.0.0"
+dotenvy = "0.15.7"
+futures = "0.3.31"
+jsonwebtoken = "9.3.1"
+serde = { version = "1.0.219", features = ["derive"] }
+sqlx = { version = "0.8.5", features = ["chrono", "postgres", "runtime-tokio"] }
+thiserror = "2.0.12"
+tokio = { version = "1.45.0", features = ["full"] }
+tower-http = { version = "0.6.6", features = ["cors"] }
+validator = { version = "0.20.0", features = ["derive"] }
+
+[dev-dependencies]
+mockall = "0.13.1"
+url = "2.5.4"
+uuid = { version = "1.16.0", features = ["v4"] }

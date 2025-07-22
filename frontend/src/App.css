@@ -1,0 +1,37 @@
+#root {
+  max-width: 1000px;
+  margin: auto;
+  padding: 10px;
+}
+
+nav {
+  text-align: center;
+}
+
+button {
+  font-size: 1rem;
+  margin: 5px;
+  border: 1px solid black;
+  background-color: white;
+  color: black;
+  cursor: pointer;
+}
+
+button:enabled:hover {
+  background-color: var(--accent-color);
+}
+
+button:enabled:active {
+  transform: scale(0.9);
+}
+
+input {
+  font-size: 1rem;
+  margin: 5px;
+  background-color: white;
+  color: black;
+}
+
+hr {
+  margin: 15px auto;
+}

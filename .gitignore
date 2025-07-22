@@ -1,4 +1,11 @@
-/target
-.vscode/
-scratch/
 .env*
+.DS_Store
+scratch
+.vscode
+
+# Backend
+target
+
+# Frontend
+node_modules
+dist

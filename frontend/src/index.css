@@ -1,0 +1,10 @@
+:root {
+  --accent-color: lightgreen;
+  font-family: sans-serif;
+  color: white;
+  background-color: rgb(40, 40, 40);
+}
+
+* {
+  box-sizing: border-box;
+}

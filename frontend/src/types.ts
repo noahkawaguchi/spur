@@ -1,0 +1,16 @@
+import { z } from 'zod';
+
+const PromptSchema = z.object({ id: z.number(), authorUsername: z.string(), body: z.string() });
+
+const PostSchema = z.object({
+  id: z.number(),
+  authorUsername: z.string(),
+  prompt: PromptSchema,
+  body: z.string(),
+});
+
+export const ContentSchema = z.object({
+  prompts: z.array(PromptSchema),
+  posts: z.array(PostSchema),
+});
+export type Content = z.infer<typeof ContentSchema>;
