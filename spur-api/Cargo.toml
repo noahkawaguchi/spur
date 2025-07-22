@@ -19,6 +19,7 @@ spur-shared = { path = "../spur-shared" }
 sqlx = { version = "0.8.5", features = ["chrono", "postgres", "runtime-tokio"] }
 thiserror = "2.0.12"
 tokio.workspace = true
+tower-http = {version = "0.6.6", features = ["cors"] }
 validator.workspace = true
 
 [dev-dependencies]
