@@ -29,7 +29,7 @@ interface ReqOpts<T> {
 const useRequest = <TResponse, TRequest = undefined>(
   method: 'GET' | 'POST',
   endpoint: string,
-  respSchema: ZodType<TResponse>,
+  respSchema: ZodType<TResponse> | null,
 ): {
   data: TResponse | null;
   error: string | null;
@@ -79,9 +79,12 @@ const useRequest = <TResponse, TRequest = undefined>(
       })
         .then(async response => {
           if (response.ok) {
-            const parsedBody = respSchema.safeParse(await response.json());
-            if (parsedBody.success) setData(parsedBody.data);
-            else throw new Error('success response but unexpected body type');
+            // Only attempt to parse the response body if one is expected
+            if (respSchema) {
+              const parsedBody = respSchema.safeParse(await response.json());
+              if (parsedBody.success) setData(parsedBody.data);
+              else throw new Error('success response but unexpected body type');
+            }
           } else if (response.status === 401) {
             // Token expired
             removeToken();

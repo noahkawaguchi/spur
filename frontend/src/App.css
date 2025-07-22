@@ -25,6 +25,12 @@ button:enabled:active {
   transform: scale(0.9);
 }
 
+button:disabled,
+input:disabled {
+  background-color: gray;
+  cursor: not-allowed;
+}
+
 input {
   font-size: 1rem;
   margin: 5px;

@@ -5,11 +5,12 @@ import FriendsPage from './pages/FriendsPage';
 import './App.css';
 import HomePage from './pages/HomePage';
 import NotFoundPage from './pages/NotFoundPage';
-import MainLayout from './Layouts/MainLayout';
+import MainLayout from './layouts/MainLayout';
 import FriendContentPage from './pages/FriendContentPage';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './components/ErrorFallback';
 import FeedPage from './pages/FeedPage';
+import CreatePage from './pages/CreatePage';
 
 const App = () => {
   return (
@@ -20,7 +21,7 @@ const App = () => {
           <Route element={<MainLayout />}>
             <Route path='/' element={<HomePage />} />
             <Route path='/feed' element={<FeedPage />} />
-            <Route path='/create' element={<p>Create page here!</p>} />
+            <Route path='/create' element={<CreatePage />} />
             <Route path='/friends' element={<FriendsPage />} />
             <Route path='/friends/:username' element={<FriendContentPage />} />
             <Route path='/profile' element={<ProfilePage />} />
