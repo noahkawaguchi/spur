@@ -2,13 +2,16 @@ import ContentDisplay from '../components/ContentDisplay';
 
 const FeedPage = () => {
   return (
-    <>
-      <>
-        <h2>Feed</h2>
-        <hr />
-        <ContentDisplay endpoint='content' displayUsername={true} />
-      </>
-    </>
+    <ContentDisplay
+      header={
+        <>
+          <h2>Feed</h2>
+          <hr />
+        </>
+      }
+      endpoint='content'
+      displayUsername={true}
+    />
   );
 };
 

@@ -8,6 +8,7 @@ const PostSchema = z.object({
   prompt: PromptSchema,
   body: z.string(),
 });
+export type Post = z.infer<typeof PostSchema>;
 
 export const ContentSchema = z.object({
   prompts: z.array(PromptSchema),

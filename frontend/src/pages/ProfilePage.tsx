@@ -11,14 +11,19 @@ const ProfilePage = () => {
   };
 
   return (
-    <>
-      <h2>Your profile</h2>
-      <button type='button' onClick={handleLogout}>
-        Log out
-      </button>
-      <hr />
-      <ContentDisplay endpoint='content/me' displayUsername={false} />
-    </>
+    <ContentDisplay
+      header={
+        <>
+          <h2>Your profile</h2>
+          <button type='button' onClick={handleLogout}>
+            Log out
+          </button>
+          <hr />
+        </>
+      }
+      endpoint='content/me'
+      displayUsername={false}
+    />
   );
 };
 

@@ -6,13 +6,16 @@ const FriendContentPage = () => {
   if (!username) throw new Error('unexpected undefined username in FriendsContentPage');
 
   return (
-    <>
-      <>
-        <h2>{username}</h2>
-        <hr />
-        <ContentDisplay endpoint={`content/friend/${username}`} displayUsername={false} />
-      </>
-    </>
+    <ContentDisplay
+      header={
+        <>
+          <h2>{username}</h2>
+          <hr />
+        </>
+      }
+      endpoint={`content/friend/${username}`}
+      displayUsername={false}
+    />
   );
 };
 
