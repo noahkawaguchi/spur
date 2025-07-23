@@ -41,3 +41,15 @@ input {
 hr {
   margin: 15px auto;
 }
+
+table {
+  width: 100%;
+  text-align: left;
+}
+
+td,
+th {
+  border: 1px dotted lightgray;
+  padding: 10px;
+  margin: 0px;
+}

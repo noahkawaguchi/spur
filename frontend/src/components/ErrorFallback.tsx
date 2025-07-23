@@ -15,7 +15,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
     <>
       <h2>Unexpected error! (⸝⸝⸝&gt;﹏&lt;⸝⸝⸝)</h2>
       <button type='button' onClick={resetErrorBoundary}>
-        Try again
+        Retry
       </button>
       <button type='button' onClick={handleClick}>
         Back home

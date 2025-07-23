@@ -37,6 +37,7 @@ const FriendsPage = () => {
   return (
     <>
       <h2>Friends</h2>
+      <hr />
       {friendsLoading && <p>Loading...</p>}
       {friendsError && <p>Error: {friendsError}</p>}
       {friendsData &&
@@ -55,7 +56,7 @@ const FriendsPage = () => {
           <p>(No friends)</p>
         ))}
 
-      <h2>Requests</h2>
+      <h3>Requests</h3>
       {requestsLoading && <p>Loading...</p>}
       {requestsError && <p>Error: {requestsError}</p>}
       {requestsData &&

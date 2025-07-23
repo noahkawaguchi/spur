@@ -3,7 +3,13 @@ import useRequest from '../hooks/useRequest';
 import { ContentSchema, type Content } from '../types';
 import { useTokenOrRedirect } from '../utils/jwt';
 
-const ContentDisplay = ({ endpoint }: { endpoint: string }) => {
+const ContentDisplay = ({
+  endpoint,
+  displayUsername,
+}: {
+  endpoint: string;
+  displayUsername: boolean;
+}) => {
   const token = useTokenOrRedirect();
   const { data, error, loading, sendRequest } = useRequest<Content>('GET', endpoint, ContentSchema);
 
@@ -17,42 +23,32 @@ const ContentDisplay = ({ endpoint }: { endpoint: string }) => {
       {error && <p>Error: {error}</p>}
       {data && (
         <>
-          <h3>
-            <i>Prompts</i>
-          </h3>
+          <h3>Prompts</h3>
           {data.prompts.length ? (
-            data.prompts.map(prompt => (
-              <div key={prompt.id}>
-                <hr />
-                <h4>
-                  Prompt {prompt.id} (by {prompt.authorUsername})
-                </h4>
-                <p>{prompt.body}</p>
-              </div>
-            ))
+            <table>
+              {data.prompts.map(prompt => (
+                <tr key={prompt.id}>
+                  {displayUsername && <th>by {prompt.authorUsername}</th>}
+                  <td>{prompt.body}</td>
+                </tr>
+              ))}
+            </table>
           ) : (
             <p>(No prompts)</p>
           )}
-          <hr />
-          <h3>
-            <i>Posts</i>
-          </h3>
+          <h3>Posts</h3>
           {data.posts.length ? (
-            data.posts.map(post => (
-              <div key={post.id}>
-                <hr />
-                <h4>
-                  Post {post.id} (by {post.authorUsername})
-                </h4>
-                <p>
-                  <i>
-                    In response to prompt {post.prompt.id} (by {post.prompt.authorUsername}): "
-                    {post.prompt.body}"
-                  </i>
-                </p>
-                <p>{post.body}</p>
-              </div>
-            ))
+            <table>
+              {data.posts.map(post => (
+                <tr key={post.id}>
+                  {displayUsername && <th>by {post.authorUsername}</th>}
+                  <td>
+                    in response to {post.prompt.authorUsername}: "{post.prompt.body}"
+                  </td>
+                  <td>{post.body}</td>
+                </tr>
+              ))}
+            </table>
           ) : (
             <p>(No posts)</p>
           )}

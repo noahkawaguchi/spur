@@ -6,7 +6,7 @@ const FeedPage = () => {
       <>
         <h2>Feed</h2>
         <hr />
-        <ContentDisplay endpoint='content' />
+        <ContentDisplay endpoint='content' displayUsername={true} />
       </>
     </>
   );

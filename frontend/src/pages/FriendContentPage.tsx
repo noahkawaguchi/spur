@@ -10,7 +10,7 @@ const FriendContentPage = () => {
       <>
         <h2>{username}</h2>
         <hr />
-        <ContentDisplay endpoint={`content/friend/${username}`} />
+        <ContentDisplay endpoint={`content/friend/${username}`} displayUsername={false} />
       </>
     </>
   );

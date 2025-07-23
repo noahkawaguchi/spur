@@ -51,6 +51,7 @@ const LoginPage = () => {
               setEmail(e.target.value);
             }}
             placeholder='you@email.com'
+            disabled={loading}
             required
             autoFocus
           />
@@ -65,10 +66,13 @@ const LoginPage = () => {
               setPassword(e.target.value);
             }}
             placeholder='**********'
+            disabled={loading}
             required
           />
         </label>
-        <button type='submit'>Submit</button>
+        <button type='submit' disabled={loading}>
+          Submit
+        </button>
       </form>
 
       {loading && <p>Loading...</p>}

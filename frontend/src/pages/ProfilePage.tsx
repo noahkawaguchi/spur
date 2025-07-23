@@ -17,7 +17,7 @@ const ProfilePage = () => {
         Log out
       </button>
       <hr />
-      <ContentDisplay endpoint='content/me' />
+      <ContentDisplay endpoint='content/me' displayUsername={false} />
     </>
   );
 };
