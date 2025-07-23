@@ -1,49 +1,37 @@
 import { useEffect } from 'react';
-import z from 'zod';
-import { getToken } from '../utils/jwt';
+import { useTokenOrRedirect } from '../utils/jwt';
 import { Link, useNavigate } from 'react-router-dom';
 import useRequest from '../hooks/useRequest';
-
-const UsernamesResponseSchema = z.object({ usernames: z.array(z.string()) });
-type UsernamesResponse = z.infer<typeof UsernamesResponseSchema>;
+import { UsernamesResponseSchema, type UsernamesResponse } from '../types';
 
 const FriendsPage = () => {
+  const token = useTokenOrRedirect();
   const navigate = useNavigate();
 
-  const {
-    data: friendsData,
-    error: friendsError,
-    loading: friendsLoading,
-    sendRequest: friendsSendRequest,
-  } = useRequest<UsernamesResponse>('GET', 'friends', UsernamesResponseSchema);
-
-  const {
-    data: requestsData,
-    error: requestsError,
-    loading: requestsLoading,
-    sendRequest: requestsSendRequest,
-  } = useRequest<UsernamesResponse>('GET', 'friends/requests', UsernamesResponseSchema);
+  const { data, error, loading, sendRequest } = useRequest<UsernamesResponse>(
+    'GET',
+    'friends',
+    UsernamesResponseSchema,
+  );
 
   useEffect(() => {
-    const token = getToken();
-    if (token) {
-      void friendsSendRequest({ token });
-      void requestsSendRequest({ token });
-    } else {
-      void navigate('/login');
-    }
-  }, [friendsSendRequest, requestsSendRequest, navigate]);
+    void sendRequest({ token });
+  }, [sendRequest, token]);
 
   return (
     <>
       <h2>Friends</h2>
+      <button type='button' onClick={() => void navigate('/requests')}>
+        Pending requests
+      </button>
       <hr />
-      {friendsLoading && <p>Loading...</p>}
-      {friendsError && <p>Error: {friendsError}</p>}
-      {friendsData &&
-        (friendsData.usernames.length ? (
+      {loading && <p>Loading...</p>}
+      {error && <p>Error: {error}</p>}
+      {data &&
+        (data.usernames.length ? (
           <>
-            {friendsData.usernames.map(username => (
+            <h3>Current friends</h3>
+            {data.usernames.map(username => (
               <div key={username}>
                 {username}{' '}
                 <Link to={`/friends/${username}`}>
@@ -54,16 +42,6 @@ const FriendsPage = () => {
           </>
         ) : (
           <p>(No friends)</p>
-        ))}
-
-      <h3>Requests</h3>
-      {requestsLoading && <p>Loading...</p>}
-      {requestsError && <p>Error: {requestsError}</p>}
-      {requestsData &&
-        (requestsData.usernames.length ? (
-          <p>Pending requests to you: {requestsData.usernames}</p>
-        ) : (
-          <p>(No pending requests)</p>
         ))}
     </>
   );

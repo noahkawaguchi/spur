@@ -14,3 +14,6 @@ export const ContentSchema = z.object({
   posts: z.array(PostSchema),
 });
 export type Content = z.infer<typeof ContentSchema>;
+
+export const UsernamesResponseSchema = z.object({ usernames: z.array(z.string()) });
+export type UsernamesResponse = z.infer<typeof UsernamesResponseSchema>;

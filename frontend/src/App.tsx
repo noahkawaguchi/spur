@@ -11,6 +11,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './components/ErrorFallback';
 import FeedPage from './pages/FeedPage';
 import CreatePage from './pages/CreatePage';
+import FriendRequestsPage from './pages/FriendRequestsPage';
 
 const App = () => {
   return (
@@ -24,6 +25,7 @@ const App = () => {
             <Route path='/create' element={<CreatePage />} />
             <Route path='/friends' element={<FriendsPage />} />
             <Route path='/friends/:username' element={<FriendContentPage />} />
+            <Route path='/requests' element={<FriendRequestsPage />} />
             <Route path='/profile' element={<ProfilePage />} />
             <Route path='*' element={<NotFoundPage />} />
           </Route>
