@@ -30,7 +30,7 @@ const CreatePage = () => {
     <>
       <h2>Create</h2>
       <hr />
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} onReset={handleReset}>
         <label>
           <h3>New prompt</h3>
           <input
@@ -47,9 +47,7 @@ const CreatePage = () => {
         <button type='submit' disabled={submitted}>
           Submit
         </button>
-        <button type='reset' onClick={handleReset}>
-          Reset
-        </button>
+        <button type='reset'>Reset</button>
       </form>
       {submitted && (
         <>

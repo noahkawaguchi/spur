@@ -34,12 +34,14 @@ const ContentDisplay = ({
             <h3>Prompts</h3>
             {data.prompts.length ? (
               <table>
-                {data.prompts.map(prompt => (
-                  <tr key={prompt.id}>
-                    {displayUsername && <th>by {prompt.authorUsername}</th>}
-                    <td>{prompt.body}</td>
-                  </tr>
-                ))}
+                <tbody>
+                  {data.prompts.map(prompt => (
+                    <tr key={prompt.id}>
+                      {displayUsername && <th>by {prompt.authorUsername}</th>}
+                      <td>{prompt.body}</td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             ) : (
               <p>(No prompts)</p>
@@ -47,22 +49,24 @@ const ContentDisplay = ({
             <h3>Posts</h3>
             {data.posts.length ? (
               <table>
-                {data.posts.map(post => (
-                  <tr key={post.id}>
-                    {displayUsername && <th>by {post.authorUsername}</th>}
-                    <td>
-                      in response to {post.prompt.authorUsername}: "{post.prompt.body}"
-                    </td>
-                    <button
-                      type='button'
-                      onClick={() => {
-                        setReadingPost(post);
-                      }}
-                    >
-                      Read
-                    </button>
-                  </tr>
-                ))}
+                <tbody>
+                  {data.posts.map(post => (
+                    <tr key={post.id}>
+                      {displayUsername && <th>by {post.authorUsername}</th>}
+                      <td>
+                        in response to {post.prompt.authorUsername}: "{post.prompt.body}"
+                      </td>
+                      <button
+                        type='button'
+                        onClick={() => {
+                          setReadingPost(post);
+                        }}
+                      >
+                        Read
+                      </button>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             ) : (
               <p>(No posts)</p>

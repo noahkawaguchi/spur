@@ -27,6 +27,7 @@ pub struct LoginRequest {
 }
 
 #[derive(Serialize, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
 pub struct AddFriendRequest {
     #[validate(length(min = 1, message = "recipient username cannot be empty"))]
     pub recipient_username: String,

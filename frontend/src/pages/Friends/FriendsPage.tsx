@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { useTokenOrRedirect } from '../utils/jwt';
+import { useTokenOrRedirect } from '../../utils/jwt';
 import { Link, useNavigate } from 'react-router-dom';
-import useRequest from '../hooks/useRequest';
-import { UsernamesResponseSchema, type UsernamesResponse } from '../types';
+import useRequest from '../../hooks/useRequest';
+import { UsernamesResponseSchema, type UsernamesResponse } from '../../types';
 
 const FriendsPage = () => {
   const token = useTokenOrRedirect();
@@ -21,8 +21,11 @@ const FriendsPage = () => {
   return (
     <>
       <h2>Friends</h2>
-      <button type='button' onClick={() => void navigate('/requests')}>
-        Pending requests
+      <button type='button' onClick={() => void navigate('/friends/requests')}>
+        See pending requests
+      </button>
+      <button type='button' onClick={() => void navigate('/friends/add')}>
+        Add a new friend
       </button>
       <hr />
       {loading && <p>Loading...</p>}

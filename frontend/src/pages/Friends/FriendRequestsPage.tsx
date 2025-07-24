@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import useRequest from '../hooks/useRequest';
-import { UsernamesResponseSchema, type UsernamesResponse } from '../types';
-import { useTokenOrRedirect } from '../utils/jwt';
+import useRequest from '../../hooks/useRequest';
+import { UsernamesResponseSchema, type UsernamesResponse } from '../../types';
+import { useTokenOrRedirect } from '../../utils/jwt';
+import FriendRequest from './FriendRequest';
 
 const FriendRequestsPage = () => {
   const token = useTokenOrRedirect();
@@ -18,17 +19,19 @@ const FriendRequestsPage = () => {
 
   return (
     <>
-      <h2>Friend requests</h2>
+      <h2>Pending friend requests</h2>
       <hr />
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
       {data &&
         (data.usernames.length ? (
-          data.usernames.map(username => (
-            <div key={username}>
-              <p>{username}</p>
-            </div>
-          ))
+          <table>
+            <tbody>
+              {data.usernames.map(username => (
+                <FriendRequest key={username} username={username} />
+              ))}
+            </tbody>
+          </table>
         ) : (
           <p>(No pending friend requests)</p>
         ))}
