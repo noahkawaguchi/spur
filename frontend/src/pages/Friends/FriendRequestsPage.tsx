@@ -3,6 +3,7 @@ import useRequest from '../../hooks/useRequest';
 import { UsernamesResponseSchema, type UsernamesResponse } from '../../types';
 import { useTokenOrRedirect } from '../../utils/jwt';
 import FriendRequest from './FriendRequest';
+import { Link } from 'react-router-dom';
 
 const FriendRequestsPage = () => {
   const token = useTokenOrRedirect();
@@ -19,6 +20,9 @@ const FriendRequestsPage = () => {
 
   return (
     <>
+      <Link to='/friends'>
+        <button type='button'>Back</button>
+      </Link>
       <h2>Pending friend requests</h2>
       <hr />
       {loading && <p>Loading...</p>}

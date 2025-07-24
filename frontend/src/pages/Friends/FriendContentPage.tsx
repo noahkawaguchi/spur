@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import ContentDisplay from '../../components/ContentDisplay';
 
 const FriendContentPage = () => {
@@ -9,6 +9,9 @@ const FriendContentPage = () => {
     <ContentDisplay
       header={
         <>
+          <Link to='/friends'>
+            <button type='button'>Back</button>
+          </Link>
           <h2>{username}</h2>
           <hr />
         </>

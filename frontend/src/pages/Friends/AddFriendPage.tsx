@@ -2,6 +2,7 @@ import { useState } from 'react';
 import useRequest from '../../hooks/useRequest';
 import { type AddFriendRequest, type SuccessResponse, SuccessResponseSchema } from '../../types';
 import { useTokenOrRedirect } from '../../utils/jwt';
+import { Link } from 'react-router-dom';
 
 const AddFriendPage = () => {
   const token = useTokenOrRedirect();
@@ -22,6 +23,9 @@ const AddFriendPage = () => {
 
   return (
     <>
+      <Link to='/friends'>
+        <button type='button'>Back</button>
+      </Link>
       <h2>Add a new friend</h2>
       <hr />
       <form onSubmit={handleSubmit}>
