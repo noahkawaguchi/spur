@@ -26,12 +26,14 @@ button:enabled:active {
 }
 
 button:disabled,
-input:disabled {
+input:disabled,
+textarea:disabled {
   background-color: gray;
   cursor: not-allowed;
 }
 
-input {
+input,
+textarea {
   font-size: 1rem;
   margin: 5px;
   background-color: white;

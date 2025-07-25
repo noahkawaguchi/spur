@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import useRequest from '../hooks/useRequest';
-import { ContentSchema, type Content, type Post } from '../types';
+import { ContentSchema, type Content, type Post, type Prompt } from '../types';
 import { useTokenOrRedirect } from '../utils/jwt';
 import PostReader from './PostReader';
+import PostWriter from './PostWriter';
 
 const ContentDisplay = ({
   header,
@@ -15,6 +16,7 @@ const ContentDisplay = ({
 }) => {
   const token = useTokenOrRedirect();
   const [readingPost, setReadingPost] = useState<Post | null>(null);
+  const [respondingToPrompt, setRespondingToPrompt] = useState<Prompt | null>(null);
   const { data, error, loading, sendRequest } = useRequest<Content>('GET', endpoint, ContentSchema);
 
   useEffect(() => {
@@ -23,12 +25,14 @@ const ContentDisplay = ({
 
   return (
     <>
-      {!readingPost && header}
+      {!readingPost && !respondingToPrompt && header}
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
       {data &&
         (readingPost ? (
           <PostReader post={readingPost} setReadingPost={setReadingPost} />
+        ) : respondingToPrompt ? (
+          <PostWriter prompt={respondingToPrompt} setRespondingToPrompt={setRespondingToPrompt} />
         ) : (
           <>
             <h3>Prompts</h3>
@@ -39,6 +43,14 @@ const ContentDisplay = ({
                     <tr key={prompt.id}>
                       {displayUsername && <th>by {prompt.authorUsername}</th>}
                       <td>{prompt.body}</td>
+                      <button
+                        type='button'
+                        onClick={() => {
+                          setRespondingToPrompt(prompt);
+                        }}
+                      >
+                        Write post
+                      </button>
                     </tr>
                   ))}
                 </tbody>

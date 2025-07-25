@@ -40,6 +40,7 @@ pub struct CreatePromptRequest {
 }
 
 #[derive(Serialize, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
 pub struct CreatePostRequest {
     #[validate(range(min = 1, message = "prompt ID must be positive"))]
     pub prompt_id: i32,

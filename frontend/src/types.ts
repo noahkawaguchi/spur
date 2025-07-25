@@ -8,6 +8,7 @@ export interface AddFriendRequest {
 }
 
 const PromptSchema = z.object({ id: z.number(), authorUsername: z.string(), body: z.string() });
+export type Prompt = z.infer<typeof PromptSchema>;
 
 const PostSchema = z.object({
   id: z.number(),

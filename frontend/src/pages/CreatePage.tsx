@@ -8,7 +8,7 @@ const CreatePage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [prompt, setPrompt] = useState('');
 
-  const { loading, error, sendRequest } = useRequest<null, { body: string }>(
+  const { success, loading, error, sendRequest } = useRequest<null, { body: string }>(
     'POST',
     'prompts',
     null,
@@ -53,7 +53,7 @@ const CreatePage = () => {
         <>
           {loading && <p>Loading...</p>}
           {error && <p>Error: {error}</p>}
-          {!loading && !error && <p>Successfully created!</p>}
+          {success && <p>Successfully created!</p>}
         </>
       )}
       <hr />

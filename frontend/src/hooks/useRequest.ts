@@ -20,8 +20,10 @@ interface ReqOpts<T> {
  * @param endpoint   - The API endpoint. Do not include the base URL, leading slash, or parameters.
  * @param respSchema - The schema for the expected response type.
  *
- * @returns { data, error, loading, sendRequest }
+ * @returns { data, success, error, loading, sendRequest }
  *          data        - The expected TResponse or null.
+ *          success     - Whether the request received a success response. Can be used in place of
+ *                        data when no response body is expected.
  *          error       - Any error encountered or null.
  *          loading     - Whether the request is currently in progress.
  *          sendRequest - The function to trigger the request.
@@ -32,11 +34,13 @@ const useRequest = <TResponse, TRequest = undefined>(
   respSchema: ZodType<TResponse> | null,
 ): {
   data: TResponse | null;
+  success: boolean;
   error: string | null;
   loading: boolean;
   sendRequest: (opts: ReqOpts<TRequest>) => Promise<void>;
 } => {
   const [data, setData] = useState<TResponse | null>(null);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,6 +65,7 @@ const useRequest = <TResponse, TRequest = undefined>(
       isSubmitting.current = true;
 
       setData(null);
+      setSuccess(false);
       setError(null);
       setLoading(true);
 
@@ -79,6 +84,7 @@ const useRequest = <TResponse, TRequest = undefined>(
       })
         .then(async response => {
           if (response.ok) {
+            setSuccess(true);
             // Only attempt to parse the response body if one is expected
             if (respSchema) {
               const parsedBody = respSchema.safeParse(await response.json());
@@ -105,7 +111,7 @@ const useRequest = <TResponse, TRequest = undefined>(
     [endpoint, method, respSchema, navigate],
   );
 
-  return { data, error, loading, sendRequest };
+  return { data, success, error, loading, sendRequest };
 };
 
 export default useRequest;
