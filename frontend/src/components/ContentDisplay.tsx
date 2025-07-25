@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import useRequest from '../hooks/useRequest';
 import { ContentSchema, type Content, type Post, type Prompt } from '../types';
 import { useTokenOrRedirect } from '../utils/jwt';
-import PostReader from './PostReader';
-import PostWriter from './PostWriter';
+import PostReader from './PostReaderWriter/PostReader';
+import PostWriter from './PostReaderWriter/PostWriter';
 
 const ContentDisplay = ({
   header,
@@ -43,14 +43,16 @@ const ContentDisplay = ({
                     <tr key={prompt.id}>
                       {displayUsername && <th>by {prompt.authorUsername}</th>}
                       <td>{prompt.body}</td>
-                      <button
-                        type='button'
-                        onClick={() => {
-                          setRespondingToPrompt(prompt);
-                        }}
-                      >
-                        Write post
-                      </button>
+                      <td className='button-cell'>
+                        <button
+                          type='button'
+                          onClick={() => {
+                            setRespondingToPrompt(prompt);
+                          }}
+                        >
+                          Write post
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -68,14 +70,17 @@ const ContentDisplay = ({
                       <td>
                         in response to {post.prompt.authorUsername}: "{post.prompt.body}"
                       </td>
-                      <button
-                        type='button'
-                        onClick={() => {
-                          setReadingPost(post);
-                        }}
-                      >
-                        Read
-                      </button>
+                      <td className='button-cell'>
+                        {' '}
+                        <button
+                          type='button'
+                          onClick={() => {
+                            setReadingPost(post);
+                          }}
+                        >
+                          Read
+                        </button>
+                      </td>{' '}
                     </tr>
                   ))}
                 </tbody>

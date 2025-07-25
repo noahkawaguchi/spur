@@ -4,16 +4,29 @@
   padding: 10px;
 }
 
+header {
+  background-color: var(--soft-background);
+  padding: 5px;
+  border: var(--light-border);
+  border-radius: 25px;
+}
+
 nav {
   text-align: center;
 }
 
+input,
 button {
   font-size: 1rem;
   margin: 5px;
+  padding: 5px;
   border: 1px solid black;
+  border-radius: 5px;
   background-color: white;
   color: black;
+}
+
+button {
   cursor: pointer;
 }
 
@@ -26,18 +39,9 @@ button:enabled:active {
 }
 
 button:disabled,
-input:disabled,
-textarea:disabled {
+input:disabled {
   background-color: gray;
   cursor: not-allowed;
-}
-
-input,
-textarea {
-  font-size: 1rem;
-  margin: 5px;
-  background-color: white;
-  color: black;
 }
 
 hr {
@@ -47,11 +51,19 @@ hr {
 table {
   width: 100%;
   text-align: left;
+  border-spacing: 5px;
 }
 
 td,
 th {
-  border: 1px dotted lightgray;
+  border: var(--light-border);
+  border-radius: 10px;
   padding: 10px;
-  margin: 0px;
+  background-color: var(--soft-background);
+}
+
+.button-cell {
+  white-space: nowrap;
+  padding: 5px;
+  width: 0;
 }

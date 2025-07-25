@@ -1,4 +1,5 @@
-import type { Post } from '../types';
+import type { Post } from '../../types';
+import styles from './PostReaderWriter.module.css';
 
 const PostReader = ({
   post,
@@ -18,8 +19,7 @@ const PostReader = ({
         Back
       </button>
       <div style={{ textAlign: 'center' }}>
-        <h2>Post {post.id}</h2>
-        <h3>by {post.authorUsername}</h3>
+        <h2>Post by {post.authorUsername}</h2>
         <p>
           <i>
             in response to {post.prompt.authorUsername}: "{post.prompt.body}"
@@ -27,7 +27,7 @@ const PostReader = ({
         </p>
       </div>
       <hr />
-      <p>{post.body}</p>
+      <p className={styles.postReadingArea}>{post.body}</p>
     </>
   );
 };

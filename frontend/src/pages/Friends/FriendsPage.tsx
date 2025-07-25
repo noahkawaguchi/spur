@@ -38,9 +38,11 @@ const FriendsPage = () => {
                 {data.usernames.map(username => (
                   <tr key={username}>
                     <td>{username}</td>
-                    <Link to={`/friends/${username}`}>
-                      <button type='button'>View profile</button>
-                    </Link>
+                    <td className='button-cell'>
+                      <Link to={`/friends/${username}`}>
+                        <button type='button'>View profile</button>
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

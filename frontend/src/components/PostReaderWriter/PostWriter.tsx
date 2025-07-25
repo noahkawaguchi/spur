@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import type { Prompt } from '../types';
-import useRequest from '../hooks/useRequest';
-import { useTokenOrRedirect } from '../utils/jwt';
+import type { Prompt } from '../../types';
+import useRequest from '../../hooks/useRequest';
+import { useTokenOrRedirect } from '../../utils/jwt';
 import TextareaAutosize from 'react-textarea-autosize';
+import styles from './PostReaderWriter.module.css';
 
 const PostWriter = ({
   prompt,
@@ -43,6 +44,7 @@ const PostWriter = ({
         <hr />
         <form onSubmit={handleSubmit}>
           <TextareaAutosize
+            className={styles.postWritingArea}
             value={postBody}
             onChange={e => {
               setPostBody(e.target.value);
@@ -51,7 +53,6 @@ const PostWriter = ({
             disabled={loading}
             required
             autoFocus
-            style={{ width: '95%' }}
             minRows={5}
           />
           <br />

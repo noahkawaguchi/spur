@@ -20,9 +20,11 @@ const FriendRequest = ({ username }: { username: string }) => {
     <>
       <tr>
         <td>{username}</td>
-        <button type='button' onClick={handleClick}>
-          Accept
-        </button>
+        <td className='button-cell'>
+          <button type='button' onClick={handleClick}>
+            Accept
+          </button>
+        </td>
       </tr>
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
