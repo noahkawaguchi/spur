@@ -1,13 +1,12 @@
 :root {
   --accent-color: lightgreen;
   --soft-background: rgb(60, 60, 60);
-  --light-border: 1px dotted lightgray;
-  --app-font: sans-serif;
-  font-family: var(--app-font);
+  --light-border: 1px solid lightsteelblue;
   color: white;
   background-color: rgb(40, 40, 40);
 }
 
 * {
   box-sizing: border-box;
+  font-family: sans-serif;
 }

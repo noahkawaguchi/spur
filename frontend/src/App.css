@@ -46,6 +46,7 @@ input:disabled {
 
 hr {
   margin: 15px auto;
+  border: 1px solid gray;
 }
 
 table {
@@ -63,7 +64,9 @@ th {
 }
 
 .button-cell {
+  border: none;
+  background: none;
   white-space: nowrap;
-  padding: 5px;
+  padding: 0;
   width: 0;
 }
