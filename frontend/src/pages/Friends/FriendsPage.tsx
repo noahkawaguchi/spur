@@ -7,11 +7,11 @@ import { UsernamesResponseSchema, type UsernamesResponse } from '../../types';
 const FriendsPage = () => {
   const token = useTokenOrRedirect();
 
-  const { data, error, loading, sendRequest } = useRequest<UsernamesResponse>(
-    'GET',
-    'friends',
-    UsernamesResponseSchema,
-  );
+  const { data, error, loading, sendRequest } = useRequest<null, UsernamesResponse>({
+    method: 'GET',
+    endpoint: 'friends',
+    respSchema: UsernamesResponseSchema,
+  });
 
   useEffect(() => {
     void sendRequest({ token });

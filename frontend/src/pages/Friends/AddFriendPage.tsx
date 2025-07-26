@@ -9,11 +9,11 @@ const AddFriendPage = () => {
 
   const [username, setUsername] = useState('');
 
-  const { data, error, loading, sendRequest } = useRequest<SuccessResponse, AddFriendRequest>(
-    'POST',
-    'friends',
-    SuccessResponseSchema,
-  );
+  const { data, error, loading, sendRequest } = useRequest<AddFriendRequest, SuccessResponse>({
+    method: 'POST',
+    endpoint: 'friends',
+    respSchema: SuccessResponseSchema,
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

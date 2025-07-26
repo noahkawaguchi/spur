@@ -18,11 +18,13 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const { data, error, loading, sendRequest } = useRequest<LoginResponse, LoginRequest>(
-    'POST',
-    'auth/login',
-    LoginResponseSchema,
-  );
+  const { data, error, loading, sendRequest } = useRequest<LoginRequest, LoginResponse>({
+    method: 'POST',
+    endpoint: 'auth/login',
+    respSchema: LoginResponseSchema,
+    // Display any login errors such as invalid password instead of looping back to login again
+    redirect401: false,
+  });
 
   useEffect(() => {
     if (data) {

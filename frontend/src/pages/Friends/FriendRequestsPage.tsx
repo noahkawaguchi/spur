@@ -8,11 +8,11 @@ import { Link } from 'react-router-dom';
 const FriendRequestsPage = () => {
   const token = useTokenOrRedirect();
 
-  const { data, error, loading, sendRequest } = useRequest<UsernamesResponse>(
-    'GET',
-    'friends/requests',
-    UsernamesResponseSchema,
-  );
+  const { data, error, loading, sendRequest } = useRequest<null, UsernamesResponse>({
+    method: 'GET',
+    endpoint: 'friends/requests',
+    respSchema: UsernamesResponseSchema,
+  });
 
   useEffect(() => {
     void sendRequest({ token });

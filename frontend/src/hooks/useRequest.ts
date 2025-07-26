@@ -4,21 +4,40 @@ import { ZodType, z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { removeToken } from '../utils/jwt';
 
-interface ReqOpts<T> {
+interface UseRequestOpts<TResponse> {
+  method: 'GET' | 'POST';
+  endpoint: string;
+  respSchema: ZodType<TResponse> | null;
+  redirect401?: boolean;
+}
+
+interface UseRequestResult<TRequest, TResponse> {
+  data: TResponse | null;
+  success: boolean;
+  error: string | null;
+  loading: boolean;
+  sendRequest: (opts: SendRequestOpts<TRequest>) => Promise<void>;
+}
+
+interface SendRequestOpts<TRequest> {
   pathParameter?: string;
   token?: string;
-  body?: T;
+  body?: TRequest;
 }
 
 /**
  * Custom hook for making HTTP requests to the backend.
  *
- * @template TResponse - The expected response type.
- * @template TRequest  - The type of the request body (optional).
+ * @template TRequest  - The type of the request body (pass null for no body).
+ * @template TResponse - The type of the expected response body (pass null for no body).
  *
- * @param method     - The HTTP method to use.
- * @param endpoint   - The API endpoint. Do not include the base URL, leading slash, or parameters.
- * @param respSchema - The schema for the expected response type.
+ * @param opts             - Object containing hook options.
+ * @param opts.method      - The HTTP method to use.
+ * @param opts.endpoint    - The API endpoint. Do not include the base URL, leading slash, or path
+ *                           parameters.
+ * @param opts.respSchema  - The schema for the expected response type.
+ * @param opts.redirect401 - Whether to remove the local token and redirect to the login page if
+ *                           the backend responds with 401 Unauthorized. Defaults to true.
  *
  * @returns { data, success, error, loading, sendRequest }
  *          data        - The expected TResponse or null.
@@ -28,17 +47,12 @@ interface ReqOpts<T> {
  *          loading     - Whether the request is currently in progress.
  *          sendRequest - The function to trigger the request.
  */
-const useRequest = <TResponse, TRequest = undefined>(
-  method: 'GET' | 'POST',
-  endpoint: string,
-  respSchema: ZodType<TResponse> | null,
-): {
-  data: TResponse | null;
-  success: boolean;
-  error: string | null;
-  loading: boolean;
-  sendRequest: (opts: ReqOpts<TRequest>) => Promise<void>;
-} => {
+const useRequest = <TRequest, TResponse>({
+  method,
+  endpoint,
+  respSchema,
+  redirect401 = true,
+}: UseRequestOpts<TResponse>): UseRequestResult<TRequest, TResponse> => {
   const [data, setData] = useState<TResponse | null>(null);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,16 +65,15 @@ const useRequest = <TResponse, TRequest = undefined>(
   const navigate = useNavigate();
 
   /**
-   * Triggers a request using the specified options (all optional).
-   * If the backend responds with 401 Unauthorized, removes the stored JWT and redirects to the
-   * login page.
+   * Triggers a request using the specified options, if any.
    *
-   * @param pathParameter - The desired path parameter. Do not include a slash.
-   * @param token         - The JSON Web Token to be sent in the Authorization header.
-   * @param body          - The body to be sent in the request.
+   * @param opts               - Object containing request options (all optional).
+   * @param opts.pathParameter - The desired path parameter. Do not include a slash.
+   * @param opts.token         - The JSON Web Token to be sent in the Authorization header.
+   * @param opts.body          - The body to be sent in the request.
    */
   const sendRequest = useCallback(
-    async (opts: ReqOpts<TRequest>) => {
+    async ({ pathParameter, token, body }: SendRequestOpts<TRequest>) => {
       if (isSubmitting.current) return;
       isSubmitting.current = true;
 
@@ -69,18 +82,18 @@ const useRequest = <TResponse, TRequest = undefined>(
       setError(null);
       setLoading(true);
 
-      const url = opts.pathParameter
-        ? `${backendUrl}/${endpoint}/${opts.pathParameter}`
+      const url = pathParameter
+        ? `${backendUrl}/${endpoint}/${pathParameter}`
         : `${backendUrl}/${endpoint}`;
 
       const headers: Record<string, string> = {};
-      if (opts.body) headers['Content-Type'] = 'application/json';
-      if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+      if (body) headers['Content-Type'] = 'application/json';
+      if (token) headers.Authorization = `Bearer ${token}`;
 
       await fetch(url, {
         method,
         headers: Object.keys(headers).length ? headers : undefined,
-        body: JSON.stringify(opts.body), // undefined if opts.body is undefined
+        body: JSON.stringify(body), // undefined if opts.body is undefined
       })
         .then(async response => {
           if (response.ok) {
@@ -91,7 +104,7 @@ const useRequest = <TResponse, TRequest = undefined>(
               if (parsedBody.success) setData(parsedBody.data);
               else throw new Error('success response but unexpected body type');
             }
-          } else if (response.status === 401) {
+          } else if (redirect401 && response.status === 401) {
             // Token expired
             removeToken();
             void navigate('/login');
@@ -108,7 +121,7 @@ const useRequest = <TResponse, TRequest = undefined>(
           isSubmitting.current = false;
         });
     },
-    [endpoint, method, respSchema, navigate],
+    [endpoint, method, respSchema, navigate, redirect401],
   );
 
   return { data, success, error, loading, sendRequest };

@@ -8,11 +8,11 @@ const CreatePage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [prompt, setPrompt] = useState('');
 
-  const { success, loading, error, sendRequest } = useRequest<null, { body: string }>(
-    'POST',
-    'prompts',
-    null,
-  );
+  const { success, loading, error, sendRequest } = useRequest<{ body: string }, null>({
+    method: 'POST',
+    endpoint: 'prompts',
+    respSchema: null,
+  });
 
   const handleReset = (e: React.FormEvent) => {
     e.preventDefault();

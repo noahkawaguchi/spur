@@ -15,9 +15,9 @@ const PostWriter = ({
   const token = useTokenOrRedirect();
   const [postBody, setPostBody] = useState('');
   const { success, error, loading, sendRequest } = useRequest<
-    null,
-    { promptId: number; body: string }
-  >('POST', 'posts', null);
+    { promptId: number; body: string },
+    null
+  >({ method: 'POST', endpoint: 'posts', respSchema: null });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

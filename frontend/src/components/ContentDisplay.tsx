@@ -17,7 +17,11 @@ const ContentDisplay = ({
   const token = useTokenOrRedirect();
   const [readingPost, setReadingPost] = useState<Post | null>(null);
   const [respondingToPrompt, setRespondingToPrompt] = useState<Prompt | null>(null);
-  const { data, error, loading, sendRequest } = useRequest<Content>('GET', endpoint, ContentSchema);
+  const { data, error, loading, sendRequest } = useRequest<null, Content>({
+    method: 'GET',
+    endpoint,
+    respSchema: ContentSchema,
+  });
 
   useEffect(() => {
     void sendRequest({ token });

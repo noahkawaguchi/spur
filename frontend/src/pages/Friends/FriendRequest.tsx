@@ -5,11 +5,11 @@ import { useTokenOrRedirect } from '../../utils/jwt';
 const FriendRequest = ({ username }: { username: string }) => {
   const token = useTokenOrRedirect();
 
-  const { data, error, loading, sendRequest } = useRequest<SuccessResponse, AddFriendRequest>(
-    'POST',
-    'friends',
-    SuccessResponseSchema,
-  );
+  const { data, error, loading, sendRequest } = useRequest<AddFriendRequest, SuccessResponse>({
+    method: 'POST',
+    endpoint: 'friends',
+    respSchema: SuccessResponseSchema,
+  });
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
