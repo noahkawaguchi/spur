@@ -13,8 +13,9 @@ pub struct SuccessResponse {
     pub message: String,
 }
 
+/// A response body for sending a JWT.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct LoginResponse {
+pub struct TokenResponse {
     pub token: String,
 }
 

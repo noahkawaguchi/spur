@@ -16,18 +16,21 @@ impl UserRepo {
 
 #[async_trait::async_trait]
 impl UserStore for UserRepo {
-    async fn insert_new(&self, new_user: &NewUser) -> Result<(), InsertionError> {
-        sqlx::query!(
-            "INSERT INTO users (name, email, username, password_hash) VALUES ($1, $2, $3, $4)",
+    async fn insert_new(&self, new_user: &NewUser) -> Result<i32, InsertionError> {
+        sqlx::query_scalar!(
+            "
+            INSERT INTO users (name, email, username, password_hash)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id
+            ",
             new_user.name,
             new_user.email,
             new_user.username,
             new_user.password_hash,
         )
-        .execute(&self.pool)
+        .fetch_one(&self.pool)
         .await
         .map_err(Into::into)
-        .map(|_| ())
     }
 
     async fn get_by_id(&self, id: i32) -> Result<Option<User>, TechnicalError> {

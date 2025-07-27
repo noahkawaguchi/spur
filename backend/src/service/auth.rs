@@ -15,20 +15,27 @@ pub fn hash_pw(reg: UserRegistration) -> Result<NewUser, DomainError> {
     Ok(reg.into_new_user_with(pw_hash))
 }
 
-pub fn jwt_if_valid_pw(user: &User, password: &str, secret: &str) -> Result<String, DomainError> {
+pub fn create_jwt(id: i32, secret: &str) -> Result<String, DomainError> {
+    jsonwebtoken::encode(
+        &Header::default(),
+        &Claims::new(id)?,
+        &EncodingKey::from_secret(secret.as_ref()),
+    )
+    .map_err(|e| TechnicalError::from(e).into())
+}
+
+pub fn create_jwt_if_valid_pw(
+    user: &User,
+    password: &str,
+    secret: &str,
+) -> Result<String, DomainError> {
     // Validate the password
     bcrypt::verify(password, &user.password_hash)
         .map_err(TechnicalError::from)?
         .then_some(())
         .ok_or(AuthError::InvalidPassword)?;
 
-    // Create the JWT
-    jsonwebtoken::encode(
-        &Header::default(),
-        &Claims::new(user.id)?,
-        &EncodingKey::from_secret(secret.as_ref()),
-    )
-    .map_err(|e| TechnicalError::from(e).into())
+    create_jwt(user.id, secret)
 }
 
 pub fn validate_jwt(token: &str, secret: &str) -> Result<i32, DomainError> {
@@ -65,7 +72,8 @@ mod tests {
         }
     }
 
-    // Determined that testing hash_pw would be trivial
+    // Determined that testing hash_pw would be trivial and that create_jwt is sufficiently tested
+    // via create_jwt_if_valid_pw
 
     #[test]
     fn encodes_and_decodes_id_for_valid_pw() {
@@ -73,7 +81,7 @@ mod tests {
         let secret = "shh_hhh_hhh";
 
         let bob = make_bob(correct_pw);
-        let token = jwt_if_valid_pw(&bob, correct_pw, secret)
+        let token = create_jwt_if_valid_pw(&bob, correct_pw, secret)
             .expect("failed to create JWT for valid password");
 
         let id = validate_jwt(&token, secret).expect("failed to validate token");
@@ -83,7 +91,7 @@ mod tests {
     #[test]
     fn token_creation_errors_for_invalid_pw() {
         let bob = make_bob("correct password");
-        let result = jwt_if_valid_pw(&bob, "incorrect password", "top secret");
+        let result = create_jwt_if_valid_pw(&bob, "incorrect password", "top secret");
         assert!(
             matches!(result, Err(DomainError::Auth(AuthError::InvalidPassword))),
             "{}",
@@ -97,7 +105,7 @@ mod tests {
         let bob = make_bob(password);
         let secret = "no one's gonna know";
 
-        let _ = jwt_if_valid_pw(&bob, password, secret).expect("failed to create token");
+        let _ = create_jwt_if_valid_pw(&bob, password, secret).expect("failed to create token");
         assert!(matches!(
             validate_jwt("fake token", secret),
             Err(DomainError::Auth(AuthError::JwtValidation)),
@@ -110,7 +118,7 @@ mod tests {
         let bob = make_bob(password);
         let secret = "shh";
 
-        let token = jwt_if_valid_pw(&bob, password, secret).expect("failed to create token");
+        let token = create_jwt_if_valid_pw(&bob, password, secret).expect("failed to create token");
         assert!(matches!(
             validate_jwt(&token, "boo!"),
             Err(DomainError::Auth(AuthError::JwtValidation)),

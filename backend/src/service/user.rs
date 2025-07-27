@@ -18,7 +18,7 @@ impl<S: UserStore> UserSvc<S> {
 
 #[async_trait::async_trait]
 impl<S: UserStore> UserManager for UserSvc<S> {
-    async fn insert_new(&self, new_user: &NewUser) -> Result<(), DomainError> {
+    async fn insert_new(&self, new_user: &NewUser) -> Result<i32, DomainError> {
         self.store.insert_new(new_user).await.map_err(|e| match e {
             InsertionError::UniqueViolation(v) if v.contains("email") => {
                 UserError::DuplicateEmail.into()
@@ -138,6 +138,7 @@ mod tests {
         async fn correctly_creates_new_user_from_request() {
             let alice = new_alice();
             let alice_clone = alice.clone();
+            let alice_id = 88;
 
             let mut mock_repo = MockUserStore::new();
             mock_repo
@@ -149,14 +150,16 @@ mod tests {
                         && u.password_hash == alice_clone.password_hash
                 })
                 .once()
-                .return_once(|_| Ok(()));
+                .return_once(move |_| Ok(alice_id));
 
             let user_svc = UserSvc::new(mock_repo);
 
-            assert!(matches!(
-                user_svc.insert_new(&alice).await,
-                anyhow::Result::Ok(()),
-            ));
+            assert!(
+                user_svc
+                    .insert_new(&alice)
+                    .await
+                    .is_ok_and(|id| id == alice_id),
+            );
         }
     }
 
