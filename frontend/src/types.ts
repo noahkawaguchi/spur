@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+export const TokenResponseSchema = z.object({ token: z.string() });
+export type TokenResponse = z.infer<typeof TokenResponseSchema>;
+
 export const SuccessResponseSchema = z.object({ message: z.string() });
 export type SuccessResponse = z.infer<typeof SuccessResponseSchema>;
 

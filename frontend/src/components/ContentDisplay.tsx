@@ -75,7 +75,6 @@ const ContentDisplay = ({
                         in response to {post.prompt.authorUsername}: "{post.prompt.body}"
                       </td>
                       <td className='button-cell'>
-                        {' '}
                         <button
                           type='button'
                           onClick={() => {
@@ -84,7 +83,7 @@ const ContentDisplay = ({
                         >
                           Read
                         </button>
-                      </td>{' '}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -36,7 +36,7 @@ const AddFriendPage = () => {
             onChange={e => {
               setUsername(e.target.value);
             }}
-            placeholder='alice123'
+            placeholder='potential_friend123'
             disabled={loading}
             required
             autoFocus

@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
-import { setToken } from '../utils/jwt';
-import { useNavigate } from 'react-router-dom';
-import z from 'zod';
-import useRequest from '../hooks/useRequest';
+import { setToken } from '../../utils/jwt';
+import { Link, useNavigate } from 'react-router-dom';
+import useRequest from '../../hooks/useRequest';
+import { TokenResponseSchema, type TokenResponse } from '../../types';
+import styles from './Auth.module.css';
 
 interface LoginRequest {
   email: string;
   password: string;
 }
-
-const LoginResponseSchema = z.object({ token: z.string() });
-type LoginResponse = z.infer<typeof LoginResponseSchema>;
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -18,10 +16,10 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const { data, error, loading, sendRequest } = useRequest<LoginRequest, LoginResponse>({
+  const { data, error, loading, sendRequest } = useRequest<LoginRequest, TokenResponse>({
     method: 'POST',
     endpoint: 'auth/login',
-    respSchema: LoginResponseSchema,
+    respSchema: TokenResponseSchema,
     // Display any login errors such as invalid password instead of looping back to login again
     redirect401: false,
   });
@@ -42,8 +40,7 @@ const LoginPage = () => {
     <>
       <h2>Login</h2>
       <hr />
-
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className={styles.authForm}>
         <label>
           Email:{' '}
           <input
@@ -58,7 +55,7 @@ const LoginPage = () => {
             autoFocus
           />
         </label>
-
+        <br />
         <label>
           Password:{' '}
           <input
@@ -72,16 +69,21 @@ const LoginPage = () => {
             required
           />
         </label>
+        <br />
         <button type='submit' disabled={loading}>
           Submit
         </button>
       </form>
-
+      <p>
+        or{' '}
+        <Link to='/signup'>
+          <button type='button'>sign up</button>
+        </Link>{' '}
+        for a new account
+      </p>
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
       {data && <p>Success!</p>}
-
-      <p>or sign up</p>
       <hr />
     </>
   );

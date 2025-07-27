@@ -1,5 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
+import LoginPage from './pages/Auth/LoginPage';
 import ProfilePage from './pages/ProfilePage';
 import FriendsPage from './pages/Friends/FriendsPage';
 import './App.css';
@@ -13,6 +13,7 @@ import FeedPage from './pages/FeedPage';
 import CreatePage from './pages/CreatePage';
 import FriendRequestsPage from './pages/Friends/FriendRequestsPage';
 import AddFriendPage from './pages/Friends/AddFriendPage';
+import SignupPage from './pages/Auth/SignupPage';
 
 const App = () => {
   return (
@@ -20,6 +21,7 @@ const App = () => {
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         <Routes>
           <Route path='/login' element={<LoginPage />} />
+          <Route path='/signup' element={<SignupPage />} />
           <Route element={<MainLayout />}>
             <Route path='/' element={<HomePage />} />
             <Route path='/feed' element={<FeedPage />} />
