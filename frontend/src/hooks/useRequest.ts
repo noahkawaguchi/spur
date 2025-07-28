@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
-import { backendUrl } from '../config';
 import { ZodType, z } from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { removeToken } from '../utils/jwt';
+import { backendUrl } from '@/config';
+import { removeToken } from '@/utils/jwt';
 
 interface UseRequestOpts<TResponse> {
   method: 'GET' | 'POST';

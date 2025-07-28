@@ -1,9 +1,9 @@
+import useRequest from '@/hooks/useRequest';
+import { TokenResponseSchema, type TokenResponse } from '@/types';
+import { setToken } from '@/utils/jwt';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import useRequest from '../../hooks/useRequest';
-import { TokenResponseSchema, type TokenResponse } from '../../types';
-import { setToken } from '../../utils/jwt';
-import styles from './Auth.module.css';
+import styles from '@/styles/shared.module.css';
 
 const SignupPage = () => {
   const navigate = useNavigate();

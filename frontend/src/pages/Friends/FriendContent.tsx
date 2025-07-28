@@ -1,5 +1,5 @@
+import ContentDisplay from '@/components/ContentDisplay';
 import { Link, useParams } from 'react-router-dom';
-import ContentDisplay from '../../components/ContentDisplay';
 
 const FriendContentPage = () => {
   const { username } = useParams<{ username: string }>();

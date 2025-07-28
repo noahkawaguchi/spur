@@ -62,11 +62,3 @@ th {
   padding: 10px;
   background-color: var(--soft-background);
 }
-
-.button-cell {
-  border: none;
-  background: none;
-  white-space: nowrap;
-  padding: 0;
-  width: 0;
-}

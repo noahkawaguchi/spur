@@ -1,6 +1,6 @@
+import ContentDisplay from '@/components/ContentDisplay';
+import { removeToken } from '@/utils/jwt';
 import { useNavigate } from 'react-router-dom';
-import { removeToken } from '../utils/jwt';
-import ContentDisplay from '../components/ContentDisplay';
 
 const ProfilePage = () => {
   const navigate = useNavigate();

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import type { Prompt } from '../../types';
-import useRequest from '../../hooks/useRequest';
-import { useTokenOrRedirect } from '../../utils/jwt';
 import TextareaAutosize from 'react-textarea-autosize';
 import styles from './PostReaderWriter.module.css';
+import type { Prompt } from '@/types';
+import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
+import useRequest from '@/hooks/useRequest';
 
 const PostWriter = ({
   prompt,
@@ -21,7 +21,7 @@ const PostWriter = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    void sendRequest({ token, body: { promptId: prompt.id, body: postBody } });
+    if (token) void sendRequest({ token, body: { promptId: prompt.id, body: postBody } });
   };
 
   return (

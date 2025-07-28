@@ -1,24 +1,24 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import LoginPage from './pages/Auth/LoginPage';
-import ProfilePage from './pages/ProfilePage';
-import FriendsPage from './pages/Friends/FriendsPage';
-import './App.css';
-import HomePage from './pages/HomePage';
-import NotFoundPage from './pages/NotFoundPage';
-import MainLayout from './layouts/MainLayout';
-import FriendContentPage from './pages/Friends/FriendContentPage';
 import { ErrorBoundary } from 'react-error-boundary';
-import ErrorFallback from './components/ErrorFallback';
-import FeedPage from './pages/FeedPage';
-import CreatePage from './pages/CreatePage';
-import FriendRequestsPage from './pages/Friends/FriendRequestsPage';
-import AddFriendPage from './pages/Friends/AddFriendPage';
-import SignupPage from './pages/Auth/SignupPage';
+import ErrorFallbackPage from '@/pages/ErrorFallback';
+import LoginPage from '@/pages/Login';
+import SignupPage from '@/pages/Signup';
+import MainLayout from '@/layouts/MainLayout';
+import HomePage from '@/pages/Home';
+import FeedPage from '@/pages/Feed';
+import NotFoundPage from '@/pages/NotFound';
+import CreatePage from '@/pages/Create';
+import FriendsPage from '@/pages/Friends';
+import FriendRequestsPage from '@/pages/Friends/Requests';
+import AddFriendPage from '@/pages/Friends/Add';
+import FriendContentPage from '@/pages/Friends/FriendContent';
+import ProfilePage from '@/pages/Profile';
+import './App.css';
 
 const App = () => {
   return (
     <BrowserRouter>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <ErrorBoundary FallbackComponent={ErrorFallbackPage}>
         <Routes>
           <Route path='/login' element={<LoginPage />} />
           <Route path='/signup' element={<SignupPage />} />

@@ -1,4 +1,4 @@
-import type { Post } from '../../types';
+import type { Post } from '@/types';
 import styles from './PostReaderWriter.module.css';
 
 const PostReader = ({

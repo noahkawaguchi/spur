@@ -1,9 +1,10 @@
+import PostReader from '@/components/PostReaderWriter/PostReader';
+import PostWriter from '@/components/PostReaderWriter/PostWriter';
+import useRequest from '@/hooks/useRequest';
+import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
+import { ContentSchema, type Content, type Post, type Prompt } from '@/types';
 import { useEffect, useState } from 'react';
-import useRequest from '../hooks/useRequest';
-import { ContentSchema, type Content, type Post, type Prompt } from '../types';
-import { useTokenOrRedirect } from '../utils/jwt';
-import PostReader from './PostReaderWriter/PostReader';
-import PostWriter from './PostReaderWriter/PostWriter';
+import styles from '@/styles/shared.module.css';
 
 const ContentDisplay = ({
   header,
@@ -24,7 +25,7 @@ const ContentDisplay = ({
   });
 
   useEffect(() => {
-    void sendRequest({ token });
+    if (token) void sendRequest({ token });
   }, [sendRequest, token]);
 
   return (
@@ -47,7 +48,7 @@ const ContentDisplay = ({
                     <tr key={prompt.id}>
                       {displayUsername && <th>by {prompt.authorUsername}</th>}
                       <td>{prompt.body}</td>
-                      <td className='button-cell'>
+                      <td className={styles.buttonCell}>
                         <button
                           type='button'
                           onClick={() => {
@@ -74,7 +75,7 @@ const ContentDisplay = ({
                       <td>
                         in response to {post.prompt.authorUsername}: "{post.prompt.body}"
                       </td>
-                      <td className='button-cell'>
+                      <td className={styles.buttonCell}>
                         <button
                           type='button'
                           onClick={() => {

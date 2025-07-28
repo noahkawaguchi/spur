@@ -1,6 +1,7 @@
-import useRequest from '../../hooks/useRequest';
-import { type SuccessResponse, SuccessResponseSchema, type AddFriendRequest } from '../../types';
-import { useTokenOrRedirect } from '../../utils/jwt';
+import useRequest from '@/hooks/useRequest';
+import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
+import { SuccessResponseSchema, type AddFriendRequest, type SuccessResponse } from '@/types';
+import styles from '@/styles/shared.module.css';
 
 const FriendRequest = ({ username }: { username: string }) => {
   const token = useTokenOrRedirect();
@@ -13,14 +14,14 @@ const FriendRequest = ({ username }: { username: string }) => {
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    void sendRequest({ token, body: { recipientUsername: username } });
+    if (token) void sendRequest({ token, body: { recipientUsername: username } });
   };
 
   return (
     <>
       <tr>
         <td>{username}</td>
-        <td className='button-cell'>
+        <td className={styles.buttonCell}>
           <button type='button' onClick={handleClick}>
             Accept
           </button>

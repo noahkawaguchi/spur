@@ -1,6 +1,6 @@
-import useRequest from '../hooks/useRequest';
+import useRequest from '@/hooks/useRequest';
+import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
 import { useState } from 'react';
-import { useTokenOrRedirect } from '../utils/jwt';
 
 const CreatePage = () => {
   const token = useTokenOrRedirect();
@@ -23,7 +23,7 @@ const CreatePage = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
-    void sendRequest({ token, body: { body: prompt } });
+    if (token) void sendRequest({ token, body: { body: prompt } });
   };
 
   return (

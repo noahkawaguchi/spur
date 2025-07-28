@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { setToken } from '../../utils/jwt';
+import { setToken } from '@/utils/jwt';
 import { Link, useNavigate } from 'react-router-dom';
-import useRequest from '../../hooks/useRequest';
-import { TokenResponseSchema, type TokenResponse } from '../../types';
-import styles from './Auth.module.css';
+import useRequest from '@/hooks/useRequest';
+import { TokenResponseSchema, type TokenResponse } from '@/types';
+import styles from '@/styles/shared.module.css';
 
 interface LoginRequest {
   email: string;

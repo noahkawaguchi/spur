@@ -1,0 +1,12 @@
+.buttonCell {
+  border: none;
+  background: none;
+  white-space: nowrap;
+  padding: 0;
+  width: 0;
+}
+
+.authForm {
+  text-align: right;
+  max-width: max-content;
+}

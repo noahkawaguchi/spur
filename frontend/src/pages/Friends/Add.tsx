@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import useRequest from '../../hooks/useRequest';
-import { type AddFriendRequest, type SuccessResponse, SuccessResponseSchema } from '../../types';
-import { useTokenOrRedirect } from '../../utils/jwt';
 import { Link } from 'react-router-dom';
+import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
+import useRequest from '@/hooks/useRequest';
+import { SuccessResponseSchema, type AddFriendRequest, type SuccessResponse } from '@/types';
 
 const AddFriendPage = () => {
   const token = useTokenOrRedirect();
-
   const [username, setUsername] = useState('');
-
   const { data, error, loading, sendRequest } = useRequest<AddFriendRequest, SuccessResponse>({
     method: 'POST',
     endpoint: 'friends',
@@ -17,7 +15,7 @@ const AddFriendPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    void sendRequest({ token, body: { recipientUsername: username } });
+    if (token) void sendRequest({ token, body: { recipientUsername: username } });
     setUsername('');
   };
 

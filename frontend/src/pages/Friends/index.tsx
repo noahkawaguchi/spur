@@ -1,8 +1,9 @@
+import useRequest from '@/hooks/useRequest';
+import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
+import { UsernamesResponseSchema, type UsernamesResponse } from '@/types';
 import { useEffect } from 'react';
-import { useTokenOrRedirect } from '../../utils/jwt';
 import { Link } from 'react-router-dom';
-import useRequest from '../../hooks/useRequest';
-import { UsernamesResponseSchema, type UsernamesResponse } from '../../types';
+import styles from '@/styles/shared.module.css';
 
 const FriendsPage = () => {
   const token = useTokenOrRedirect();
@@ -14,7 +15,7 @@ const FriendsPage = () => {
   });
 
   useEffect(() => {
-    void sendRequest({ token });
+    if (token) void sendRequest({ token });
   }, [sendRequest, token]);
 
   return (
@@ -38,7 +39,7 @@ const FriendsPage = () => {
                 {data.usernames.map(username => (
                   <tr key={username}>
                     <td>{username}</td>
-                    <td className='button-cell'>
+                    <td className={styles.buttonCell}>
                       <Link to={`/friends/${username}`}>
                         <button type='button'>View profile</button>
                       </Link>

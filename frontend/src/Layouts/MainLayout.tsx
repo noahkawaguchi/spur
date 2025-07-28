@@ -1,7 +1,7 @@
 import { Outlet, useNavigate } from 'react-router-dom';
-import Header from '../components/Header/Header';
-import { getToken } from '../utils/jwt';
 import { useEffect } from 'react';
+import { getToken } from '@/utils/jwt';
+import Header from '@/components/Header/Header';
 
 const MainLayout = () => {
   const navigate = useNavigate();

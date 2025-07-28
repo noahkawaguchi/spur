@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import useRequest from '../../hooks/useRequest';
-import { UsernamesResponseSchema, type UsernamesResponse } from '../../types';
-import { useTokenOrRedirect } from '../../utils/jwt';
-import FriendRequest from './FriendRequest';
 import { Link } from 'react-router-dom';
+import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
+import useRequest from '@/hooks/useRequest';
+import { UsernamesResponseSchema, type UsernamesResponse } from '@/types';
+import FriendRequest from '@/pages/Friends/Requests/FriendRequest';
 
 const FriendRequestsPage = () => {
   const token = useTokenOrRedirect();
@@ -15,7 +15,7 @@ const FriendRequestsPage = () => {
   });
 
   useEffect(() => {
-    void sendRequest({ token });
+    if (token) void sendRequest({ token });
   }, [sendRequest, token]);
 
   return (
