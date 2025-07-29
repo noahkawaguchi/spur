@@ -4,7 +4,6 @@ import ErrorFallbackPage from '@/pages/ErrorFallback';
 import LoginPage from '@/pages/Login';
 import SignupPage from '@/pages/Signup';
 import MainLayout from '@/layouts/MainLayout';
-import HomePage from '@/pages/Home';
 import FeedPage from '@/pages/Feed';
 import NotFoundPage from '@/pages/NotFound';
 import CreatePage from '@/pages/Create';
@@ -14,24 +13,26 @@ import AddFriendPage from '@/pages/Friends/Add';
 import FriendContentPage from '@/pages/Friends/FriendContent';
 import ProfilePage from '@/pages/Profile';
 import './App.css';
+import UniversalLayout from '@/layouts/UniversalLayout';
 
 const App = () => {
   return (
     <BrowserRouter>
       <ErrorBoundary FallbackComponent={ErrorFallbackPage}>
         <Routes>
-          <Route path='/login' element={<LoginPage />} />
-          <Route path='/signup' element={<SignupPage />} />
-          <Route element={<MainLayout />}>
-            <Route path='/' element={<HomePage />} />
-            <Route path='/feed' element={<FeedPage />} />
-            <Route path='/create' element={<CreatePage />} />
-            <Route path='/friends' element={<FriendsPage />} />
-            <Route path='/friends/requests' element={<FriendRequestsPage />} />
-            <Route path='/friends/add' element={<AddFriendPage />} />
-            <Route path='/friends/:username' element={<FriendContentPage />} />
-            <Route path='/profile' element={<ProfilePage />} />
-            <Route path='*' element={<NotFoundPage />} />
+          <Route element={<UniversalLayout />}>
+            <Route path='/login' element={<LoginPage />} />
+            <Route path='/signup' element={<SignupPage />} />
+            <Route element={<MainLayout />}>
+              <Route path='/' element={<FeedPage />} />
+              <Route path='/create' element={<CreatePage />} />
+              <Route path='/friends' element={<FriendsPage />} />
+              <Route path='/friends/requests' element={<FriendRequestsPage />} />
+              <Route path='/friends/add' element={<AddFriendPage />} />
+              <Route path='/friends/:username' element={<FriendContentPage />} />
+              <Route path='/profile' element={<ProfilePage />} />
+              <Route path='*' element={<NotFoundPage />} />
+            </Route>
           </Route>
         </Routes>
       </ErrorBoundary>

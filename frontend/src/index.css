@@ -1,7 +1,8 @@
 :root {
-  --accent-color: lightgreen;
+  --main-background: rgb(40, 40, 40);
   --soft-background: rgb(60, 60, 60);
   --light-border: 1px solid lightsteelblue;
+  --accent-color: lightgreen;
   color: white;
   background-color: rgb(20, 45, 20);
 }

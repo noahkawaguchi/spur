@@ -1,16 +1,5 @@
-.titleLink {
+.headerTitle {
   text-align: center;
-  color: white;
-  text-decoration: none;
-  padding: 5px;
-}
-
-.titleLink:hover {
-  color: var(--accent-color);
-  font-style: italic;
-}
-
-.titleHeading {
   width: max-content;
   margin: 20px auto;
 }
@@ -33,7 +22,10 @@
   }
 }
 
-.titleHeading:hover {
+.headerTitle:hover {
+  color: var(--accent-color);
+  font-style: italic;
+  cursor: default;
   animation-name: title-twist;
   animation-duration: 0.4s;
   animation-iteration-count: 1;
