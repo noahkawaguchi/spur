@@ -7,7 +7,7 @@ import useRequest from '@/hooks/useRequest';
 
 const PostWriter = ({
   prompt,
-  setRespondingToPrompt: setWritingPost,
+  setRespondingToPrompt,
 }: {
   prompt: Prompt;
   setRespondingToPrompt: (prompt: Prompt | null) => void;
@@ -29,7 +29,7 @@ const PostWriter = ({
       <button
         type='button'
         onClick={() => {
-          setWritingPost(null);
+          setRespondingToPrompt(null);
         }}
       >
         Back

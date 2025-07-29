@@ -78,7 +78,6 @@ const SignupPage = () => {
             placeholder='your_username123'
             disabled={loading}
             required
-            autoFocus
           />
         </label>
         <br />

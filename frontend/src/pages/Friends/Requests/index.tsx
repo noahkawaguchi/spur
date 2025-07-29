@@ -23,7 +23,7 @@ const FriendRequestsPage = () => {
       <Link to='/friends'>
         <button type='button'>Back</button>
       </Link>
-      <h2>Pending friend requests</h2>
+      <h2>Pending friend requests to you</h2>
       <hr />
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}

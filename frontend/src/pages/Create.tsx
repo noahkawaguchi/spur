@@ -4,25 +4,15 @@ import { useState } from 'react';
 
 const CreatePage = () => {
   const token = useTokenOrRedirect();
-
-  const [submitted, setSubmitted] = useState(false);
   const [prompt, setPrompt] = useState('');
-
   const { success, loading, error, sendRequest } = useRequest<{ body: string }, null>({
     method: 'POST',
     endpoint: 'prompts',
     respSchema: null,
   });
 
-  const handleReset = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPrompt('');
-    setSubmitted(false);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
     if (token) void sendRequest({ token, body: { body: prompt } });
   };
 
@@ -30,7 +20,7 @@ const CreatePage = () => {
     <>
       <h2>Create</h2>
       <hr />
-      <form onSubmit={handleSubmit} onReset={handleReset}>
+      <form onSubmit={handleSubmit}>
         <label>
           <h3>New prompt</h3>
           <input
@@ -39,23 +29,20 @@ const CreatePage = () => {
               setPrompt(e.target.value);
             }}
             placeholder='Tell me about a time...'
-            disabled={submitted}
+            disabled={loading}
             required
             autoFocus
+            style={{ width: '95%' }}
           />
         </label>
-        <button type='submit' disabled={submitted}>
+        <br />
+        <button type='submit' disabled={loading}>
           Submit
         </button>
-        <button type='reset'>Reset</button>
       </form>
-      {submitted && (
-        <>
-          {loading && <p>Loading...</p>}
-          {error && <p>Error: {error}</p>}
-          {success && <p>Successfully created!</p>}
-        </>
-      )}
+      {loading && <p>Loading...</p>}
+      {error && <p>Error: {error}</p>}
+      {success && <p>Successfully created!</p>}
       <hr />
       <h3>New post</h3>
       <p>Find a friend's prompt to respond to!</p>

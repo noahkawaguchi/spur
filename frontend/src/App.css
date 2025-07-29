@@ -1,7 +1,11 @@
 #root {
   max-width: 1000px;
+  height: 100vh;
   margin: auto;
-  padding: 10px;
+  padding: 25px;
+  background-color: rgb(40, 40, 40);
+  border-left: var(--light-border);
+  border-right: var(--light-border);
 }
 
 header {

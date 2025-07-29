@@ -22,7 +22,7 @@ const ProfilePage = () => {
         </>
       }
       endpoint='content/me'
-      displayUsername={false}
+      displayUsernames={false}
     />
   );
 };

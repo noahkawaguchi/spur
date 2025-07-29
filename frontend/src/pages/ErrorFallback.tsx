@@ -20,6 +20,7 @@ const ErrorFallbackPage = ({ error, resetErrorBoundary }: FallbackProps) => {
       <button type='button' onClick={handleClick}>
         Back home
       </button>
+      <hr />
     </>
   );
 };

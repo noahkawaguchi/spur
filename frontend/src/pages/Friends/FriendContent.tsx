@@ -17,7 +17,7 @@ const FriendContentPage = () => {
         </>
       }
       endpoint={`content/friend/${username}`}
-      displayUsername={false}
+      displayUsernames={false}
     />
   );
 };

@@ -9,11 +9,11 @@ import styles from '@/styles/shared.module.css';
 const ContentDisplay = ({
   header,
   endpoint,
-  displayUsername,
+  displayUsernames,
 }: {
   header: React.ReactElement;
   endpoint: string;
-  displayUsername: boolean;
+  displayUsernames: boolean;
 }) => {
   const token = useTokenOrRedirect();
   const [readingPost, setReadingPost] = useState<Post | null>(null);
@@ -46,7 +46,7 @@ const ContentDisplay = ({
                 <tbody>
                   {data.prompts.map(prompt => (
                     <tr key={prompt.id}>
-                      {displayUsername && <th>by {prompt.authorUsername}</th>}
+                      {displayUsernames && <th>by {prompt.authorUsername}</th>}
                       <td>{prompt.body}</td>
                       <td className={styles.buttonCell}>
                         <button
@@ -71,7 +71,7 @@ const ContentDisplay = ({
                 <tbody>
                   {data.posts.map(post => (
                     <tr key={post.id}>
-                      {displayUsername && <th>by {post.authorUsername}</th>}
+                      {displayUsernames && <th>by {post.authorUsername}</th>}
                       <td>
                         in response to {post.prompt.authorUsername}: "{post.prompt.body}"
                       </td>

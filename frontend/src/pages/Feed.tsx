@@ -10,7 +10,7 @@ const FeedPage = () => {
         </>
       }
       endpoint='content'
-      displayUsername={true}
+      displayUsernames={true}
     />
   );
 };

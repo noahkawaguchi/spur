@@ -3,7 +3,11 @@
   --soft-background: rgb(60, 60, 60);
   --light-border: 1px solid lightsteelblue;
   color: white;
-  background-color: rgb(40, 40, 40);
+  background-color: rgb(20, 45, 20);
+}
+
+body {
+  margin: 0 auto;
 }
 
 * {
