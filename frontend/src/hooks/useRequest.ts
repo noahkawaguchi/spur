@@ -109,8 +109,16 @@ const useRequest = <TRequest, TResponse>({
             removeToken();
             void navigate('/login');
           } else {
-            const parsedErrBody = z.object({ error: z.string() }).safeParse(await response.json());
-            throw new Error(parsedErrBody.success ? parsedErrBody.data.error : response.statusText);
+            const rawText = await response.text();
+            let errMsg;
+            try {
+              // The expected error response type from the backend
+              errMsg = z.object({ error: z.string() }).parse(JSON.parse(rawText)).error;
+            } catch {
+              // Some other error response
+              errMsg = rawText || response.statusText || `HTTP ${response.status.toString()}`;
+            }
+            throw new Error(errMsg);
           }
         })
         .catch((err: unknown) => {

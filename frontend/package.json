@@ -10,7 +10,7 @@
     "check": "npx tsc -p tsconfig.app.json && npx tsc -p tsconfig.node.json",
     "lint": "eslint .",
     "format": "prettier src --write",
-    "test": "vitest"
+    "test": "vitest --reporter=verbose"
   },
   "dependencies": {
     "react": "^19.1.0",
