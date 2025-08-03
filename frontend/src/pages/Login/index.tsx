@@ -5,20 +5,19 @@ import useRequest from '@/hooks/useRequest';
 import { TokenResponseSchema, type TokenResponse } from '@/types';
 import styles from '@/styles/shared.module.css';
 
-interface LoginRequest {
-  email: string;
-  password: string;
-}
-
 const LoginPage = () => {
   const navigate = useNavigate();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { data, error, loading, sendRequest } = useRequest<LoginRequest, TokenResponse>({
+
+  const { data, error, loading, sendRequest } = useRequest<
+    { email: string; password: string },
+    TokenResponse
+  >({
     method: 'POST',
     endpoint: 'auth/login',
     respSchema: TokenResponseSchema,
-    // Display any login errors such as invalid password instead of looping back to login again
     redirect401: false,
   });
 

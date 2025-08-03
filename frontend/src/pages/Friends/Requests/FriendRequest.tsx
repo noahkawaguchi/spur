@@ -12,8 +12,7 @@ const FriendRequest = ({ username }: { username: string }) => {
     respSchema: SuccessResponseSchema,
   });
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleClick = () => {
     if (token) void sendRequest({ token, body: { recipientUsername: username } });
   };
 
