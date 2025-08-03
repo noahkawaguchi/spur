@@ -1,3 +1,8 @@
+.authForm {
+  text-align: right;
+  max-width: max-content;
+}
+
 .buttonCell {
   border: none;
   background: none;
@@ -6,7 +11,13 @@
   width: 0;
 }
 
-.authForm {
-  text-align: right;
-  max-width: max-content;
+.postBodyArea {
+  background-color: var(--soft-background);
+  color: white;
+  font-size: 1rem;
+  line-height: 1.5;
+  padding: 15px;
+  width: 95%;
+  border: var(--light-border);
+  border-radius: 15px;
 }

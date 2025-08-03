@@ -1,5 +1,5 @@
 import type { Post } from '@/types';
-import styles from './PostReaderWriter.module.css';
+import styles from '@/styles/shared.module.css';
 
 const PostReader = ({
   post,
@@ -27,7 +27,12 @@ const PostReader = ({
         </p>
       </div>
       <hr />
-      <p className={styles.postReadingArea}>{post.body}</p>
+      <p
+        className={styles.postBodyArea}
+        style={{ whiteSpace: 'pre-line', margin: 'auto', textAlign: 'justify' }}
+      >
+        {post.body}
+      </p>
     </>
   );
 };

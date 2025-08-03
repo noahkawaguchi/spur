@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
-import styles from './PostReaderWriter.module.css';
+import styles from '@/styles/shared.module.css';
 import type { Prompt } from '@/types';
 import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
 import useRequest from '@/hooks/useRequest';
@@ -44,7 +44,7 @@ const PostWriter = ({
         <hr />
         <form onSubmit={handleSubmit}>
           <TextareaAutosize
-            className={styles.postWritingArea}
+            className={styles.postBodyArea}
             value={postBody}
             onChange={e => {
               setPostBody(e.target.value);

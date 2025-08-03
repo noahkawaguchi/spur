@@ -1,5 +1,5 @@
-import PostReader from '@/components/PostReaderWriter/PostReader';
-import PostWriter from '@/components/PostReaderWriter/PostWriter';
+import PostReader from '@/components/PostReader';
+import PostWriter from '@/components/PostWriter';
 import useRequest from '@/hooks/useRequest';
 import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
 import { ContentSchema, type Content, type Post, type Prompt } from '@/types';

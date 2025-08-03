@@ -44,7 +44,8 @@ button:enabled:active {
 }
 
 button:disabled,
-input:disabled {
+input:disabled,
+textarea:disabled {
   background-color: gray;
   cursor: not-allowed;
 }
