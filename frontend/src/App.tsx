@@ -3,7 +3,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallbackPage from '@/pages/ErrorFallback';
 import LoginPage from '@/pages/Login';
 import SignupPage from '@/pages/Signup';
-import MainLayout from '@/layouts/MainLayout';
+import MainLayout from '@/Layouts/MainLayout';
 import FeedPage from '@/pages/Feed';
 import NotFoundPage from '@/pages/NotFound';
 import CreatePage from '@/pages/Create';
@@ -13,7 +13,7 @@ import AddFriendPage from '@/pages/Friends/Add';
 import FriendContentPage from '@/pages/Friends/FriendContent';
 import ProfilePage from '@/pages/Profile';
 import './App.css';
-import UniversalLayout from '@/layouts/UniversalLayout';
+import UniversalLayout from '@/Layouts/UniversalLayout';
 
 const App = () => {
   return (
