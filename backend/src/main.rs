@@ -19,7 +19,7 @@ mod utils;
 mod test_utils;
 
 use anyhow::Result;
-use axum::http::{HeaderValue, Method, header};
+use axum::http::{Method, header};
 use config::AppConfig;
 use sqlx::postgres::PgPoolOptions;
 use state::AppState;
@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
         .await?;
 
     let cors = CorsLayer::new()
-        .allow_origin(HeaderValue::from_static("http://localhost:5173"))
+        .allow_origin([config.frontend_url.parse()?])
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION])
         .allow_credentials(true);
