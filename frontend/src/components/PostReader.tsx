@@ -27,10 +27,7 @@ const PostReader = ({
         </p>
       </div>
       <hr />
-      <p
-        className={styles.postBodyArea}
-        style={{ whiteSpace: 'pre-line', margin: 'auto', textAlign: 'justify' }}
-      >
+      <p className={styles.postBodyArea} style={{ whiteSpace: 'pre-line', textAlign: 'justify' }}>
         {post.body}
       </p>
     </>

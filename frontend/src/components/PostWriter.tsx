@@ -43,18 +43,21 @@ const PostWriter = ({
         </p>
         <hr />
         <form onSubmit={handleSubmit}>
-          <TextareaAutosize
-            className={styles.postBodyArea}
-            value={postBody}
-            onChange={e => {
-              setPostBody(e.target.value);
-            }}
-            placeholder='Your thoughts here...'
-            disabled={loading}
-            required
-            autoFocus
-            minRows={5}
-          />
+          <label>
+            Post body:
+            <TextareaAutosize
+              className={styles.postBodyArea}
+              value={postBody}
+              onChange={e => {
+                setPostBody(e.target.value);
+              }}
+              placeholder='Your thoughts...'
+              disabled={loading}
+              required
+              autoFocus
+              minRows={5}
+            />
+          </label>
           <br />
           <button type='submit' disabled={loading}>
             Post
