@@ -1,4 +1,12 @@
-/target
-.vscode/
-scratch/
 .env*
+.DS_Store
+scratch
+.vscode
+cspell.json
+
+# Backend
+target
+
+# Frontend
+node_modules
+dist

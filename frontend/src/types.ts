@@ -1,0 +1,31 @@
+import { z } from 'zod';
+
+export const TokenResponseSchema = z.object({ token: z.string() });
+export type TokenResponse = z.infer<typeof TokenResponseSchema>;
+
+export const SuccessResponseSchema = z.object({ message: z.string() });
+export type SuccessResponse = z.infer<typeof SuccessResponseSchema>;
+
+export interface AddFriendRequest {
+  recipientUsername: string;
+}
+
+const PromptSchema = z.object({ id: z.number(), authorUsername: z.string(), body: z.string() });
+export type Prompt = z.infer<typeof PromptSchema>;
+
+const PostSchema = z.object({
+  id: z.number(),
+  authorUsername: z.string(),
+  prompt: PromptSchema,
+  body: z.string(),
+});
+export type Post = z.infer<typeof PostSchema>;
+
+export const ContentSchema = z.object({
+  prompts: z.array(PromptSchema),
+  posts: z.array(PostSchema),
+});
+export type Content = z.infer<typeof ContentSchema>;
+
+export const UsernamesResponseSchema = z.object({ usernames: z.array(z.string()) });
+export type UsernamesResponse = z.infer<typeof UsernamesResponseSchema>;
