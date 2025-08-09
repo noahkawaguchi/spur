@@ -1,4 +1,4 @@
-import SinglePostDisplay from '@/components/SinglePostDisplay';
+import SinglePostDisplay from '@/components/PostsDisplay/SinglePostDisplay';
 import useRequest from '@/hooks/useRequest';
 import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
 import { PostsResponseSchema, type Post, type PostsResponse } from '@/types';
@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import styles from '@/styles/shared.module.css';
 import { first100chars, howLongAgo } from '@/utils/fmt';
 
-const ManyPostsDisplay = ({
+const PostsDisplay = ({
   header,
   endpoint,
   displayUsernames,
@@ -68,4 +68,4 @@ const ManyPostsDisplay = ({
   );
 };
 
-export default ManyPostsDisplay;
+export default PostsDisplay;

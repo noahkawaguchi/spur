@@ -1,14 +1,12 @@
 import type { Post } from '@/types';
-import styles from '@/styles/shared.module.css';
+import styles from './PostsDisplay.module.css';
 import { howLongAgo } from '@/utils/fmt';
 import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
 import { useState } from 'react';
 import useRequest from '@/hooks/useRequest';
 import TextareaAutosize from 'react-textarea-autosize';
 
-// TODO:
-//   - move styles to a module here instead of shared
-//   - add buttons to get parent post and children posts
+// TODO: add buttons to get parent post and children posts
 
 const SinglePostDisplay = ({
   readingPost,

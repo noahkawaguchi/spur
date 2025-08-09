@@ -1,4 +1,4 @@
-import ManyPostsDisplay from '@/components/ManyPostsDisplay';
+import PostsDisplay from '@/components/PostsDisplay';
 import { removeToken } from '@/utils/jwt';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,7 +11,7 @@ const ProfilePage = () => {
   };
 
   return (
-    <ManyPostsDisplay
+    <PostsDisplay
       header={
         <>
           <h2>Your profile</h2>

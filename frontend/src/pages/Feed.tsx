@@ -1,8 +1,8 @@
-import ManyPostsDisplay from '@/components/ManyPostsDisplay';
+import PostsDisplay from '@/components/PostsDisplay';
 
 const FeedPage = () => {
   return (
-    <ManyPostsDisplay
+    <PostsDisplay
       header={
         <>
           <h2>Feed</h2>

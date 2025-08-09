@@ -1,4 +1,4 @@
-import ManyPostsDisplay from '@/components/ManyPostsDisplay';
+import PostsDisplay from '@/components/PostsDisplay';
 import { Link, useParams } from 'react-router-dom';
 
 const FriendContentPage = () => {
@@ -6,7 +6,7 @@ const FriendContentPage = () => {
   if (!username) throw new Error('unexpected undefined username in FriendsContentPage');
 
   return (
-    <ManyPostsDisplay
+    <PostsDisplay
       header={
         <>
           <Link to='/friends'>
