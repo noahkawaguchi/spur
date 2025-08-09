@@ -1,8 +1,8 @@
-use crate::models::{post::PostWithPrompt, prompt::PromptWithAuthor};
+use crate::models::post::PostResponse;
 use serde::{Deserialize, Serialize};
 
 /// A general-purpose error response body.
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub error: String,
 }
@@ -14,7 +14,7 @@ pub struct SuccessResponse {
 }
 
 /// A response body for sending a JWT.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct TokenResponse {
     pub token: String,
 }
@@ -25,18 +25,14 @@ pub struct UsernamesResponse {
     pub usernames: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct SinglePromptResponse {
-    pub prompt: PromptWithAuthor,
-}
-
+/// A response body for sending one post.
 #[derive(Serialize, Deserialize)]
 pub struct SinglePostResponse {
-    pub post: PostWithPrompt,
+    pub post: PostResponse,
 }
 
+/// A response body for sending many posts.
 #[derive(Serialize, Deserialize)]
-pub struct PromptsAndPostsResponse {
-    pub prompts: Vec<PromptWithAuthor>,
-    pub posts: Vec<PostWithPrompt>,
+pub struct ManyPostsResponse {
+    pub posts: Vec<PostResponse>,
 }

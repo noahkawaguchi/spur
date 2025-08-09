@@ -1,11 +1,10 @@
 use crate::{
     domain::{
-        content::repository::PromptStore,
         friendship::{repository::FriendshipStore, user_id_pair::UserIdPair},
         user::UserStore,
     },
-    models::{prompt::PromptWithAuthor, user::NewUser},
-    repository::{friendship::FriendshipRepo, prompt::PromptRepo, user::UserRepo},
+    models::user::NewUser,
+    repository::{friendship::FriendshipRepo, user::UserRepo},
 };
 
 /// Inserts four new users into the test database and returns them as they were inserted.
@@ -111,47 +110,47 @@ pub async fn seed_friends(pool: sqlx::PgPool) {
         .unwrap();
 }
 
-/// Inserts eight prompts into the test database, two by each of four users assumed to have IDs 1,
-/// 2, 3, and 4, and returns the Prompts in `PromptWithAuthor` form.
-///
-/// # Panics
-///
-/// Panics if any of the insertions fail. This function should only be used in testing.
-pub async fn seed_prompts(pool: sqlx::PgPool) -> [PromptWithAuthor; 8] {
-    let repo = PromptRepo::new(pool);
+// /// Inserts eight prompts into the test database, two by each of four users assumed to have IDs 1,
+// /// 2, 3, and 4, and returns the Prompts in `PromptWithAuthor` form.
+// ///
+// /// # Panics
+// ///
+// /// Panics if any of the insertions fail. This function should only be used in testing.
+// pub async fn seed_prompts(pool: sqlx::PgPool) -> [PromptWithAuthor; 8] {
+//     let repo = PromptRepo::new(pool);
 
-    [
-        repo.insert_new(1, "User one prompt one")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(1, "User one prompt two")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(2, "User two prompt one")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(2, "User two prompt two")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(3, "User three prompt one")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(3, "User three prompt two")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(4, "User four prompt one")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(4, "User four prompt two")
-            .await
-            .unwrap()
-            .into(),
-    ]
-}
+//     [
+//         repo.insert_new(1, "User one prompt one")
+//             .await
+//             .unwrap()
+//             .into(),
+//         repo.insert_new(1, "User one prompt two")
+//             .await
+//             .unwrap()
+//             .into(),
+//         repo.insert_new(2, "User two prompt one")
+//             .await
+//             .unwrap()
+//             .into(),
+//         repo.insert_new(2, "User two prompt two")
+//             .await
+//             .unwrap()
+//             .into(),
+//         repo.insert_new(3, "User three prompt one")
+//             .await
+//             .unwrap()
+//             .into(),
+//         repo.insert_new(3, "User three prompt two")
+//             .await
+//             .unwrap()
+//             .into(),
+//         repo.insert_new(4, "User four prompt one")
+//             .await
+//             .unwrap()
+//             .into(),
+//         repo.insert_new(4, "User four prompt two")
+//             .await
+//             .unwrap()
+//             .into(),
+//     ]
+// }

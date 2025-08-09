@@ -10,22 +10,20 @@ export interface AddFriendRequest {
   recipientUsername: string;
 }
 
-const PromptSchema = z.object({ id: z.number(), authorUsername: z.string(), body: z.string() });
-export type Prompt = z.infer<typeof PromptSchema>;
-
-const PostSchema = z.object({
+export const PostSchema = z.object({
   id: z.number(),
   authorUsername: z.string(),
-  prompt: PromptSchema,
+  parentId: z.nullable(z.number()),
   body: z.string(),
+  createdAtMs: z.number(),
+  editedAtMs: z.nullable(z.number()),
+  archivedAtMs: z.nullable(z.number()),
+  deletedAtMs: z.nullable(z.number()),
 });
 export type Post = z.infer<typeof PostSchema>;
 
-export const ContentSchema = z.object({
-  prompts: z.array(PromptSchema),
-  posts: z.array(PostSchema),
-});
-export type Content = z.infer<typeof ContentSchema>;
+export const PostsResponseSchema = z.object({ posts: z.array(PostSchema) });
+export type PostsResponse = z.infer<typeof PostsResponseSchema>;
 
 export const UsernamesResponseSchema = z.object({ usernames: z.array(z.string()) });
 export type UsernamesResponse = z.infer<typeof UsernamesResponseSchema>;

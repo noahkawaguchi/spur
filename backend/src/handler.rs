@@ -1,9 +1,7 @@
 pub mod api_error;
 pub mod auth;
-pub mod content;
 pub mod friendship;
 pub mod post;
-pub mod prompt;
 pub mod validated_json;
 
 /// Expands to a handler function return type.

@@ -1,6 +1,5 @@
 use super::{
-    auth::AuthError, content::error::ContentError, friendship::error::FriendshipError,
-    user::UserError,
+    auth::AuthError, friendship::error::FriendshipError, post::PostError, user::UserError,
 };
 use crate::technical_error::TechnicalError;
 use thiserror::Error;
@@ -17,7 +16,7 @@ pub enum DomainError {
     Friendship(#[from] FriendshipError),
 
     #[error(transparent)]
-    Content(#[from] ContentError),
+    Post(#[from] PostError),
 
     #[error(transparent)]
     Technical(#[from] TechnicalError),

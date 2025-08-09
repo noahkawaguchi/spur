@@ -1,4 +1,4 @@
-import ContentDisplay from '@/components/ContentDisplay';
+import ManyPostsDisplay from '@/components/ManyPostsDisplay';
 import { removeToken } from '@/utils/jwt';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,7 +11,7 @@ const ProfilePage = () => {
   };
 
   return (
-    <ContentDisplay
+    <ManyPostsDisplay
       header={
         <>
           <h2>Your profile</h2>
@@ -21,7 +21,7 @@ const ProfilePage = () => {
           <hr />
         </>
       }
-      endpoint='content/me'
+      endpoint='posts/me'
       displayUsernames={false}
     />
   );

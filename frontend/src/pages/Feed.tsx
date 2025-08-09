@@ -1,15 +1,15 @@
-import ContentDisplay from '@/components/ContentDisplay';
+import ManyPostsDisplay from '@/components/ManyPostsDisplay';
 
 const FeedPage = () => {
   return (
-    <ContentDisplay
+    <ManyPostsDisplay
       header={
         <>
           <h2>Feed</h2>
           <hr />
         </>
       }
-      endpoint='content'
+      endpoint='posts/friends'
       displayUsernames={true}
     />
   );

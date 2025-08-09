@@ -1,7 +1,6 @@
 use crate::{
     domain::{
-        content::error::ContentError, error::DomainError, friendship::error::FriendshipError,
-        user::UserError,
+        error::DomainError, friendship::error::FriendshipError, post::PostError, user::UserError,
     },
     dto::responses::ErrorResponse,
 };
@@ -41,13 +40,13 @@ impl IntoResponse for ApiError {
                         StatusCode::CONFLICT
                     }
                 },
-                DomainError::Content(err) => match err {
-                    ContentError::DuplicatePrompt | ContentError::DuplicatePost => {
-                        StatusCode::CONFLICT
+                DomainError::Post(err) => match err {
+                    PostError::NotFound => StatusCode::NOT_FOUND,
+                    PostError::DuplicateReply => StatusCode::CONFLICT,
+                    PostError::DeletedParent => StatusCode::GONE,
+                    PostError::SelfReply | PostError::ArchivedParent => {
+                        StatusCode::UNPROCESSABLE_ENTITY
                     }
-                    ContentError::OwnPrompt => StatusCode::UNPROCESSABLE_ENTITY,
-                    ContentError::NotFound => StatusCode::NOT_FOUND,
-                    ContentError::NotFriends => StatusCode::FORBIDDEN,
                 },
                 DomainError::Technical(_) => StatusCode::INTERNAL_SERVER_ERROR,
             },
