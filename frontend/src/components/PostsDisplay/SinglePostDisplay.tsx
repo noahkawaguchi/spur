@@ -1,41 +1,17 @@
 import type { Post } from '@/types';
 import styles from './PostsDisplay.module.css';
 import { howLongAgo } from '@/utils/fmt';
-import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
 import { useState } from 'react';
-import useRequest from '@/hooks/useRequest';
-import TextareaAutosize from 'react-textarea-autosize';
+import ReplyWriter from './ReplyWriter';
 
 // TODO: add buttons to get parent post and children posts
 
-const SinglePostDisplay = ({
-  readingPost,
-  setReadingPost,
-}: {
-  readingPost: Post;
-  setReadingPost: (readingPost: Post | null) => void;
-}) => {
-  const token = useTokenOrRedirect();
-  const [postBody, setPostBody] = useState('');
+const SinglePostDisplay = ({ readingPost, backFn }: { readingPost: Post; backFn: () => void }) => {
   const [replying, setReplying] = useState(false);
-  const { success, error, loading, sendRequest } = useRequest<
-    { parentId: number; body: string },
-    null
-  >({ method: 'POST', endpoint: 'posts', respSchema: null });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (token) void sendRequest({ token, body: { parentId: readingPost.id, body: postBody } });
-  };
 
   return (
     <>
-      <button
-        type='button'
-        onClick={() => {
-          setReadingPost(null);
-        }}
-      >
+      <button type='button' onClick={backFn}>
         Back
       </button>
       <div style={{ textAlign: 'center' }}>
@@ -45,51 +21,22 @@ const SinglePostDisplay = ({
         <p className={styles.postBodyArea} style={{ whiteSpace: 'pre-line', textAlign: 'justify' }}>
           {readingPost.body}
         </p>
-        <button
-          type='button'
-          onClick={() => {
-            setReplying(true);
-          }}
-          hidden={replying}
-        >
-          Reply
-        </button>
-        {replying && (
-          <>
-            <hr />
-            <form onSubmit={handleSubmit}>
-              <label>
-                New Reply:
-                <TextareaAutosize
-                  className={styles.postBodyArea}
-                  value={postBody}
-                  onChange={e => {
-                    setPostBody(e.target.value);
-                  }}
-                  placeholder='Your thoughts...'
-                  disabled={loading}
-                  required
-                  autoFocus
-                  minRows={5}
-                />
-              </label>
-              <br />
-              <button type='submit' disabled={loading}>
-                Post
-              </button>
-              <button
-                type='button'
-                onClick={() => {
-                  setReplying(false);
-                }}
-              >
-                Cancel
-              </button>
-            </form>
-            {loading && <p>Loading...</p>}
-            {error && <p>Error: {error}</p>}
-            {success && <p>Successfully created!</p>}
-          </>
+        {replying ? (
+          <ReplyWriter
+            parentId={readingPost.id}
+            cancelFn={() => {
+              setReplying(false);
+            }}
+          />
+        ) : (
+          <button
+            type='button'
+            onClick={() => {
+              setReplying(true);
+            }}
+          >
+            Reply
+          </button>
         )}
       </div>
     </>

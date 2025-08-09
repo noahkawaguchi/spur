@@ -35,7 +35,12 @@ const PostsDisplay = ({
       {error && <p>Error: {error}</p>}
       {posts &&
         (readingPost ? (
-          <SinglePostDisplay readingPost={readingPost} setReadingPost={setReadingPost} />
+          <SinglePostDisplay
+            readingPost={readingPost}
+            backFn={() => {
+              setReadingPost(null);
+            }}
+          />
         ) : (
           <>
             {posts.length ? (
