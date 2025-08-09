@@ -1,7 +1,7 @@
 import SinglePostDisplay from '@/components/PostsDisplay/SinglePostDisplay';
 import useRequest from '@/hooks/useRequest';
 import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
-import { PostsResponseSchema, type Post, type PostsResponse } from '@/types';
+import { PostArraySchema, type Post } from '@/types';
 import { useEffect, useState } from 'react';
 import styles from '@/styles/shared.module.css';
 import { first100chars, howLongAgo } from '@/utils/fmt';
@@ -17,11 +17,12 @@ const PostsDisplay = ({
 }) => {
   const token = useTokenOrRedirect();
   const [readingPost, setReadingPost] = useState<Post | null>(null);
-  const { data, error, loading, sendRequest } = useRequest<null, PostsResponse>({
-    method: 'GET',
-    endpoint,
-    respSchema: PostsResponseSchema,
-  });
+  const {
+    data: posts,
+    error,
+    loading,
+    sendRequest,
+  } = useRequest<null, Post[]>({ method: 'GET', endpoint, respSchema: PostArraySchema });
 
   useEffect(() => {
     if (token) void sendRequest({ token });
@@ -32,15 +33,15 @@ const PostsDisplay = ({
       {!readingPost && header}
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
-      {data &&
+      {posts &&
         (readingPost ? (
           <SinglePostDisplay readingPost={readingPost} setReadingPost={setReadingPost} />
         ) : (
           <>
-            {data.posts.length ? (
+            {posts.length ? (
               <table>
                 <tbody>
-                  {data.posts.map(post => (
+                  {posts.map(post => (
                     <tr key={post.id}>
                       {displayUsernames && <th>by {post.authorUsername}</th>}
                       <td>created {howLongAgo(post.createdAtMs)} ago</td>

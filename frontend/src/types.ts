@@ -10,6 +10,8 @@ export interface AddFriendRequest {
   recipientUsername: string;
 }
 
+export const StringArraySchema = z.array(z.string());
+
 export const PostSchema = z.object({
   id: z.number(),
   authorUsername: z.string(),
@@ -21,9 +23,4 @@ export const PostSchema = z.object({
   deletedAtMs: z.nullable(z.number()),
 });
 export type Post = z.infer<typeof PostSchema>;
-
-export const PostsResponseSchema = z.object({ posts: z.array(PostSchema) });
-export type PostsResponse = z.infer<typeof PostsResponseSchema>;
-
-export const UsernamesResponseSchema = z.object({ usernames: z.array(z.string()) });
-export type UsernamesResponse = z.infer<typeof UsernamesResponseSchema>;
+export const PostArraySchema = z.array(PostSchema);

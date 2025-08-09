@@ -1,12 +1,9 @@
 use super::{api_result, validated_json::ValidatedJson};
 use crate::{
     domain::post::PostManager,
-    dto::{
-        requests::CreatePostRequest,
-        responses::{ManyPostsResponse, SinglePostResponse},
-    },
+    dto::{requests::CreatePostRequest, responses::PostResponse},
     state::AppState,
-    utils::vec_into,
+    map_into::MapInto,
 };
 use axum::{
     Extension, Json, Router,
@@ -25,6 +22,7 @@ pub fn routes() -> Router<AppState> {
         .route("/me", get(own_posts))
 }
 
+/// Creates a new post.
 async fn create_new(
     post_svc: State<Arc<dyn PostManager>>,
     Extension(requester_id): Extension<i32>,
@@ -33,37 +31,55 @@ async fn create_new(
     post_svc
         .create_new(requester_id, payload.parent_id, &payload.body)
         .await?;
+
     Ok(StatusCode::CREATED)
 }
 
+/// Retrieves a post using its ID.
 async fn get_by_id(
     post_svc: State<Arc<dyn PostManager>>,
     Path(post_id): Path<i32>,
-) -> api_result!(SinglePostResponse) {
-    let post = post_svc.get_by_id(post_id).await?.into();
-    Ok((StatusCode::OK, Json(SinglePostResponse { post })))
+) -> api_result!(PostResponse) {
+    Ok((
+        StatusCode::OK,
+        Json(post_svc.get_by_id(post_id).await?.into()),
+    ))
 }
 
+/// Retrieves posts written by the requester's friends.
 async fn all_friend_posts(
     post_svc: State<Arc<dyn PostManager>>,
     Extension(requester_id): Extension<i32>,
-) -> api_result!(ManyPostsResponse) {
-    let posts = vec_into(post_svc.all_friend_posts(requester_id).await?);
-    Ok((StatusCode::OK, Json(ManyPostsResponse { posts })))
+) -> api_result!(Vec<PostResponse>) {
+    Ok((
+        StatusCode::OK,
+        Json(post_svc.all_friend_posts(requester_id).await?.map_into()),
+    ))
 }
 
+/// Retrieves posts written by the user with the specified username.
 async fn specific_user_posts(
     post_svc: State<Arc<dyn PostManager>>,
     Path(author_username): Path<String>,
-) -> api_result!(ManyPostsResponse) {
-    let posts = vec_into(post_svc.user_posts_by_username(&author_username).await?);
-    Ok((StatusCode::OK, Json(ManyPostsResponse { posts })))
+) -> api_result!(Vec<PostResponse>) {
+    Ok((
+        StatusCode::OK,
+        Json(
+            post_svc
+                .user_posts_by_username(&author_username)
+                .await?
+                .map_into(),
+        ),
+    ))
 }
 
+/// Retrieves the requester's own posts.
 async fn own_posts(
     post_svc: State<Arc<dyn PostManager>>,
     Extension(requester_id): Extension<i32>,
-) -> api_result!(ManyPostsResponse) {
-    let posts = vec_into(post_svc.user_posts_by_id(requester_id).await?);
-    Ok((StatusCode::OK, Json(ManyPostsResponse { posts })))
+) -> api_result!(Vec<PostResponse>) {
+    Ok((
+        StatusCode::OK,
+        Json(post_svc.user_posts_by_id(requester_id).await?.map_into()),
+    ))
 }

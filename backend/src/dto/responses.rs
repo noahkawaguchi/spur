@@ -1,38 +1,33 @@
-use crate::models::post::PostResponse;
 use serde::{Deserialize, Serialize};
 
-/// A general-purpose error response body.
+/// A general-purpose error response struct.
 #[derive(Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub error: String,
 }
 
-/// A general-purpose success response body.
+/// A general-purpose success response struct.
 #[derive(Serialize, Deserialize)]
 pub struct SuccessResponse {
     pub message: String,
 }
 
-/// A response body for sending a JWT.
+/// A response struct for sending a JWT.
 #[derive(Serialize, Deserialize)]
 pub struct TokenResponse {
     pub token: String,
 }
 
-/// A response body for listing the usernames of a set of users.
+/// A response struct for sending information about a post.
 #[derive(Serialize, Deserialize)]
-pub struct UsernamesResponse {
-    pub usernames: Vec<String>,
-}
-
-/// A response body for sending one post.
-#[derive(Serialize, Deserialize)]
-pub struct SinglePostResponse {
-    pub post: PostResponse,
-}
-
-/// A response body for sending many posts.
-#[derive(Serialize, Deserialize)]
-pub struct ManyPostsResponse {
-    pub posts: Vec<PostResponse>,
+#[serde(rename_all = "camelCase")]
+pub struct PostResponse {
+    pub id: i32,
+    pub author_username: String,
+    pub parent_id: Option<i32>,
+    pub body: String,
+    pub created_at_ms: i64,
+    pub edited_at_ms: Option<i64>,
+    pub archived_at_ms: Option<i64>,
+    pub deleted_at_ms: Option<i64>,
 }

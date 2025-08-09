@@ -1,31 +1,17 @@
+use crate::dto::responses::PostResponse;
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 
 /// The post entity as it exists in the database with the addition of the author's username.
 pub struct PostInfo {
     pub id: i32,
     pub author_id: Option<i32>,
+    pub author_username: Option<String>, // From the users table
     pub parent_id: Option<i32>,
     pub body: Option<String>,
     pub created_at: DateTime<Utc>,
     pub edited_at: Option<DateTime<Utc>>,
     pub archived_at: Option<DateTime<Utc>>,
     pub deleted_at: Option<DateTime<Utc>>,
-
-    pub author_username: Option<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PostResponse {
-    pub id: i32,
-    pub author_username: String,
-    pub parent_id: Option<i32>,
-    pub body: String,
-    pub created_at_ms: i64,
-    pub edited_at_ms: Option<i64>,
-    pub archived_at_ms: Option<i64>,
-    pub deleted_at_ms: Option<i64>,
 }
 
 impl From<PostInfo> for PostResponse {
