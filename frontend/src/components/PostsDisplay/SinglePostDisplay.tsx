@@ -1,15 +1,68 @@
-import type { Post } from '@/types';
+import { PostSchema, type Post } from '@/types';
 import styles from './PostsDisplay.module.css';
-import { howLongAgo } from '@/utils/fmt';
+import { firstChars, howLongAgo } from '@/utils/fmt';
 import { useState } from 'react';
 import ReplyWriter from './ReplyWriter';
-
-// TODO: add buttons to get parent post and children posts
+import useRequest from '@/hooks/useRequest';
+import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
+import PostsDisplay from '.';
 
 const SinglePostDisplay = ({ readingPost, backFn }: { readingPost: Post; backFn: () => void }) => {
+  const token = useTokenOrRedirect();
   const [replying, setReplying] = useState(false);
+  const [nestedParent, setNestedParent] = useState(false);
+  const [nestedChildren, setNestedChildren] = useState(false);
 
-  return (
+  const {
+    data: parentPost,
+    loading,
+    error,
+    sendRequest,
+  } = useRequest<null, Post>({ method: 'GET', endpoint: 'posts', respSchema: PostSchema });
+
+  const handleParentClick = () => {
+    if (token && readingPost.parentId) {
+      void sendRequest({ token, pathParameter: readingPost.parentId.toString() });
+      setNestedParent(true);
+    }
+  };
+
+  return nestedParent ? (
+    <>
+      {loading && <p>Loading...</p>}
+      {error && <p>Error: {error}</p>}
+      {parentPost && (
+        <SinglePostDisplay
+          readingPost={parentPost}
+          backFn={() => {
+            setNestedParent(false);
+          }}
+        />
+      )}
+    </>
+  ) : nestedChildren ? (
+    <PostsDisplay
+      header={
+        <>
+          <button
+            type='button'
+            onClick={() => {
+              setNestedChildren(false);
+            }}
+          >
+            Back
+          </button>
+          <h2>Children of {readingPost.authorUsername}'s Post</h2>
+          <p>
+            <i>"{firstChars(readingPost.body, 100)}"</i>
+          </p>
+          <hr />
+        </>
+      }
+      endpoint={`posts/children/${readingPost.id.toString()}`}
+      displayUsernames={true}
+    />
+  ) : (
     <>
       <button type='button' onClick={backFn}>
         Back
@@ -29,14 +82,29 @@ const SinglePostDisplay = ({ readingPost, backFn }: { readingPost: Post; backFn:
             }}
           />
         ) : (
-          <button
-            type='button'
-            onClick={() => {
-              setReplying(true);
-            }}
-          >
-            Reply
-          </button>
+          <>
+            <button
+              type='button'
+              onClick={() => {
+                setReplying(true);
+              }}
+            >
+              Reply
+            </button>
+            {readingPost.parentId && (
+              <button type='button' onClick={handleParentClick}>
+                Parent
+              </button>
+            )}
+            <button
+              type='button'
+              onClick={() => {
+                setNestedChildren(true);
+              }}
+            >
+              Children
+            </button>
+          </>
         )}
       </div>
     </>

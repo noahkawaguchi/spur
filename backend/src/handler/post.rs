@@ -2,8 +2,8 @@ use super::{api_result, validated_json::ValidatedJson};
 use crate::{
     domain::post::PostManager,
     dto::{requests::CreatePostRequest, responses::PostResponse},
-    state::AppState,
     map_into::MapInto,
+    state::AppState,
 };
 use axum::{
     Extension, Json, Router,
@@ -17,6 +17,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", post(create_new))
         .route("/{post_id}", get(get_by_id))
+        .route("/children/{post_id}", get(get_by_parent_id))
         .route("/friends", get(all_friend_posts))
         .route("/user/{author_username}", get(specific_user_posts))
         .route("/me", get(own_posts))
@@ -43,6 +44,17 @@ async fn get_by_id(
     Ok((
         StatusCode::OK,
         Json(post_svc.get_by_id(post_id).await?.into()),
+    ))
+}
+
+/// Retrieves the children of the post with the provided ID.
+async fn get_by_parent_id(
+    post_svc: State<Arc<dyn PostManager>>,
+    Path(parent_id): Path<i32>,
+) -> api_result!(Vec<PostResponse>) {
+    Ok((
+        StatusCode::OK,
+        Json(post_svc.get_by_parent_id(parent_id).await?.map_into()),
     ))
 }
 

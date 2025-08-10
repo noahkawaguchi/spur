@@ -4,7 +4,7 @@ import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
 import { PostArraySchema, type Post } from '@/types';
 import { useEffect, useState } from 'react';
 import styles from '@/styles/shared.module.css';
-import { first100chars, howLongAgo } from '@/utils/fmt';
+import { firstChars, howLongAgo } from '@/utils/fmt';
 
 const PostsDisplay = ({
   header,
@@ -50,7 +50,7 @@ const PostsDisplay = ({
                     <tr key={post.id}>
                       {displayUsernames && <th>by {post.authorUsername}</th>}
                       <td>created {howLongAgo(post.createdAtMs)} ago</td>
-                      <td>{first100chars(post.body)}</td>
+                      <td>{firstChars(post.body)}</td>
                       <td className={styles.buttonCell}>
                         <button
                           type='button'

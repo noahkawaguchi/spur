@@ -1,5 +1,6 @@
-export const first100chars = (str: string): string =>
-  str.length > 50 ? str.slice(0, 50) + '...' : str;
+/** Slices the first `n` characters of `str` and adds an ellipsis, defaulting to 50 characters. */
+export const firstChars = (str: string, n = 50): string =>
+  str.length > n ? str.slice(0, n) + '...' : str;
 
 /**
  * Finds the amount of time that has elapsed between the provided time and now.

@@ -48,6 +48,22 @@ impl PostStore for PostRepo {
         .map_err(Into::into)
     }
 
+    async fn get_by_parent_id(&self, parent_id: i32) -> Result<Vec<PostInfo>, TechnicalError> {
+        sqlx::query_as!(
+            PostInfo,
+            "
+            SELECT p.*, u.username AS author_username
+            FROM post p
+            LEFT JOIN users u ON p.author_id = u.id
+            WHERE p.parent_id = $1;
+            ",
+            parent_id
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(Into::into)
+    }
+
     async fn user_posts_by_id(&self, author_id: i32) -> Result<Vec<PostInfo>, TechnicalError> {
         sqlx::query_as!(
             PostInfo,

@@ -37,6 +37,9 @@ pub trait PostManager: Send + Sync {
     /// Retrieves a post by its ID.
     async fn get_by_id(&self, post_id: i32) -> Result<PostInfo, DomainError>;
 
+    /// Retrieves all children of the post with the provided ID.
+    async fn get_by_parent_id(&self, parent_id: i32) -> Result<Vec<PostInfo>, DomainError>;
+
     /// Retrieves all posts written by the user with the provided ID.
     async fn user_posts_by_id(&self, author_id: i32) -> Result<Vec<PostInfo>, DomainError>;
 
@@ -63,6 +66,9 @@ pub trait PostStore: Send + Sync {
 
     /// Retrieves a post by its ID, returning None if no post is found.
     async fn get_by_id(&self, id: i32) -> Result<Option<PostInfo>, TechnicalError>;
+
+    /// Retrieves all children of the post with the provided ID.
+    async fn get_by_parent_id(&self, parent_id: i32) -> Result<Vec<PostInfo>, TechnicalError>;
 
     /// Retrieves all posts written by the user with the provided ID.
     async fn user_posts_by_id(&self, author_id: i32) -> Result<Vec<PostInfo>, TechnicalError>;

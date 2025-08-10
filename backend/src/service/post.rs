@@ -55,6 +55,13 @@ impl<S: PostStore> PostManager for PostSvc<S> {
             .map_err(Into::into)
     }
 
+    async fn get_by_parent_id(&self, parent_id: i32) -> Result<Vec<PostInfo>, DomainError> {
+        self.store
+            .get_by_parent_id(parent_id)
+            .await
+            .map_err(Into::into)
+    }
+
     async fn user_posts_by_id(&self, author_id: i32) -> Result<Vec<PostInfo>, DomainError> {
         self.store
             .user_posts_by_id(author_id)
