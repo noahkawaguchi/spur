@@ -1,5 +1,9 @@
 use super::insertion_error::InsertionError;
-use crate::{domain::post::PostStore, models::post::PostInfo, technical_error::TechnicalError};
+use crate::{
+    domain::post::{PostInsertionError, PostStore},
+    models::post::PostInfo,
+    technical_error::TechnicalError,
+};
 
 pub struct PostRepo {
     pool: sqlx::PgPool,
@@ -16,20 +20,54 @@ impl PostStore for PostRepo {
         author_id: i32,
         parent_id: i32,
         body: &str,
-    ) -> Result<(), InsertionError> {
-        sqlx::query!(
+    ) -> Result<(), PostInsertionError> {
+        // Disallow writing posts in response to nonexistent, deleted, archived, or one's own posts
+        sqlx::query_scalar!(
             "
-            INSERT INTO post (author_id, parent_id, body)
-            VALUES ($1, $2, $3)
+            WITH parent AS (
+                SELECT author_id, archived_at, deleted_at
+                FROM post
+                WHERE id = $2
+                FOR UPDATE
+            ),
+            parent_status AS (
+                SELECT
+                    CASE
+                        WHEN parent.deleted_at IS NOT NULL THEN 'deleted'
+                        WHEN parent.archived_at IS NOT NULL THEN 'archived'
+                        WHEN parent.author_id = $1 THEN 'self_reply'
+                        ELSE 'ok'
+                    END as status
+                FROM parent
+            ),
+            _ AS (
+                INSERT INTO post (author_id, parent_id, body)
+                SELECT $1, $2, $3
+                FROM parent_status
+                WHERE status = 'ok'
+            )
+            SELECT status FROM parent_status
             ",
             author_id,
             parent_id,
             body,
         )
-        .execute(&self.pool)
+        .fetch_one(&self.pool)
         .await
-        .map_err(Into::into)
-        .map(|_| ())
+        .map_err(|e| InsertionError::from(e).into()) // Technical errors and unique violations
+        .and_then(|status| {
+            // Business rules enforced in SQL
+            status.map_or_else(
+                || Err(PostInsertionError::NotFound),
+                |s| match s.as_str() {
+                    "ok" => Ok(()),
+                    "deleted" => Err(PostInsertionError::DeletedParent),
+                    "archived" => Err(PostInsertionError::ArchivedParent),
+                    "self_reply" => Err(PostInsertionError::SelfReply),
+                    _ => Err(PostInsertionError::UnexpectedStatus),
+                },
+            )
+        })
     }
 
     async fn get_by_id(&self, id: i32) -> Result<Option<PostInfo>, TechnicalError> {

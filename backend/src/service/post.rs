@@ -4,8 +4,6 @@ use crate::{
         post::{PostError, PostManager, PostStore},
     },
     models::post::PostInfo,
-    repository::insertion_error::InsertionError,
-    technical_error::TechnicalError,
 };
 
 pub struct PostSvc<S: PostStore> {
@@ -24,27 +22,10 @@ impl<S: PostStore> PostManager for PostSvc<S> {
         parent_id: i32,
         body: &str,
     ) -> Result<(), DomainError> {
-        // Disallow replying to nonexistent, archived, deleted, or one's own posts
-        let parent_post = self.get_by_id(parent_id).await?;
-
-        if parent_post.archived_at.is_some() {
-            return Err(PostError::ArchivedParent.into());
-        }
-        if parent_post.deleted_at.is_some() {
-            return Err(PostError::DeletedParent.into());
-        }
-        if parent_post.author_id.is_some_and(|id| id == author_id) {
-            return Err(PostError::SelfReply.into());
-        }
-
-        // TODO: New kinds of domain-related database errors are possible with the new post style.
-        // Some of the above logic could be handled by the database directly to minimize race
-        // conditions.
-        match self.store.insert_new(author_id, parent_id, body).await {
-            Err(InsertionError::Technical(e)) => Err(TechnicalError::Database(e).into()),
-            Err(InsertionError::UniqueViolation(_)) => Err(PostError::DuplicateReply.into()),
-            Ok(()) => Ok(()),
-        }
+        self.store
+            .insert_new(author_id, parent_id, body)
+            .await
+            .map_err(Into::into)
     }
 
     async fn get_by_id(&self, post_id: i32) -> Result<PostInfo, DomainError> {
@@ -372,6 +353,6 @@ impl<S: PostStore> PostManager for PostSvc<S> {
 //         }
 //     }
 //
-//     // Determined that `single_user_posts` and `all_friend_posts` do not need to be tested at this
-//     // point because they just wrap the repository functions and call `into`.
+//     // Determined that `single_user_posts` and `all_friend_posts` do not need to be tested at
+// this     // point because they just wrap the repository functions and call `into`.
 // }

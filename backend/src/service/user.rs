@@ -4,8 +4,6 @@ use crate::{
         user::{UserError, UserManager, UserStore},
     },
     models::user::{NewUser, User},
-    repository::insertion_error::InsertionError,
-    technical_error::TechnicalError,
 };
 
 pub struct UserSvc<S: UserStore> {
@@ -19,18 +17,7 @@ impl<S: UserStore> UserSvc<S> {
 #[async_trait::async_trait]
 impl<S: UserStore> UserManager for UserSvc<S> {
     async fn insert_new(&self, new_user: &NewUser) -> Result<i32, DomainError> {
-        self.store.insert_new(new_user).await.map_err(|e| match e {
-            InsertionError::UniqueViolation(v) if v.contains("email") => {
-                UserError::DuplicateEmail.into()
-            }
-            InsertionError::UniqueViolation(v) if v.contains("username") => {
-                UserError::DuplicateUsername.into()
-            }
-            InsertionError::UniqueViolation(v) => {
-                TechnicalError::Unexpected(format!("Unexpected unique violation: {v}")).into()
-            }
-            InsertionError::Technical(e) => TechnicalError::Database(e).into(),
-        })
+        self.store.insert_new(new_user).await.map_err(Into::into)
     }
 
     async fn get_by_id(&self, id: i32) -> Result<User, DomainError> {
@@ -58,7 +45,10 @@ impl<S: UserStore> UserManager for UserSvc<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::user::MockUserStore;
+    use crate::{
+        domain::user::{MockUserStore, UserInsertionError},
+        repository::insertion_error::InsertionError,
+    };
     use chrono::{Months, Utc};
     use mockall::predicate::eq;
 
@@ -90,8 +80,8 @@ mod tests {
                 })
                 .once()
                 .return_once(|_| {
-                    Err(InsertionError::UniqueViolation(String::from(
-                        "users_email_unique",
+                    Err(UserInsertionError(InsertionError::UniqueViolation(
+                        String::from("users_email_unique"),
                     )))
                 });
 
@@ -120,8 +110,8 @@ mod tests {
                 })
                 .once()
                 .return_once(|_| {
-                    Err(InsertionError::UniqueViolation(String::from(
-                        "users_username_unique",
+                    Err(UserInsertionError(InsertionError::UniqueViolation(
+                        String::from("users_username_unique"),
                     )))
                 });
 

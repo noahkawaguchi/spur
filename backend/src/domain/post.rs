@@ -10,17 +10,42 @@ pub enum PostError {
     #[error("Cannot reply multiple times to the same post. Try editing the existing reply.")]
     DuplicateReply,
 
-    #[error("Cannot reply to one's own post")]
-    SelfReply,
-
     #[error("No post found")]
     NotFound,
+
+    #[error("Cannot reply to a deleted post")]
+    DeletedParent,
 
     #[error("Cannot reply to an archived post")]
     ArchivedParent,
 
+    #[error("Cannot reply to one's own post")]
+    SelfReply,
+}
+
+/// A specialized error enum for inserting posts into the database.
+#[derive(Debug, Error)]
+pub enum PostInsertionError {
+    /// A technical database error or unique violation enforced by the schema.
+    #[error(transparent)]
+    Database(#[from] InsertionError),
+
+    /// Should be impossible, as all statuses are defined as hardcoded strings in the SQL query.
+    /// This variant is only present for exhaustive matching and future-proofing.
+    #[error("Unexpected status returned from post insertion query")]
+    UnexpectedStatus,
+
+    #[error("No post found")]
+    NotFound,
+
     #[error("Cannot reply to a deleted post")]
     DeletedParent,
+
+    #[error("Cannot reply to an archived post")]
+    ArchivedParent,
+
+    #[error("Cannot reply to one's own post")]
+    SelfReply,
 }
 
 #[cfg_attr(test, mockall::automock)]
@@ -62,7 +87,7 @@ pub trait PostStore: Send + Sync {
         author_id: i32,
         parent_id: i32,
         body: &str,
-    ) -> Result<(), InsertionError>;
+    ) -> Result<(), PostInsertionError>;
 
     /// Retrieves a post by its ID, returning None if no post is found.
     async fn get_by_id(&self, id: i32) -> Result<Option<PostInfo>, TechnicalError>;

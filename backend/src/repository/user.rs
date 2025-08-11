@@ -1,6 +1,5 @@
-use super::insertion_error::InsertionError;
 use crate::{
-    domain::user::UserStore,
+    domain::user::{UserInsertionError, UserStore},
     models::user::{NewUser, User},
     technical_error::TechnicalError,
 };
@@ -16,7 +15,7 @@ impl UserRepo {
 
 #[async_trait::async_trait]
 impl UserStore for UserRepo {
-    async fn insert_new(&self, new_user: &NewUser) -> Result<i32, InsertionError> {
+    async fn insert_new(&self, new_user: &NewUser) -> Result<i32, UserInsertionError> {
         sqlx::query_scalar!(
             "
             INSERT INTO users (name, email, username, password_hash)
@@ -58,7 +57,10 @@ impl UserStore for UserRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{temp_db::with_test_pool, within_one_second};
+    use crate::{
+        repository::insertion_error::InsertionError,
+        test_utils::{temp_db::with_test_pool, within_one_second},
+    };
     use chrono::Utc;
 
     fn make_test_users() -> Vec<NewUser> {
@@ -201,7 +203,7 @@ mod tests {
             let result = repo.insert_new(&fake_alice).await;
 
             assert!(
-                matches!(result, Err(InsertionError::UniqueViolation(v)) if v.contains("users_email_unique"))
+                matches!(result, Err(UserInsertionError( InsertionError::UniqueViolation(v) )) if v.contains("users_email_unique"))
             );
         })
         .await;
@@ -232,7 +234,7 @@ mod tests {
 
             let result = repo.insert_new(&fake_bob).await;
 
-            assert!(matches!(result, Err(InsertionError::UniqueViolation(v)) if v.contains("users_username_unique")));
+            assert!(matches!(result, Err(UserInsertionError( InsertionError::UniqueViolation(v) )) if v.contains("users_username_unique")));
         })
         .await;
     }
@@ -262,7 +264,10 @@ mod tests {
 
             for user in incomplete_users {
                 let result = repo.insert_new(&user).await;
-                assert!(matches!(result, Err(InsertionError::Technical(_))));
+                assert!(matches!(
+                    result,
+                    Err(UserInsertionError(InsertionError::Technical(_)))
+                ));
             }
         })
         .await;

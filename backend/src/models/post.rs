@@ -5,13 +5,14 @@ use chrono::{DateTime, Utc};
 pub struct PostInfo {
     pub id: i32,
     pub author_id: Option<i32>,
-    pub author_username: Option<String>, // From the users table
     pub parent_id: Option<i32>,
     pub body: Option<String>,
     pub created_at: DateTime<Utc>,
     pub edited_at: Option<DateTime<Utc>>,
     pub archived_at: Option<DateTime<Utc>>,
     pub deleted_at: Option<DateTime<Utc>>,
+    /// From the users table
+    pub author_username: Option<String>,
 }
 
 impl From<PostInfo> for PostResponse {
