@@ -1,6 +1,6 @@
-use crate::{
-    domain::friendship::{FriendshipStatus, repository::FriendshipStore, user_id_pair::UserIdPair},
-    technical_error::TechnicalError,
+use super::error::RepoError;
+use crate::domain::friendship::{
+    FriendshipStatus, repository::FriendshipStore, user_id_pair::UserIdPair,
 };
 
 pub struct FriendshipRepo {
@@ -13,10 +13,10 @@ impl FriendshipRepo {
 
 #[async_trait::async_trait]
 impl FriendshipStore for FriendshipRepo {
-    async fn new_request(&self, ids: &UserIdPair, requester_id: i32) -> Result<(), TechnicalError> {
+    async fn new_request(&self, ids: &UserIdPair, requester_id: i32) -> Result<(), RepoError> {
         sqlx::query!(
             "
-            INSERT INTO friendships (first_id, second_id, requester_first) 
+            INSERT INTO friendships (first_id, second_id, requester_first)
             VALUES ($1, $2, $3)
             ",
             ids.lesser(),
@@ -29,7 +29,7 @@ impl FriendshipStore for FriendshipRepo {
         .map(|_| ())
     }
 
-    async fn accept_request(&self, ids: &UserIdPair) -> Result<(), TechnicalError> {
+    async fn accept_request(&self, ids: &UserIdPair) -> Result<(), RepoError> {
         sqlx::query!(
             "
             UPDATE friendships
@@ -45,7 +45,7 @@ impl FriendshipStore for FriendshipRepo {
         .map(|_| ())
     }
 
-    async fn get_status(&self, ids: &UserIdPair) -> Result<FriendshipStatus, TechnicalError> {
+    async fn get_status(&self, ids: &UserIdPair) -> Result<FriendshipStatus, RepoError> {
         sqlx::query!(
             "
             SELECT requester_first, confirmed FROM friendships
@@ -65,7 +65,7 @@ impl FriendshipStore for FriendshipRepo {
         })
     }
 
-    async fn get_friends(&self, id: i32) -> Result<Vec<i32>, TechnicalError> {
+    async fn get_friends(&self, id: i32) -> Result<Vec<i32>, RepoError> {
         sqlx::query_scalar!(
             "
             SELECT
@@ -85,7 +85,7 @@ impl FriendshipStore for FriendshipRepo {
         .map(|friends| friends.into_iter().flatten().collect())
     }
 
-    async fn get_requests(&self, id: i32) -> Result<Vec<i32>, TechnicalError> {
+    async fn get_requests(&self, id: i32) -> Result<Vec<i32>, RepoError> {
         sqlx::query_scalar!(
             "
             SELECT first_id AS requester_id FROM friendships

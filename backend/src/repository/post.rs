@@ -1,9 +1,9 @@
-use super::insertion_error::InsertionError;
+use super::error::RepoError;
 use crate::{
-    domain::post::{PostInsertionError, PostStore},
+    domain::post::{PostInsertionOutcome, PostStore},
     models::post::PostInfo,
-    technical_error::TechnicalError,
 };
+use anyhow::anyhow;
 
 pub struct PostRepo {
     pool: sqlx::PgPool,
@@ -20,7 +20,7 @@ impl PostStore for PostRepo {
         author_id: i32,
         parent_id: i32,
         body: &str,
-    ) -> Result<(), PostInsertionError> {
+    ) -> Result<PostInsertionOutcome, RepoError> {
         // Disallow writing posts in response to nonexistent, deleted, archived, or one's own posts
         sqlx::query_scalar!(
             "
@@ -54,23 +54,24 @@ impl PostStore for PostRepo {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| InsertionError::from(e).into()) // Technical errors and unique violations
+        .map_err(Into::into) // Technical errors and unique violations
         .and_then(|status| {
             // Business rules enforced in SQL
-            status.map_or_else(
-                || Err(PostInsertionError::NotFound),
-                |s| match s.as_str() {
-                    "ok" => Ok(()),
-                    "deleted" => Err(PostInsertionError::DeletedParent),
-                    "archived" => Err(PostInsertionError::ArchivedParent),
-                    "self_reply" => Err(PostInsertionError::SelfReply),
-                    _ => Err(PostInsertionError::UnexpectedStatus),
-                },
-            )
+            status.map_or(Ok(PostInsertionOutcome::ParentMissing), |s| {
+                match s.as_str() {
+                    "deleted" => Ok(PostInsertionOutcome::ParentDeleted),
+                    "archived" => Ok(PostInsertionOutcome::ParentArchived),
+                    "self_reply" => Ok(PostInsertionOutcome::SelfReply),
+                    "ok" => Ok(PostInsertionOutcome::Inserted),
+                    _ => {
+                        Err(anyhow!("Unexpected insertion status despite hardcoded strings").into())
+                    }
+                }
+            })
         })
     }
 
-    async fn get_by_id(&self, id: i32) -> Result<Option<PostInfo>, TechnicalError> {
+    async fn get_by_id(&self, id: i32) -> Result<Option<PostInfo>, RepoError> {
         sqlx::query_as!(
             PostInfo,
             "
@@ -86,7 +87,7 @@ impl PostStore for PostRepo {
         .map_err(Into::into)
     }
 
-    async fn get_by_parent_id(&self, parent_id: i32) -> Result<Vec<PostInfo>, TechnicalError> {
+    async fn get_by_parent_id(&self, parent_id: i32) -> Result<Vec<PostInfo>, RepoError> {
         sqlx::query_as!(
             PostInfo,
             "
@@ -102,7 +103,7 @@ impl PostStore for PostRepo {
         .map_err(Into::into)
     }
 
-    async fn user_posts_by_id(&self, author_id: i32) -> Result<Vec<PostInfo>, TechnicalError> {
+    async fn user_posts_by_id(&self, author_id: i32) -> Result<Vec<PostInfo>, RepoError> {
         sqlx::query_as!(
             PostInfo,
             "
@@ -122,7 +123,7 @@ impl PostStore for PostRepo {
     async fn user_posts_by_username(
         &self,
         author_username: &str,
-    ) -> Result<Vec<PostInfo>, TechnicalError> {
+    ) -> Result<Vec<PostInfo>, RepoError> {
         sqlx::query_as!(
             PostInfo,
             "
@@ -141,7 +142,7 @@ impl PostStore for PostRepo {
         .map_err(Into::into)
     }
 
-    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostInfo>, TechnicalError> {
+    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostInfo>, RepoError> {
         sqlx::query_as!(
             PostInfo,
             "

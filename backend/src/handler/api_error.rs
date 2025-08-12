@@ -1,6 +1,6 @@
 use crate::{
     domain::{
-        error::DomainError, friendship::error::FriendshipError, post::PostError, user::UserError,
+        auth::AuthError, friendship::error::FriendshipError, post::PostError, user::UserError,
     },
     dto::responses::ErrorResponse,
 };
@@ -16,48 +16,65 @@ use thiserror::Error;
 pub enum ApiError {
     #[error(transparent)]
     Request(#[from] validator::ValidationErrors),
-
     #[error(transparent)]
-    Domain(#[from] DomainError),
+    Auth(#[from] AuthError),
+    #[error(transparent)]
+    User(#[from] UserError),
+    #[error(transparent)]
+    Friendship(#[from] FriendshipError),
+    #[error(transparent)]
+    Post(#[from] PostError),
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let status = match &self {
-            Self::Request(_) => StatusCode::UNPROCESSABLE_ENTITY,
-            Self::Domain(e) => match e {
-                DomainError::Auth(_) => StatusCode::UNAUTHORIZED,
-                DomainError::User(err) => match err {
-                    UserError::NotFound => StatusCode::NOT_FOUND,
-                    UserError::DuplicateEmail | UserError::DuplicateUsername => {
-                        StatusCode::CONFLICT
-                    }
-                },
-                DomainError::Friendship(err) => match err {
-                    FriendshipError::SelfFriendship => StatusCode::UNPROCESSABLE_ENTITY,
-                    FriendshipError::NonexistentUser => StatusCode::NOT_FOUND,
-                    FriendshipError::AlreadyFriends | FriendshipError::AlreadyRequested => {
-                        StatusCode::CONFLICT
-                    }
-                },
-                DomainError::Post(err) => match err {
-                    PostError::NotFound => StatusCode::NOT_FOUND,
-                    PostError::DuplicateReply => StatusCode::CONFLICT,
-                    PostError::DeletedParent => StatusCode::GONE,
-                    PostError::SelfReply | PostError::ArchivedParent => {
-                        StatusCode::UNPROCESSABLE_ENTITY
-                    }
-                },
-                DomainError::Technical(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            },
-        };
+        let (status, message) = match self {
+            Self::Request(_)
+            | Self::Friendship(FriendshipError::SelfFriendship)
+            | Self::Post(PostError::SelfReply | PostError::ArchivedParent) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, self.to_string())
+            }
 
-        let message = if let Self::Domain(DomainError::Technical(e)) = self {
-            // TODO: use a logger
-            eprintln!("{}", e.to_string().red());
-            String::from("Internal server error")
-        } else {
-            self.to_string()
+            Self::Auth(AuthError::JwtValidation | AuthError::InvalidPassword) => {
+                (StatusCode::UNAUTHORIZED, self.to_string())
+            }
+
+            Self::User(UserError::NotFound)
+            | Self::Post(PostError::NotFound)
+            | Self::Friendship(FriendshipError::NonexistentUser) => {
+                (StatusCode::NOT_FOUND, self.to_string())
+            }
+
+            Self::User(UserError::DuplicateEmail | UserError::DuplicateUsername)
+            | Self::Friendship(
+                FriendshipError::AlreadyFriends | FriendshipError::AlreadyRequested,
+            )
+            | Self::Post(PostError::DuplicateReply) => (StatusCode::CONFLICT, self.to_string()),
+
+            Self::Post(PostError::DeletedParent) => (StatusCode::GONE, self.to_string()),
+
+            Self::Auth(AuthError::Technical(_))
+            | Self::User(UserError::Technical(_))
+            | Self::Friendship(FriendshipError::Technical(_))
+            | Self::Post(PostError::Technical(_)) => (StatusCode::INTERNAL_SERVER_ERROR, {
+                // TODO: use a logger
+                eprintln!("{}", self.to_string().red());
+                String::from("internal server error")
+            }),
+
+            // TODO: This redundant matching on UserError should not be here after the friendship
+            // domain is redesigned
+            Self::Friendship(FriendshipError::User(err)) => match err {
+                UserError::NotFound => (StatusCode::NOT_FOUND, err.to_string()),
+                UserError::DuplicateEmail | UserError::DuplicateUsername => {
+                    (StatusCode::CONFLICT, err.to_string())
+                }
+                UserError::Technical(_) => (StatusCode::INTERNAL_SERVER_ERROR, {
+                    // TODO: use a logger
+                    eprintln!("{}", err.to_string().red());
+                    String::from("Internal server error")
+                }),
+            },
         };
 
         (status, Json(ErrorResponse { error: message })).into_response()

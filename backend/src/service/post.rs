@@ -1,8 +1,5 @@
 use crate::{
-    domain::{
-        error::DomainError,
-        post::{PostError, PostManager, PostStore},
-    },
+    domain::post::{PostError, PostManager, PostStore},
     models::post::PostInfo,
 };
 
@@ -21,29 +18,29 @@ impl<S: PostStore> PostManager for PostSvc<S> {
         author_id: i32,
         parent_id: i32,
         body: &str,
-    ) -> Result<(), DomainError> {
+    ) -> Result<(), PostError> {
         self.store
             .insert_new(author_id, parent_id, body)
             .await
             .map_err(Into::into)
+            .and_then(TryFrom::try_from)
     }
 
-    async fn get_by_id(&self, post_id: i32) -> Result<PostInfo, DomainError> {
+    async fn get_by_id(&self, post_id: i32) -> Result<PostInfo, PostError> {
         self.store
             .get_by_id(post_id)
             .await?
             .ok_or(PostError::NotFound)
-            .map_err(Into::into)
     }
 
-    async fn get_by_parent_id(&self, parent_id: i32) -> Result<Vec<PostInfo>, DomainError> {
+    async fn get_by_parent_id(&self, parent_id: i32) -> Result<Vec<PostInfo>, PostError> {
         self.store
             .get_by_parent_id(parent_id)
             .await
             .map_err(Into::into)
     }
 
-    async fn user_posts_by_id(&self, author_id: i32) -> Result<Vec<PostInfo>, DomainError> {
+    async fn user_posts_by_id(&self, author_id: i32) -> Result<Vec<PostInfo>, PostError> {
         self.store
             .user_posts_by_id(author_id)
             .await
@@ -53,14 +50,14 @@ impl<S: PostStore> PostManager for PostSvc<S> {
     async fn user_posts_by_username(
         &self,
         author_username: &str,
-    ) -> Result<Vec<PostInfo>, DomainError> {
+    ) -> Result<Vec<PostInfo>, PostError> {
         self.store
             .user_posts_by_username(author_username)
             .await
             .map_err(Into::into)
     }
 
-    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostInfo>, DomainError> {
+    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostInfo>, PostError> {
         self.store
             .all_friend_posts(user_id)
             .await

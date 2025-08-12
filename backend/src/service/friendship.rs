@@ -1,5 +1,4 @@
 use crate::domain::{
-    error::DomainError,
     friendship::{
         FriendshipStatus, error::FriendshipError, repository::FriendshipStore,
         service::FriendshipManager, user_id_pair::UserIdPair,
@@ -23,7 +22,7 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
         &self,
         sender_id: i32,
         recipient_username: &str,
-    ) -> Result<bool, DomainError> {
+    ) -> Result<bool, FriendshipError> {
         // Find the recipient's ID and create an ID pair
         let recipient_id = self.user_svc.get_by_username(recipient_username).await?.id;
         let ids = UserIdPair::new(sender_id, recipient_id)?;
@@ -31,19 +30,16 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
         // Determine the pair's current status
         match self.store.get_status(&ids).await? {
             // Already friends, cannot request to become friends
-            FriendshipStatus::Friends => Err(FriendshipError::AlreadyFriends.into()),
-
+            FriendshipStatus::Friends => Err(FriendshipError::AlreadyFriends),
             // A request from this sender to this recipient already exists, cannot request again
             FriendshipStatus::PendingFrom(id) if id == sender_id => {
-                Err(FriendshipError::AlreadyRequested.into())
+                Err(FriendshipError::AlreadyRequested)
             }
-
             // Already a pending request in the opposite direction, so accept it
             FriendshipStatus::PendingFrom(_) => {
                 self.store.accept_request(&ids).await?;
                 Ok(true)
             }
-
             // No existing relationship, create a new request
             FriendshipStatus::Nil => {
                 self.store.new_request(&ids, sender_id).await?;
@@ -52,7 +48,7 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
         }
     }
 
-    async fn get_friends(&self, id: i32) -> Result<Vec<String>, DomainError> {
+    async fn get_friends(&self, id: i32) -> Result<Vec<String>, FriendshipError> {
         futures::future::try_join_all(
             self.store
                 .get_friends(id)
@@ -63,7 +59,7 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
         .await
     }
 
-    async fn get_requests(&self, id: i32) -> Result<Vec<String>, DomainError> {
+    async fn get_requests(&self, id: i32) -> Result<Vec<String>, FriendshipError> {
         futures::future::try_join_all(
             self.store
                 .get_requests(id)
@@ -74,7 +70,7 @@ impl<S: FriendshipStore> FriendshipManager for FriendshipSvc<S> {
         .await
     }
 
-    async fn are_friends(&self, ids: &UserIdPair) -> Result<bool, DomainError> {
+    async fn are_friends(&self, ids: &UserIdPair) -> Result<bool, FriendshipError> {
         Ok(self.store.get_status(ids).await? == FriendshipStatus::Friends)
     }
 }
@@ -115,10 +111,7 @@ mod tests {
             let friendship_svc = FriendshipSvc::new(mock_friendship_repo, Arc::new(mock_user_svc));
             let result = friendship_svc.add_friend(my_id, &my_friend.username).await;
 
-            assert!(matches!(
-                result,
-                Err(DomainError::Friendship(FriendshipError::AlreadyFriends)),
-            ));
+            assert!(matches!(result, Err(FriendshipError::AlreadyFriends)));
         }
 
         #[tokio::test]
@@ -147,10 +140,7 @@ mod tests {
                 .add_friend(my_id, &desired_friend.username)
                 .await;
 
-            assert!(matches!(
-                result,
-                Err(DomainError::Friendship(FriendshipError::AlreadyRequested)),
-            ));
+            assert!(matches!(result, Err(FriendshipError::AlreadyRequested)));
         }
 
         #[tokio::test]
