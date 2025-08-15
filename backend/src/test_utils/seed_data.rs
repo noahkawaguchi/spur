@@ -1,4 +1,11 @@
-use crate::{domain::user::UserStore, models::user::NewUser, repository::user::UserRepo};
+use crate::{
+    domain::{
+        friendship::{repository::FriendshipStore, user_id_pair::UserIdPair},
+        user::UserStore,
+    },
+    models::user::NewUser,
+    repository::{friendship::FriendshipRepo, user::UserRepo},
+};
 
 /// Inserts four new users into the test database and returns them as they were inserted.
 /// They will automatically be given IDs 1, 2, 3, and 4 if there are no other existing users.
@@ -60,51 +67,67 @@ pub async fn seed_users(pool: sqlx::PgPool) -> [NewUser; 4] {
     [drake, eunice, felipe, gillian]
 }
 
-// /// Inserts friend requests and friendships into the test database, assuming users with IDs 1, 2,
-// /// 3, and 4 exist. Creates the following relationships:
-// ///
-// /// ## By pair:
-// ///
-// /// - Users 1 & 2 => no relation
-// /// - Users 1 & 3 => requested, unconfirmed
-// /// - Users 1 & 4 => no relation
-// /// - Users 2 & 3 => confirmed friends
-// /// - Users 2 & 4 => confirmed friends
-// /// - Users 3 & 4 => requested, unconfirmed
-// ///
-// /// ## By individual (confirmed only):
-// ///
-// /// - User 1 => no friends
-// /// - User 2 => friends with 3 and 4
-// /// - User 3 => friends with 2
-// /// - User 4 => friends with 2
-// ///
-// /// # Panics
-// ///
-// /// Panics if any of the insertions fail. This function should only be used in testing.
-// pub async fn seed_friends(pool: sqlx::PgPool) {
-//     let two_and_three = UserIdPair::new(2, 3).unwrap();
-//     let two_and_four = UserIdPair::new(4, 2).unwrap();
+/// Inserts the "root" of the tree of posts, the only post allowed to have a NULL parent post. This
+/// post will have an ID of 1. This is necessary for testing purposes, so that other posts can be
+/// inserted in the normal fashion where a non-NULL parent post ID is required.
+///
+/// *Assumes a user with ID 1 already exists,* who will be the author of this post.
+///
+/// # Panics
+///
+/// Panics if the insertion fails for any reason.
+pub async fn seed_root_post(pool: &sqlx::PgPool) {
+    sqlx::query!("INSERT INTO post (author_id, parent_id, body) VALUES (1, NULL, 'root post')")
+        .execute(pool)
+        .await
+        .expect("failed to insert root post");
+}
 
-//     let repo = FriendshipRepo::new(pool.clone());
+/// Inserts friend requests and friendships into the test database, assuming users with IDs 1, 2,
+/// 3, and 4 exist. Creates the following relationships:
+///
+/// ## By pair:
+///
+/// - Users 1 & 2 => no relation
+/// - Users 1 & 3 => requested, unconfirmed
+/// - Users 1 & 4 => no relation
+/// - Users 2 & 3 => confirmed friends
+/// - Users 2 & 4 => confirmed friends
+/// - Users 3 & 4 => requested, unconfirmed
+///
+/// ## By individual (confirmed only):
+///
+/// - User 1 => no friends
+/// - User 2 => friends with 3 and 4
+/// - User 3 => friends with 2
+/// - User 4 => friends with 2
+///
+/// # Panics
+///
+/// Panics if any of the insertions fail. This function should only be used in testing.
+pub async fn seed_friends(pool: sqlx::PgPool) {
+    let two_and_three = UserIdPair::new(2, 3).unwrap();
+    let two_and_four = UserIdPair::new(4, 2).unwrap();
 
-//     // Confirmed requests
-//     repo.new_request(&two_and_three, 2).await.unwrap();
-//     repo.new_request(&two_and_four, 4).await.unwrap();
-//     repo.accept_request(&two_and_three).await.unwrap();
-//     repo.accept_request(&two_and_four).await.unwrap();
+    let repo = FriendshipRepo::new(pool.clone());
 
-//     // Unconfirmed requests
-//     repo.new_request(&UserIdPair::new(1, 3).unwrap(), 3)
-//         .await
-//         .unwrap();
-//     repo.new_request(&UserIdPair::new(4, 3).unwrap(), 3)
-//         .await
-//         .unwrap();
-// }
+    // Confirmed requests
+    repo.new_request(&two_and_three, 2).await.unwrap();
+    repo.new_request(&two_and_four, 4).await.unwrap();
+    repo.accept_request(&two_and_three).await.unwrap();
+    repo.accept_request(&two_and_four).await.unwrap();
 
-// /// Inserts eight prompts into the test database, two by each of four users assumed to have IDs 1,
-// /// 2, 3, and 4, and returns the Prompts in `PromptWithAuthor` form.
+    // Unconfirmed requests
+    repo.new_request(&UserIdPair::new(1, 3).unwrap(), 3)
+        .await
+        .unwrap();
+    repo.new_request(&UserIdPair::new(4, 3).unwrap(), 3)
+        .await
+        .unwrap();
+}
+
+// /// Inserts eight prompts into the test database, two by each of four users assumed to have IDs
+// 1, /// 2, 3, and 4, and returns the Prompts in `PromptWithAuthor` form.
 // ///
 // /// # Panics
 // ///

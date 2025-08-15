@@ -60,7 +60,7 @@ mod tests {
     use super::*;
     use crate::{
         repository::error::RepoError,
-        test_utils::{temp_db::with_test_pool, within_one_second},
+        test_utils::{temp_db::with_test_pool, time::within_one_second},
     };
     use chrono::Utc;
 

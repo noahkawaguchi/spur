@@ -19,6 +19,7 @@ pub enum PostError {
     Technical(#[from] anyhow::Error),
 }
 
+#[cfg_attr(test, derive(Debug))]
 pub enum PostInsertionOutcome {
     Inserted,
     ParentMissing,

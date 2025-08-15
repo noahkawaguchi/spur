@@ -56,6 +56,12 @@ where
     .expect("failed to drop test database");
 }
 
+/// Asserts that `s` contains only ASCII alphanumeric characters and begins with an ASCII alphabetic
+/// character.
+///
+/// # Panics
+///
+/// Panics if the above constraints are not met.
 fn assert_alphanumeric_identifier(s: &str) -> &str {
     let mut chars = s.chars();
     assert!(chars.next().is_some_and(|c| c.is_ascii_alphabetic()));

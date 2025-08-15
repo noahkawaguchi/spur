@@ -41,7 +41,7 @@ impl Claims {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::within_one_second;
+    use crate::test_utils::time::within_one_second;
     use chrono::{DateTime, Days};
 
     #[test]
