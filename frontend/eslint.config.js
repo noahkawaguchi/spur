@@ -28,6 +28,10 @@ export default tseslint.config([
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    rules: { '@typescript-eslint/no-confusing-void-expression': 'off' },
+    rules: {
+      '@typescript-eslint/no-confusing-void-expression': 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
+    },
   },
 ]);
