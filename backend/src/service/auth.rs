@@ -51,7 +51,6 @@ pub fn validate_jwt(token: &str, secret: &str) -> Result<i32, AuthError> {
 mod tests {
     use super::*;
     use chrono::{Days, Utc};
-    use colored::Colorize;
 
     fn make_bob(password: &str) -> User {
         User {
@@ -86,11 +85,7 @@ mod tests {
     fn token_creation_errors_for_invalid_pw() {
         let bob = make_bob("correct password");
         let result = create_jwt_if_valid_pw(&bob, "incorrect password", "top secret");
-        assert!(
-            matches!(result, Err(AuthError::InvalidPassword)),
-            "{}",
-            format!("{result:?}").red(),
-        );
+        assert!(matches!(result, Err(AuthError::InvalidPassword)));
     }
 
     #[test]
