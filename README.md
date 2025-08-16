@@ -4,7 +4,15 @@
 
 ## Concept
 
-Spur is a full stack prompt-based social writing platform. Inverting the standard setup of posts and replies, posts must instead be in response to someone else's prompt.
+Spur is a full stack reply-based social platform. With no original posts, every post must instead be in reply to another post, creating a tree/DAG structure starting from the initial root post.
+
+```
+         [root post]         <-- Created artificially
+        /     |     \
+  [reply]  [reply]  [reply]  <-- Created by users
+ /       \
+[reply]  [reply]   (etc.)    <-- Created by users
+```
 
 ## Stack
 
@@ -15,5 +23,6 @@ Spur is a full stack prompt-based social writing platform. Inverting the standar
 
 - User authentication using bcrypt hashing and JSON Web Tokens
 - Friendships between users
-- Reading and writing posts and prompts
+- Reading and writing posts
+- Discovering new posts via parent/child relationships in the tree
 

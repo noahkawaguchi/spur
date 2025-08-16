@@ -1,5 +1,5 @@
 use crate::{
-    handler::{auth, content, friendship, post, prompt},
+    handler::{auth, friendship, post},
     middleware::validate_jwt,
     state::AppState,
 };
@@ -15,9 +15,7 @@ fn protected_routes(state: AppState) -> Router {
     Router::new()
         .route("/auth/check", get(|| async { StatusCode::NO_CONTENT })) // Simple token check route
         .nest("/friends", friendship::routes())
-        .nest("/prompts", prompt::routes())
         .nest("/posts", post::routes())
-        .nest("/content", content::routes())
         .route_layer(middleware::from_fn_with_state(state.clone(), validate_jwt))
         .with_state(state)
 }

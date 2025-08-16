@@ -2,7 +2,7 @@ use crate::dto::password_validator::validate_struct_pw;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize, Validate)]
+#[derive(Serialize, Deserialize, Validate)]
 pub struct SignupRequest {
     #[validate(length(min = 1, message = "name cannot be empty"))]
     pub name: String,
@@ -17,7 +17,7 @@ pub struct SignupRequest {
     pub password: String,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize, Validate)]
+#[derive(Serialize, Deserialize, Validate)]
 pub struct LoginRequest {
     #[validate(email(message = "not a valid email address"))]
     pub email: String,
@@ -34,17 +34,11 @@ pub struct AddFriendRequest {
 }
 
 #[derive(Serialize, Deserialize, Validate)]
-pub struct CreatePromptRequest {
-    #[validate(length(min = 1, message = "prompt body cannot be empty"))]
-    pub body: String,
-}
-
-#[derive(Serialize, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct CreatePostRequest {
-    #[validate(range(min = 1, message = "prompt ID must be positive"))]
-    pub prompt_id: i32,
+    #[validate(range(min = 1, message = "parent ID must be positive"))]
+    pub parent_id: i32,
 
-    #[validate(length(min = 1, message = "prompt body cannot be empty"))]
+    #[validate(length(min = 1, message = "post body cannot be empty"))]
     pub body: String,
 }

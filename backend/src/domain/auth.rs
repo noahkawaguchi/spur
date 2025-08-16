@@ -1,4 +1,4 @@
-use crate::technical_error::TechnicalError;
+use anyhow::{Context, Result};
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -10,6 +10,9 @@ pub enum AuthError {
 
     #[error("Expired or invalid token. Try logging in again.")]
     JwtValidation,
+
+    #[error(transparent)]
+    Technical(#[from] anyhow::Error),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -20,13 +23,13 @@ pub struct Claims {
 
 impl Claims {
     /// Initializes claims with an expiration 24 hours in the future.
-    pub fn new(id: i32) -> Result<Self, TechnicalError> {
+    pub fn new(id: i32) -> Result<Self> {
         let now = Utc::now();
 
         let exp = (now + Duration::hours(24))
             .timestamp()
             .try_into()
-            .map_err(|_| TechnicalError::Pre1970(now))?;
+            .with_context(|| format!("pre-1970 system time: {now}"))?;
 
         Ok(Self { sub: id.to_string(), exp })
     }
@@ -38,7 +41,7 @@ impl Claims {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::within_one_second;
+    use crate::test_utils::time::within_one_second;
     use chrono::{DateTime, Days};
 
     #[test]

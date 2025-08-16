@@ -6,7 +6,6 @@ import SignupPage from '@/pages/Signup';
 import MainLayout from '@/Layouts/MainLayout';
 import FeedPage from '@/pages/Feed';
 import NotFoundPage from '@/pages/NotFound';
-import CreatePage from '@/pages/Create';
 import FriendsPage from '@/pages/Friends';
 import FriendRequestsPage from '@/pages/Friends/Requests';
 import AddFriendPage from '@/pages/Friends/Add';
@@ -25,7 +24,6 @@ const App = () => {
             <Route path='/signup' element={<SignupPage />} />
             <Route element={<MainLayout />}>
               <Route path='/' element={<FeedPage />} />
-              <Route path='/create' element={<CreatePage />} />
               <Route path='/friends' element={<FriendsPage />} />
               <Route path='/friends/requests' element={<FriendRequestsPage />} />
               <Route path='/friends/add' element={<AddFriendPage />} />

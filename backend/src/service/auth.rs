@@ -1,62 +1,56 @@
 use crate::{
-    domain::{
-        auth::{AuthError, Claims},
-        error::DomainError,
-    },
-    models::user::{NewUser, User, UserRegistration},
-    technical_error::TechnicalError,
+    domain::auth::{AuthError, Claims},
+    models::user::User,
 };
+use anyhow::Context;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 
-pub fn hash_pw(reg: UserRegistration) -> Result<NewUser, DomainError> {
-    let pw_hash =
-        bcrypt::hash(&reg.password, bcrypt::DEFAULT_COST).map_err(TechnicalError::from)?;
-
-    Ok(reg.into_new_user_with(pw_hash))
+pub fn hash_pw(password: &str) -> Result<String, AuthError> {
+    bcrypt::hash(password, bcrypt::DEFAULT_COST)
+        .context("failed to hash password")
+        .map_err(Into::into)
 }
 
-pub fn create_jwt(id: i32, secret: &str) -> Result<String, DomainError> {
-    jsonwebtoken::encode(
-        &Header::default(),
-        &Claims::new(id)?,
-        &EncodingKey::from_secret(secret.as_ref()),
-    )
-    .map_err(|e| TechnicalError::from(e).into())
-}
-
+/// Creates a JSON Web Token after verifying the password. There is intentionally no way to create a
+/// JWT without first verifying the password.
 pub fn create_jwt_if_valid_pw(
     user: &User,
     password: &str,
     secret: &str,
-) -> Result<String, DomainError> {
+) -> Result<String, AuthError> {
     // Validate the password
     bcrypt::verify(password, &user.password_hash)
-        .map_err(TechnicalError::from)?
+        .context("technical issue verifying password")?
         .then_some(())
         .ok_or(AuthError::InvalidPassword)?;
 
-    create_jwt(user.id, secret)
+    jsonwebtoken::encode(
+        &Header::default(),
+        &Claims::new(user.id)?,
+        &EncodingKey::from_secret(secret.as_ref()),
+    )
+    .context("failed to encode JWT")
+    .map_err(Into::into)
 }
 
-pub fn validate_jwt(token: &str, secret: &str) -> Result<i32, DomainError> {
+/// Validates the JSON Web Token, returning the contained user ID if valid.
+pub fn validate_jwt(token: &str, secret: &str) -> Result<i32, AuthError> {
     if let Ok(token_data) = jsonwebtoken::decode::<Claims>(
         token,
         &DecodingKey::from_secret(secret.as_ref()),
         &Validation::default(),
-    ) {
-        if let Ok(id) = token_data.claims.parse_sub() {
-            return Ok(id);
-        }
+    ) && let Ok(id) = token_data.claims.parse_sub()
+    {
+        Ok(id)
+    } else {
+        Err(AuthError::JwtValidation)
     }
-
-    Err(AuthError::JwtValidation.into())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use chrono::{Days, Utc};
-    use colored::Colorize;
 
     fn make_bob(password: &str) -> User {
         User {
@@ -72,8 +66,7 @@ mod tests {
         }
     }
 
-    // Determined that testing hash_pw would be trivial and that create_jwt is sufficiently tested
-    // via create_jwt_if_valid_pw
+    // Determined that testing hash_pw would be trivial
 
     #[test]
     fn encodes_and_decodes_id_for_valid_pw() {
@@ -92,11 +85,7 @@ mod tests {
     fn token_creation_errors_for_invalid_pw() {
         let bob = make_bob("correct password");
         let result = create_jwt_if_valid_pw(&bob, "incorrect password", "top secret");
-        assert!(
-            matches!(result, Err(DomainError::Auth(AuthError::InvalidPassword))),
-            "{}",
-            format!("{result:?}").red(),
-        );
+        assert!(matches!(result, Err(AuthError::InvalidPassword)));
     }
 
     #[test]
@@ -108,7 +97,7 @@ mod tests {
         let _ = create_jwt_if_valid_pw(&bob, password, secret).expect("failed to create token");
         assert!(matches!(
             validate_jwt("fake token", secret),
-            Err(DomainError::Auth(AuthError::JwtValidation)),
+            Err(AuthError::JwtValidation),
         ));
     }
 
@@ -121,7 +110,7 @@ mod tests {
         let token = create_jwt_if_valid_pw(&bob, password, secret).expect("failed to create token");
         assert!(matches!(
             validate_jwt(&token, "boo!"),
-            Err(DomainError::Auth(AuthError::JwtValidation)),
+            Err(AuthError::JwtValidation)
         ));
     }
 }

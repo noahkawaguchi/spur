@@ -9,9 +9,6 @@ const Header = () => {
         <Link to='/'>
           <button type='button'>Feed</button>
         </Link>
-        <Link to='/create'>
-          <button type='button'>Create</button>
-        </Link>
         <Link to='/friends'>
           <button type='button'>Friends</button>
         </Link>

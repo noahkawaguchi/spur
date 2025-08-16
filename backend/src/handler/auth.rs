@@ -5,6 +5,7 @@ use crate::{
         requests::{LoginRequest, SignupRequest},
         responses::TokenResponse,
     },
+    models::user::NewUser,
     service,
     state::AppState,
 };
@@ -23,14 +24,19 @@ async fn signup(
     user_svc: State<Arc<dyn UserManager>>,
     ValidatedJson(payload): ValidatedJson<SignupRequest>,
 ) -> api_result!(TokenResponse) {
-    // Hash the password
-    let new_user = service::auth::hash_pw(payload.into())?;
+    let password_hash = service::auth::hash_pw(&payload.password)?;
 
-    // Attempt to register the new user
-    let id = user_svc.insert_new(&new_user).await?;
+    let new_user = NewUser {
+        name: payload.name,
+        email: payload.email,
+        username: payload.username,
+        password_hash,
+    };
 
-    // Create a new JWT
-    let token = service::auth::create_jwt(id, &jwt_secret)?;
+    let registered_user = user_svc.insert_new(&new_user).await?;
+
+    let token =
+        service::auth::create_jwt_if_valid_pw(&registered_user, &payload.password, &jwt_secret)?;
 
     Ok((StatusCode::CREATED, Json(TokenResponse { token })))
 }
@@ -40,11 +46,10 @@ async fn login(
     user_svc: State<Arc<dyn UserManager>>,
     payload: ValidatedJson<LoginRequest>,
 ) -> api_result!(TokenResponse) {
-    // Try to get the user
-    let user = user_svc.get_by_email(&payload.email).await?;
+    let existing_user = user_svc.get_by_email(&payload.email).await?;
 
-    // Validate the password and create a JWT
-    let token = service::auth::create_jwt_if_valid_pw(&user, &payload.password, &jwt_secret)?;
+    let token =
+        service::auth::create_jwt_if_valid_pw(&existing_user, &payload.password, &jwt_secret)?;
 
     Ok((StatusCode::OK, Json(TokenResponse { token })))
 }

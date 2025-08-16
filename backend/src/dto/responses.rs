@@ -1,42 +1,33 @@
-use crate::models::{post::PostWithPrompt, prompt::PromptWithAuthor};
 use serde::{Deserialize, Serialize};
 
-/// A general-purpose error response body.
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// A general-purpose error response struct.
+#[derive(Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub error: String,
 }
 
-/// A general-purpose success response body.
+/// A general-purpose success response struct.
 #[derive(Serialize, Deserialize)]
 pub struct SuccessResponse {
     pub message: String,
 }
 
-/// A response body for sending a JWT.
-#[derive(Debug, Serialize, Deserialize)]
+/// A response struct for sending a JWT.
+#[derive(Serialize, Deserialize)]
 pub struct TokenResponse {
     pub token: String,
 }
 
-/// A response body for listing the usernames of a set of users.
+/// A response struct for sending information about a post.
 #[derive(Serialize, Deserialize)]
-pub struct UsernamesResponse {
-    pub usernames: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct SinglePromptResponse {
-    pub prompt: PromptWithAuthor,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct SinglePostResponse {
-    pub post: PostWithPrompt,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct PromptsAndPostsResponse {
-    pub prompts: Vec<PromptWithAuthor>,
-    pub posts: Vec<PostWithPrompt>,
+#[serde(rename_all = "camelCase")]
+pub struct PostResponse {
+    pub id: i32,
+    pub author_username: String,
+    pub parent_id: Option<i32>,
+    pub body: String,
+    pub created_at_ms: i64,
+    pub edited_at_ms: Option<i64>,
+    pub archived_at_ms: Option<i64>,
+    pub deleted_at_ms: Option<i64>,
 }

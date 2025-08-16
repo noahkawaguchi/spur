@@ -1,10 +1,7 @@
 use super::{api_result, validated_json::ValidatedJson};
 use crate::{
     domain::friendship::service::FriendshipManager,
-    dto::{
-        requests::AddFriendRequest,
-        responses::{SuccessResponse, UsernamesResponse},
-    },
+    dto::{requests::AddFriendRequest, responses::SuccessResponse},
     state::AppState,
 };
 use axum::{
@@ -21,6 +18,7 @@ pub fn routes() -> Router<AppState> {
         .route("/requests", get(get_requests))
 }
 
+/// Creates a new friend request or accepts an existing friend request.
 async fn add_friend(
     friendship_svc: State<Arc<dyn FriendshipManager>>,
     Extension(requester_id): Extension<i32>,
@@ -46,18 +44,24 @@ async fn add_friend(
     Ok((status_code, Json(SuccessResponse { message })))
 }
 
+/// Retrieves the usernames of the requester's friends.
 async fn get_friends(
     friendship_svc: State<Arc<dyn FriendshipManager>>,
     Extension(requester_id): Extension<i32>,
-) -> api_result!(UsernamesResponse) {
-    let usernames = friendship_svc.get_friends(requester_id).await?;
-    Ok((StatusCode::OK, Json(UsernamesResponse { usernames })))
+) -> api_result!(Vec<String>) {
+    Ok((
+        StatusCode::OK,
+        Json(friendship_svc.get_friends(requester_id).await?),
+    ))
 }
 
+/// Retrieves the usernames of users who have pending friend requests to the requester.
 async fn get_requests(
     friendship_svc: State<Arc<dyn FriendshipManager>>,
     Extension(requester_id): Extension<i32>,
-) -> api_result!(UsernamesResponse) {
-    let usernames = friendship_svc.get_requests(requester_id).await?;
-    Ok((StatusCode::OK, Json(UsernamesResponse { usernames })))
+) -> api_result!(Vec<String>) {
+    Ok((
+        StatusCode::OK,
+        Json(friendship_svc.get_requests(requester_id).await?),
+    ))
 }

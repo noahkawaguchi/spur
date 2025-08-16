@@ -1,4 +1,4 @@
-import ContentDisplay from '@/components/ContentDisplay';
+import PostsDisplay from '@/components/PostsDisplay';
 import { removeToken } from '@/utils/jwt';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,11 +7,11 @@ const ProfilePage = () => {
 
   const handleLogout = () => {
     removeToken();
-    void navigate('/');
+    void navigate('/login');
   };
 
   return (
-    <ContentDisplay
+    <PostsDisplay
       header={
         <>
           <h2>Your profile</h2>
@@ -21,7 +21,7 @@ const ProfilePage = () => {
           <hr />
         </>
       }
-      endpoint='content/me'
+      endpoint='posts/me'
       displayUsernames={false}
     />
   );

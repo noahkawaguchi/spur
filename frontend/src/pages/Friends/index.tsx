@@ -1,17 +1,22 @@
 import useRequest from '@/hooks/useRequest';
 import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
-import { UsernamesResponseSchema, type UsernamesResponse } from '@/types';
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styles from '@/styles/shared.module.css';
+import { StringArraySchema } from '@/types';
 
 const FriendsPage = () => {
   const token = useTokenOrRedirect();
 
-  const { data, error, loading, sendRequest } = useRequest<null, UsernamesResponse>({
+  const {
+    data: usernames,
+    error,
+    loading,
+    sendRequest,
+  } = useRequest<null, string[]>({
     method: 'GET',
     endpoint: 'friends',
-    respSchema: UsernamesResponseSchema,
+    respSchema: StringArraySchema,
   });
 
   useEffect(() => {
@@ -30,13 +35,13 @@ const FriendsPage = () => {
       <hr />
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
-      {data && (
+      {usernames && (
         <>
           <h3>Current friends</h3>
-          {data.usernames.length ? (
+          {usernames.length ? (
             <table>
               <tbody>
-                {data.usernames.map(username => (
+                {usernames.map(username => (
                   <tr key={username}>
                     <td>{username}</td>
                     <td className={styles.buttonCell}>
