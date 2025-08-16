@@ -60,7 +60,7 @@ impl From<RepoError> for PostError {
 #[async_trait::async_trait]
 pub trait PostManager: Send + Sync {
     /// Attempts to create a new post.
-    async fn create_new(&self, author_id: i32, prompt_id: i32, body: &str)
+    async fn create_new(&self, author_id: i32, parent_id: i32, body: &str)
     -> Result<(), PostError>;
     /// Retrieves a post by its ID.
     async fn get_by_id(&self, post_id: i32) -> Result<PostInfo, PostError>;
