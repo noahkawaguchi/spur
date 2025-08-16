@@ -27,9 +27,7 @@ const ReplyWriter = ({ parentId, cancelFn }: { parentId: number; cancelFn: () =>
           <TextareaAutosize
             className={styles.postBodyArea}
             value={postBody}
-            onChange={e => {
-              setPostBody(e.target.value);
-            }}
+            onChange={e => setPostBody(e.target.value)}
             placeholder='Your thoughts...'
             disabled={loading}
             required

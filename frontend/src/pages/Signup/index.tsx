@@ -44,9 +44,7 @@ const SignupPage = () => {
           Name:{' '}
           <input
             value={name}
-            onChange={e => {
-              setName(e.target.value);
-            }}
+            onChange={e => setName(e.target.value)}
             placeholder='Your Name'
             disabled={loading}
             required
@@ -59,9 +57,7 @@ const SignupPage = () => {
           <input
             type='email'
             value={email}
-            onChange={e => {
-              setEmail(e.target.value);
-            }}
+            onChange={e => setEmail(e.target.value)}
             placeholder='you@email.com'
             disabled={loading}
             required
@@ -72,9 +68,7 @@ const SignupPage = () => {
           Username:{' '}
           <input
             value={username}
-            onChange={e => {
-              setUsername(e.target.value);
-            }}
+            onChange={e => setUsername(e.target.value)}
             placeholder='your_username123'
             disabled={loading}
             required
@@ -86,9 +80,7 @@ const SignupPage = () => {
           <input
             type='password'
             value={password}
-            onChange={e => {
-              setPassword(e.target.value);
-            }}
+            onChange={e => setPassword(e.target.value)}
             placeholder='**********'
             disabled={loading}
             required

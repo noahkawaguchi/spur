@@ -43,9 +43,7 @@ const LoginPage = () => {
           <input
             type='email'
             value={email}
-            onChange={e => {
-              setEmail(e.target.value);
-            }}
+            onChange={e => setEmail(e.target.value)}
             placeholder='you@email.com'
             disabled={loading}
             required
@@ -58,9 +56,7 @@ const LoginPage = () => {
           <input
             type='password'
             value={password}
-            onChange={e => {
-              setPassword(e.target.value);
-            }}
+            onChange={e => setPassword(e.target.value)}
             placeholder='**********'
             disabled={loading}
             required

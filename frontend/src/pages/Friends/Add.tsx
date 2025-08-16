@@ -31,9 +31,7 @@ const AddFriendPage = () => {
           Username:{' '}
           <input
             value={username}
-            onChange={e => {
-              setUsername(e.target.value);
-            }}
+            onChange={e => setUsername(e.target.value)}
             placeholder='potential_friend123'
             disabled={loading}
             required
