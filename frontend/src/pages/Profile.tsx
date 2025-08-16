@@ -7,7 +7,7 @@ const ProfilePage = () => {
 
   const handleLogout = () => {
     removeToken();
-    void navigate('/');
+    void navigate('/login');
   };
 
   return (
