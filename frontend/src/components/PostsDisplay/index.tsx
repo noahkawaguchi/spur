@@ -35,12 +35,7 @@ const PostsDisplay = ({
       {error && <p>Error: {error}</p>}
       {posts &&
         (readingPost ? (
-          <SinglePostDisplay
-            readingPost={readingPost}
-            backFn={() => {
-              setReadingPost(null);
-            }}
-          />
+          <SinglePostDisplay readingPost={readingPost} backFn={() => setReadingPost(null)} />
         ) : (
           <>
             {posts.length ? (
@@ -52,12 +47,7 @@ const PostsDisplay = ({
                       <td>created {howLongAgo(post.createdAtMs)} ago</td>
                       <td>{firstChars(post.body)}</td>
                       <td className={styles.buttonCell}>
-                        <button
-                          type='button'
-                          onClick={() => {
-                            setReadingPost(post);
-                          }}
-                        >
+                        <button type='button' onClick={() => setReadingPost(post)}>
                           Read
                         </button>
                       </td>

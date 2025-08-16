@@ -8,6 +8,10 @@ interface MockUseRequestResult<T> {
   sendRequest: Mock;
 }
 
-export const initMockUseRequestResult = <T>(): MockUseRequestResult<T> => {
-  return { data: null, success: false, error: null, loading: false, sendRequest: vi.fn() };
-};
+export const initMockUseRequestResult = <T>(): MockUseRequestResult<T> => ({
+  data: null,
+  success: false,
+  error: null,
+  loading: false,
+  sendRequest: vi.fn(),
+});

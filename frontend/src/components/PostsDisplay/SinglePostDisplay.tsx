@@ -32,24 +32,14 @@ const SinglePostDisplay = ({ readingPost, backFn }: { readingPost: Post; backFn:
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
       {parentPost && (
-        <SinglePostDisplay
-          readingPost={parentPost}
-          backFn={() => {
-            setNestedParent(false);
-          }}
-        />
+        <SinglePostDisplay readingPost={parentPost} backFn={() => setNestedParent(false)} />
       )}
     </>
   ) : nestedChildren ? (
     <PostsDisplay
       header={
         <>
-          <button
-            type='button'
-            onClick={() => {
-              setNestedChildren(false);
-            }}
-          >
+          <button type='button' onClick={() => setNestedChildren(false)}>
             Back
           </button>
           <h2>Children of {readingPost.authorUsername}'s Post</h2>
@@ -75,20 +65,10 @@ const SinglePostDisplay = ({ readingPost, backFn }: { readingPost: Post; backFn:
           {readingPost.body}
         </p>
         {replying ? (
-          <ReplyWriter
-            parentId={readingPost.id}
-            cancelFn={() => {
-              setReplying(false);
-            }}
-          />
+          <ReplyWriter parentId={readingPost.id} cancelFn={() => setReplying(false)} />
         ) : (
           <>
-            <button
-              type='button'
-              onClick={() => {
-                setReplying(true);
-              }}
-            >
+            <button type='button' onClick={() => setReplying(true)}>
               Reply
             </button>
             {readingPost.parentId && (
@@ -96,12 +76,7 @@ const SinglePostDisplay = ({ readingPost, backFn }: { readingPost: Post; backFn:
                 Parent
               </button>
             )}
-            <button
-              type='button'
-              onClick={() => {
-                setNestedChildren(true);
-              }}
-            >
+            <button type='button' onClick={() => setNestedChildren(true)}>
               Children
             </button>
           </>
