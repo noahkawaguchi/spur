@@ -1,5 +1,5 @@
 use super::error::FriendshipError;
-use crate::technical_error::TechnicalError;
+use anyhow::{Result, anyhow};
 use std::cmp::Ordering::{Equal, Greater, Less};
 
 /// A pair of user IDs that are guaranteed to be distinct.
@@ -25,15 +25,15 @@ impl UserIdPair {
 
     /// Gets whether the provided ID is the lesser (true) or the greater (false) of the pair.
     /// Returns `Err` if the provided ID is not one of the IDs in the pair.
-    pub fn is_lesser(&self, id: i32) -> Result<bool, TechnicalError> {
+    pub fn is_lesser(&self, id: i32) -> Result<bool> {
         match (id == self.0, id == self.1) {
-            (true, true) => Err(TechnicalError::Unexpected(String::from(
+            (true, true) => Err(anyhow!(
                 "Internal logic error: UserIdPair distinct invariant broken",
-            ))),
-            (false, false) => Err(TechnicalError::Unexpected(String::from(
+            )),
+            (false, false) => Err(anyhow!(
                 "Internal logic error: UserIdPair `is_lesser` \
                 was erroneously passed an irrelevant ID",
-            ))),
+            )),
             (true, false) => Ok(true),
             (false, true) => Ok(false),
         }
@@ -79,10 +79,8 @@ mod tests {
         let ids = UserIdPair::new(24, 99_991).unwrap();
         let result = ids.is_lesser(25);
 
-        assert!(matches!(result, Err(TechnicalError::Unexpected(_))));
-        assert!(result.is_err_and(|e| e.to_string().contains(
-            "Internal logic error: UserIdPair `is_lesser` \
-                was erroneously passed an irrelevant ID"
-        )));
+        assert!(result.is_err_and(|e| e.to_string()
+            == "Internal logic error: UserIdPair `is_lesser` \
+                was erroneously passed an irrelevant ID"));
     }
 }

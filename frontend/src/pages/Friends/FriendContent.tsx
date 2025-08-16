@@ -1,4 +1,4 @@
-import ContentDisplay from '@/components/ContentDisplay';
+import PostsDisplay from '@/components/PostsDisplay';
 import { Link, useParams } from 'react-router-dom';
 
 const FriendContentPage = () => {
@@ -6,7 +6,7 @@ const FriendContentPage = () => {
   if (!username) throw new Error('unexpected undefined username in FriendsContentPage');
 
   return (
-    <ContentDisplay
+    <PostsDisplay
       header={
         <>
           <Link to='/friends'>
@@ -16,7 +16,7 @@ const FriendContentPage = () => {
           <hr />
         </>
       }
-      endpoint={`content/friend/${username}`}
+      endpoint={`posts/user/${username}`}
       displayUsernames={false}
     />
   );

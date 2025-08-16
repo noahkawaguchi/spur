@@ -1,11 +1,10 @@
 use crate::{
     domain::{
-        content::repository::PromptStore,
         friendship::{repository::FriendshipStore, user_id_pair::UserIdPair},
         user::UserStore,
     },
-    models::{prompt::PromptWithAuthor, user::NewUser},
-    repository::{friendship::FriendshipRepo, prompt::PromptRepo, user::UserRepo},
+    models::user::NewUser,
+    repository::{friendship::FriendshipRepo, user::UserRepo},
 };
 
 /// Inserts four new users into the test database and returns them as they were inserted.
@@ -68,6 +67,22 @@ pub async fn seed_users(pool: sqlx::PgPool) -> [NewUser; 4] {
     [drake, eunice, felipe, gillian]
 }
 
+/// Inserts the "root" of the tree of posts, the only post allowed to have a NULL parent post. This
+/// post will have an ID of 1. This is necessary for testing purposes, so that other posts can be
+/// inserted in the normal fashion where a non-NULL parent post ID is required.
+///
+/// *Assumes a user with ID 1 already exists,* who will be the author of this post.
+///
+/// # Panics
+///
+/// Panics if the insertion fails for any reason.
+pub async fn seed_root_post(pool: &sqlx::PgPool) {
+    sqlx::query!("INSERT INTO post (author_id, parent_id, body) VALUES (1, NULL, 'root post')")
+        .execute(pool)
+        .await
+        .expect("failed to insert root post");
+}
+
 /// Inserts friend requests and friendships into the test database, assuming users with IDs 1, 2,
 /// 3, and 4 exist. Creates the following relationships:
 ///
@@ -109,49 +124,4 @@ pub async fn seed_friends(pool: sqlx::PgPool) {
     repo.new_request(&UserIdPair::new(4, 3).unwrap(), 3)
         .await
         .unwrap();
-}
-
-/// Inserts eight prompts into the test database, two by each of four users assumed to have IDs 1,
-/// 2, 3, and 4, and returns the Prompts in `PromptWithAuthor` form.
-///
-/// # Panics
-///
-/// Panics if any of the insertions fail. This function should only be used in testing.
-pub async fn seed_prompts(pool: sqlx::PgPool) -> [PromptWithAuthor; 8] {
-    let repo = PromptRepo::new(pool);
-
-    [
-        repo.insert_new(1, "User one prompt one")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(1, "User one prompt two")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(2, "User two prompt one")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(2, "User two prompt two")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(3, "User three prompt one")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(3, "User three prompt two")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(4, "User four prompt one")
-            .await
-            .unwrap()
-            .into(),
-        repo.insert_new(4, "User four prompt two")
-            .await
-            .unwrap()
-            .into(),
-    ]
 }

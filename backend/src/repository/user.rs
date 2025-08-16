@@ -1,8 +1,7 @@
-use super::insertion_error::InsertionError;
+use super::error::RepoError;
 use crate::{
     domain::user::UserStore,
     models::user::{NewUser, User},
-    technical_error::TechnicalError,
 };
 
 #[derive(Clone)]
@@ -16,12 +15,13 @@ impl UserRepo {
 
 #[async_trait::async_trait]
 impl UserStore for UserRepo {
-    async fn insert_new(&self, new_user: &NewUser) -> Result<i32, InsertionError> {
-        sqlx::query_scalar!(
+    async fn insert_new(&self, new_user: &NewUser) -> Result<User, RepoError> {
+        sqlx::query_as!(
+            User,
             "
             INSERT INTO users (name, email, username, password_hash)
             VALUES ($1, $2, $3, $4)
-            RETURNING id
+            RETURNING *
             ",
             new_user.name,
             new_user.email,
@@ -33,21 +33,21 @@ impl UserStore for UserRepo {
         .map_err(Into::into)
     }
 
-    async fn get_by_id(&self, id: i32) -> Result<Option<User>, TechnicalError> {
+    async fn get_by_id(&self, id: i32) -> Result<Option<User>, RepoError> {
         sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", id)
             .fetch_optional(&self.pool)
             .await
             .map_err(Into::into)
     }
 
-    async fn get_by_email(&self, email: &str) -> Result<Option<User>, TechnicalError> {
+    async fn get_by_email(&self, email: &str) -> Result<Option<User>, RepoError> {
         sqlx::query_as!(User, "SELECT * FROM users WHERE email = $1", email)
             .fetch_optional(&self.pool)
             .await
             .map_err(Into::into)
     }
 
-    async fn get_by_username(&self, username: &str) -> Result<Option<User>, TechnicalError> {
+    async fn get_by_username(&self, username: &str) -> Result<Option<User>, RepoError> {
         sqlx::query_as!(User, "SELECT * FROM users WHERE username = $1", username)
             .fetch_optional(&self.pool)
             .await
@@ -58,7 +58,10 @@ impl UserStore for UserRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{temp_db::with_test_pool, within_one_second};
+    use crate::{
+        repository::error::RepoError,
+        test_utils::{temp_db::with_test_pool, time::within_one_second},
+    };
     use chrono::Utc;
 
     fn make_test_users() -> Vec<NewUser> {
@@ -155,21 +158,13 @@ mod tests {
             let repo = UserRepo::new(pool);
 
             for (i, user) in make_test_users().into_iter().enumerate() {
-                repo.insert_new(&user).await.expect("failed to insert user");
-                let created_time = Utc::now();
+                let created_user = repo.insert_new(&user).await.expect("failed to insert user");
 
-                let got_user = repo
-                    .get_by_email(&user.email)
-                    .await
-                    .expect("failed to get user")
-                    .expect("unexpected None user");
-
-                // created_at should be within one second of the approximate time created
-                assert!(within_one_second(got_user.created_at, created_time));
+                assert!(within_one_second(created_user.created_at, Utc::now()));
 
                 // id should increment starting from 1
                 let expected_id: i32 = (i + 1).try_into().expect("failed to cast usize into i32");
-                assert_eq!(got_user.id, expected_id);
+                assert_eq!(created_user.id, expected_id);
             }
         })
         .await;
@@ -201,7 +196,7 @@ mod tests {
             let result = repo.insert_new(&fake_alice).await;
 
             assert!(
-                matches!(result, Err(InsertionError::UniqueViolation(v)) if v.contains("users_email_unique"))
+                matches!(result, Err(RepoError::UniqueViolation(v)) if v == "users_email_unique")
             );
         })
         .await;
@@ -232,7 +227,9 @@ mod tests {
 
             let result = repo.insert_new(&fake_bob).await;
 
-            assert!(matches!(result, Err(InsertionError::UniqueViolation(v)) if v.contains("users_username_unique")));
+            assert!(
+                matches!(result, Err(RepoError::UniqueViolation(v)) if v == "users_username_unique")
+            );
         })
         .await;
     }
@@ -262,7 +259,7 @@ mod tests {
 
             for user in incomplete_users {
                 let result = repo.insert_new(&user).await;
-                assert!(matches!(result, Err(InsertionError::Technical(_))));
+                assert!(matches!(result, Err(RepoError::Technical(_))));
             }
         })
         .await;

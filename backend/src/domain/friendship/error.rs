@@ -1,3 +1,4 @@
+use crate::{domain::user::UserError, repository::error::RepoError};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -13,4 +14,19 @@ pub enum FriendshipError {
 
     #[error("Pending friend request to this user already exists")]
     AlreadyRequested,
+
+    // TODO: this variant should likely be made unnecessary, ideally by ending the dependency on
+    // the user service
+    #[error(transparent)]
+    User(#[from] UserError),
+
+    #[error(transparent)]
+    Technical(#[from] anyhow::Error),
+}
+
+impl From<RepoError> for FriendshipError {
+    fn from(e: RepoError) -> Self {
+        // TODO: the friendship domain needs to be redesigned
+        Self::Technical(e.into())
+    }
 }

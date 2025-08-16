@@ -2,16 +2,21 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import useTokenOrRedirect from '@/hooks/useTokenOrRedirect';
 import useRequest from '@/hooks/useRequest';
-import { UsernamesResponseSchema, type UsernamesResponse } from '@/types';
 import FriendRequest from '@/pages/Friends/Requests/FriendRequest';
+import { StringArraySchema } from '@/types';
 
 const FriendRequestsPage = () => {
   const token = useTokenOrRedirect();
 
-  const { data, error, loading, sendRequest } = useRequest<null, UsernamesResponse>({
+  const {
+    data: usernames,
+    error,
+    loading,
+    sendRequest,
+  } = useRequest<null, string[]>({
     method: 'GET',
     endpoint: 'friends/requests',
-    respSchema: UsernamesResponseSchema,
+    respSchema: StringArraySchema,
   });
 
   useEffect(() => {
@@ -27,11 +32,11 @@ const FriendRequestsPage = () => {
       <hr />
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
-      {data &&
-        (data.usernames.length ? (
+      {usernames &&
+        (usernames.length ? (
           <table>
             <tbody>
-              {data.usernames.map(username => (
+              {usernames.map(username => (
                 <FriendRequest key={username} username={username} />
               ))}
             </tbody>

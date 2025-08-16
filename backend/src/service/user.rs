@@ -1,11 +1,6 @@
 use crate::{
-    domain::{
-        error::DomainError,
-        user::{UserError, UserManager, UserStore},
-    },
+    domain::user::{UserError, UserManager, UserStore},
     models::user::{NewUser, User},
-    repository::insertion_error::InsertionError,
-    technical_error::TechnicalError,
 };
 
 pub struct UserSvc<S: UserStore> {
@@ -18,54 +13,75 @@ impl<S: UserStore> UserSvc<S> {
 
 #[async_trait::async_trait]
 impl<S: UserStore> UserManager for UserSvc<S> {
-    async fn insert_new(&self, new_user: &NewUser) -> Result<i32, DomainError> {
-        self.store.insert_new(new_user).await.map_err(|e| match e {
-            InsertionError::UniqueViolation(v) if v.contains("email") => {
-                UserError::DuplicateEmail.into()
-            }
-            InsertionError::UniqueViolation(v) if v.contains("username") => {
-                UserError::DuplicateUsername.into()
-            }
-            InsertionError::UniqueViolation(v) => {
-                TechnicalError::Unexpected(format!("Unexpected unique violation: {v}")).into()
-            }
-            InsertionError::Technical(e) => TechnicalError::Database(e).into(),
-        })
+    async fn insert_new(&self, new_user: &NewUser) -> Result<User, UserError> {
+        self.store.insert_new(new_user).await.map_err(Into::into)
     }
 
-    async fn get_by_id(&self, id: i32) -> Result<User, DomainError> {
-        self.store
-            .get_by_id(id)
-            .await?
-            .ok_or_else(|| UserError::NotFound.into())
+    async fn get_by_id(&self, id: i32) -> Result<User, UserError> {
+        self.store.get_by_id(id).await?.ok_or(UserError::NotFound)
     }
 
-    async fn get_by_email(&self, email: &str) -> Result<User, DomainError> {
+    async fn get_by_email(&self, email: &str) -> Result<User, UserError> {
         self.store
             .get_by_email(email)
             .await?
-            .ok_or_else(|| UserError::NotFound.into())
+            .ok_or(UserError::NotFound)
     }
 
-    async fn get_by_username(&self, username: &str) -> Result<User, DomainError> {
+    async fn get_by_username(&self, username: &str) -> Result<User, UserError> {
         self.store
             .get_by_username(username)
             .await?
-            .ok_or_else(|| UserError::NotFound.into())
+            .ok_or(UserError::NotFound)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::user::MockUserStore;
+    use crate::{domain::user::MockUserStore, repository::error::RepoError};
     use chrono::{Months, Utc};
     use mockall::predicate::eq;
+
+    fn make_alice() -> User {
+        User {
+            id: 62,
+            name: String::from("Alice Palace"),
+            email: String::from("alice@palace.org"),
+            username: String::from("al_is"),
+            password_hash: String::from("ab%#S"),
+            created_at: Utc::now(),
+        }
+    }
+
+    fn make_bob() -> User {
+        User {
+            id: 9924,
+            name: String::from("Roberta"),
+            email: String::from("roberta@bob.eu"),
+            username: String::from("bob_or_rob_or_ert"),
+            password_hash: String::from("asd%$#iub8"),
+            created_at: Utc::now(),
+        }
+    }
+
+    fn make_charlie() -> User {
+        User {
+            id: 141_415,
+            name: String::from("Charles McCharles"),
+            email: String::from("charles@mc.com"),
+            username: String::from("charlie_boy"),
+            password_hash: String::from("ha$h3dp455w0rd"),
+            created_at: Utc::now()
+                .checked_sub_months(Months::new(12))
+                .expect("failed to subtract 12 months from now"),
+        }
+    }
 
     mod insert_new {
         use super::*;
 
-        fn new_alice() -> NewUser {
+        fn new_user_alice() -> NewUser {
             NewUser {
                 name: String::from("New Alice"),
                 email: String::from("alice_new@example.com"),
@@ -76,7 +92,7 @@ mod tests {
 
         #[tokio::test]
         async fn errors_for_existing_email() {
-            let alice = new_alice();
+            let alice = new_user_alice();
             let alice_clone = alice.clone();
 
             let mut mock_repo = MockUserStore::new();
@@ -90,7 +106,7 @@ mod tests {
                 })
                 .once()
                 .return_once(|_| {
-                    Err(InsertionError::UniqueViolation(String::from(
+                    Err(RepoError::UniqueViolation(String::from(
                         "users_email_unique",
                     )))
                 });
@@ -98,15 +114,12 @@ mod tests {
             let user_svc = UserSvc::new(mock_repo);
             let result = user_svc.insert_new(&alice).await;
 
-            assert!(matches!(
-                result,
-                Err(DomainError::User(UserError::DuplicateEmail)),
-            ));
+            assert!(matches!(result, Err(UserError::DuplicateEmail)));
         }
 
         #[tokio::test]
         async fn errors_for_existing_username() {
-            let alice = new_alice();
+            let alice = new_user_alice();
             let alice_clone = alice.clone();
 
             let mut mock_repo = MockUserStore::new();
@@ -120,7 +133,7 @@ mod tests {
                 })
                 .once()
                 .return_once(|_| {
-                    Err(InsertionError::UniqueViolation(String::from(
+                    Err(RepoError::UniqueViolation(String::from(
                         "users_username_unique",
                     )))
                 });
@@ -128,37 +141,35 @@ mod tests {
             let user_svc = UserSvc::new(mock_repo);
             let result = user_svc.insert_new(&alice).await;
 
-            assert!(matches!(
-                result,
-                Err(DomainError::User(UserError::DuplicateUsername)),
-            ));
+            assert!(matches!(result, Err(UserError::DuplicateUsername)));
         }
 
         #[tokio::test]
         async fn correctly_creates_new_user_from_request() {
-            let alice = new_alice();
-            let alice_clone = alice.clone();
-            let alice_id = 88;
+            let bob = make_bob();
+            let bob_clone = bob.clone();
+            let new_bob = NewUser::from(bob.clone());
+            let new_bob_clone = new_bob.clone();
 
             let mut mock_repo = MockUserStore::new();
             mock_repo
                 .expect_insert_new()
                 .withf(move |u| {
-                    u.name == alice_clone.name
-                        && u.email == alice_clone.email
-                        && u.username == alice_clone.username
-                        && u.password_hash == alice_clone.password_hash
+                    u.name == new_bob.name
+                        && u.email == new_bob.email
+                        && u.username == new_bob.username
+                        && u.password_hash == new_bob.password_hash
                 })
                 .once()
-                .return_once(move |_| Ok(alice_id));
+                .return_once(move |_| Ok(bob));
 
             let user_svc = UserSvc::new(mock_repo);
 
             assert!(
                 user_svc
-                    .insert_new(&alice)
+                    .insert_new(&new_bob_clone)
                     .await
-                    .is_ok_and(|id| id == alice_id),
+                    .is_ok_and(|returned_bob| returned_bob == bob_clone),
             );
         }
     }
@@ -195,52 +206,16 @@ mod tests {
             let email_result = user_svc.get_by_email(nonexistent_email).await;
             let username_result = user_svc.get_by_username(nonexistent_username).await;
 
-            assert!(matches!(
-                id_result,
-                Err(DomainError::User(UserError::NotFound)),
-            ));
-
-            assert!(matches!(
-                email_result,
-                Err(DomainError::User(UserError::NotFound)),
-            ));
-
-            assert!(matches!(
-                username_result,
-                Err(DomainError::User(UserError::NotFound)),
-            ));
+            assert!(matches!(id_result, Err(UserError::NotFound)));
+            assert!(matches!(email_result, Err(UserError::NotFound)));
+            assert!(matches!(username_result, Err(UserError::NotFound)));
         }
 
         #[tokio::test]
         async fn retrieves_existing_users() {
-            let alice = User {
-                id: 62,
-                name: String::from("Alice Palace"),
-                email: String::from("alice@palace.org"),
-                username: String::from("al_is"),
-                password_hash: String::from("ab%#S"),
-                created_at: Utc::now(),
-            };
-
-            let bob = User {
-                id: 9924,
-                name: String::from("Roberta"),
-                email: String::from("roberta@bob.eu"),
-                username: String::from("bob_or_rob_or_ert"),
-                password_hash: String::from("asd%$#iub8"),
-                created_at: Utc::now(),
-            };
-
-            let charlie = User {
-                id: 141_415,
-                name: String::from("Charles McCharles"),
-                email: String::from("charles@mc.com"),
-                username: String::from("charlie_boy"),
-                password_hash: String::from("ha$h3dp455w0rd"),
-                created_at: Utc::now()
-                    .checked_sub_months(Months::new(12))
-                    .expect("failed to subtract 12 months from now"),
-            };
+            let alice = make_alice();
+            let bob = make_bob();
+            let charlie = make_charlie();
 
             let alice_clone = alice.clone();
             let bob_clone = bob.clone();
