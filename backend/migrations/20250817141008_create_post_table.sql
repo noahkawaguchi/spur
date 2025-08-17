@@ -2,7 +2,7 @@ CREATE TABLE post (
     id          INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     author_id   INT REFERENCES users(id) ON DELETE SET NULL,
     parent_id   INT REFERENCES post(id) ON DELETE RESTRICT, -- Rows should only be soft deleted
-    body        TEXT CHECK (body IS NULL OR length(btrim(body)) > 0),
+    body        non_empty_text,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     edited_at   TIMESTAMPTZ,
     archived_at TIMESTAMPTZ,

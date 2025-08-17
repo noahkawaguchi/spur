@@ -20,7 +20,7 @@ impl UserStore for UserRepo {
             User,
             "
             INSERT INTO users (name, email, username, password_hash)
-            VALUES ($1, $2, $3, $4)
+            VALUES ($1::text, $2::text, $3::text, $4::text)
             RETURNING *
             ",
             new_user.name,
@@ -246,7 +246,7 @@ mod tests {
                 password_hash: String::from("95@fa@fF%aaa"),
             };
 
-            let incomplete_users = vec![
+            let incomplete_users = [
                 NewUser { name: String::new(), ..complete_user.clone() },
                 NewUser { name: String::from("  "), ..complete_user.clone() },
                 NewUser { email: String::new(), ..complete_user.clone() },
@@ -258,8 +258,43 @@ mod tests {
             ];
 
             for user in incomplete_users {
-                let result = repo.insert_new(&user).await;
-                assert!(matches!(result, Err(RepoError::Technical(_))));
+                assert!(matches!(
+                    repo.insert_new(&user).await,
+                    Err(RepoError::CheckViolation(v)) if v == "text_non_empty"
+                ));
+            }
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn rejects_usernames_with_illegal_characters() {
+        with_test_pool(|pool| async move {
+            let repo = UserRepo::new(pool);
+            let bad_usernames = [
+                "$am",
+                "dan123!",
+                "sam the man",
+                "sam　the　man",
+                "sam\tthe_man",
+                "dan\nthe_man",
+                "sam\rthe_man",
+                "サム・ザ・マン",
+                "donny😂😂😂dan",
+                "-–—ーdanielle〜~_",
+            ];
+
+            for username in bad_usernames {
+                let sam = NewUser {
+                    name: String::from("Sam Dennis"),
+                    email: String::from("sam@dennis.de"),
+                    username: username.to_string(),
+                    password_hash: String::from("%$$aabbb1234"),
+                };
+                assert!(matches!(
+                    repo.insert_new(&sam).await,
+                    Err(RepoError::CheckViolation(v)) if v == "users_username_chars"
+                ));
             }
         })
         .await;

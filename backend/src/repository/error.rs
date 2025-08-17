@@ -2,8 +2,11 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum RepoError {
-    #[error("Unique constraint violation error: {0}")]
+    #[error("Unique constraint violation: {0}")]
     UniqueViolation(String),
+
+    #[error("Check constraint violation: {0}")]
+    CheckViolation(String),
 
     #[error("Technical database error: {0}")]
     Technical(sqlx::Error),
@@ -20,6 +23,12 @@ impl From<sqlx::Error> for RepoError {
                     db_err
                         .constraint()
                         .unwrap_or("<unnamed unique constraint>")
+                        .to_string(),
+                ),
+                Some("23514") => Self::CheckViolation(
+                    db_err
+                        .constraint()
+                        .unwrap_or("<unnamed check constraint>")
                         .to_string(),
                 ),
                 _ => Self::Technical(e),

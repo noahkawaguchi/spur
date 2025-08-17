@@ -42,7 +42,7 @@ impl PostStore for PostRepo {
             ),
             _ AS (
                 INSERT INTO post (author_id, parent_id, body)
-                SELECT $1, $2, $3
+                SELECT $1, $2, $3::text
                 FROM parent_status
                 WHERE status = 'ok'
             )

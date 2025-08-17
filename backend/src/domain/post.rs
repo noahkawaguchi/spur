@@ -16,7 +16,7 @@ pub enum PostError {
     #[error("Cannot reply to one's own post")]
     SelfReply,
     #[error(transparent)]
-    Technical(#[from] anyhow::Error),
+    Internal(#[from] anyhow::Error),
 }
 
 #[cfg_attr(test, derive(Debug))]
@@ -48,10 +48,16 @@ impl From<RepoError> for PostError {
                 Self::DuplicateReply
             }
             RepoError::UniqueViolation(v) => {
-                Self::Technical(anyhow!("Unexpected unique violation: {v}"))
+                Self::Internal(anyhow!("Unexpected unique violation: {v}"))
             }
-            RepoError::Technical(e) => Self::Technical(e.into()),
-            RepoError::Unexpected(e) => Self::Technical(e),
+            RepoError::CheckViolation(v) if v == "text_non_empty" => {
+                Self::Internal(anyhow!("Empty field made it past request validation: {v}"))
+            }
+            RepoError::CheckViolation(v) => {
+                Self::Internal(anyhow!("Unexpected check violation: {v}"))
+            }
+            RepoError::Technical(e) => Self::Internal(e.into()),
+            RepoError::Unexpected(e) => Self::Internal(e),
         }
     }
 }

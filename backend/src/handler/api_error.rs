@@ -53,10 +53,10 @@ impl IntoResponse for ApiError {
 
             Self::Post(PostError::DeletedParent) => (StatusCode::GONE, self.to_string()),
 
-            Self::Auth(AuthError::Technical(_))
-            | Self::User(UserError::Technical(_))
-            | Self::Friendship(FriendshipError::Technical(_))
-            | Self::Post(PostError::Technical(_)) => (StatusCode::INTERNAL_SERVER_ERROR, {
+            Self::Auth(AuthError::Internal(_))
+            | Self::User(UserError::Internal(_))
+            | Self::Friendship(FriendshipError::Internal(_))
+            | Self::Post(PostError::Internal(_)) => (StatusCode::INTERNAL_SERVER_ERROR, {
                 // TODO: use a logger
                 eprintln!("{}", self.to_string().red());
                 String::from("internal server error")
@@ -69,7 +69,7 @@ impl IntoResponse for ApiError {
                 UserError::DuplicateEmail | UserError::DuplicateUsername => {
                     (StatusCode::CONFLICT, err.to_string())
                 }
-                UserError::Technical(_) => (StatusCode::INTERNAL_SERVER_ERROR, {
+                UserError::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, {
                     // TODO: use a logger
                     eprintln!("{}", err.to_string().red());
                     String::from("Internal server error")
