@@ -21,12 +21,12 @@ pub enum FriendshipError {
     User(#[from] UserError),
 
     #[error(transparent)]
-    Technical(#[from] anyhow::Error),
+    Internal(#[from] anyhow::Error),
 }
 
 impl From<RepoError> for FriendshipError {
     fn from(e: RepoError) -> Self {
         // TODO: the friendship domain needs to be redesigned
-        Self::Technical(e.into())
+        Self::Internal(e.into())
     }
 }

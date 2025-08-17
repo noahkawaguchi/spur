@@ -127,16 +127,16 @@ mod tests {
             post_svc
                 .create_new(author_ids[1], parent_ids[1], post_bodies[1])
                 .await,
-            Err(PostError::Technical(e)) if e.to_string() ==
+            Err(PostError::Internal(e)) if e.to_string() ==
             "Unexpected unique violation: some unique constraint violation here"
         ));
         assert!(matches!(
             post_svc.create_new(author_ids[2], parent_ids[2], post_bodies[2]).await,
-            Err(PostError::Technical(e)) if e.to_string() == sqlx::Error::PoolClosed.to_string()
+            Err(PostError::Internal(e)) if e.to_string() == sqlx::Error::PoolClosed.to_string()
         ));
         assert!(matches!(
             post_svc.create_new(author_ids[3], parent_ids[3], post_bodies[3]).await,
-            Err(PostError::Technical(e)) if e .to_string() == "something went wrong!"
+            Err(PostError::Internal(e)) if e .to_string() == "something went wrong!"
         ));
     }
 

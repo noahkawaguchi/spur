@@ -16,7 +16,7 @@ pub enum UserError {
     #[error("Username taken")]
     DuplicateUsername,
     #[error(transparent)]
-    Technical(#[from] anyhow::Error),
+    Internal(#[from] anyhow::Error),
 }
 
 impl From<RepoError> for UserError {
@@ -27,10 +27,19 @@ impl From<RepoError> for UserError {
                 Self::DuplicateUsername
             }
             RepoError::UniqueViolation(v) => {
-                Self::Technical(anyhow!("Unexpected unique violation: {v}"))
+                Self::Internal(anyhow!("Unexpected unique violation: {v}"))
             }
-            RepoError::Technical(e) => Self::Technical(e.into()),
-            RepoError::Unexpected(e) => Self::Technical(e),
+            RepoError::CheckViolation(v) if v == "users_username_chars" => Self::Internal(anyhow!(
+                "Invalid username made it past request validation: {v}"
+            )),
+            RepoError::CheckViolation(v) if v == "text_non_empty" => {
+                Self::Internal(anyhow!("Empty field made it past request validation: {v}"))
+            }
+            RepoError::CheckViolation(v) => {
+                Self::Internal(anyhow!("Unexpected check violation: {v}"))
+            }
+            RepoError::Technical(e) => Self::Internal(e.into()),
+            RepoError::Unexpected(e) => Self::Internal(e),
         }
     }
 }

@@ -7,12 +7,10 @@ use thiserror::Error;
 pub enum AuthError {
     #[error("Invalid password")]
     InvalidPassword,
-
     #[error("Expired or invalid token. Try logging in again.")]
     JwtValidation,
-
     #[error(transparent)]
-    Technical(#[from] anyhow::Error),
+    Internal(#[from] anyhow::Error),
 }
 
 #[derive(Serialize, Deserialize)]
