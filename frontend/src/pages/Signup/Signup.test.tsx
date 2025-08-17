@@ -55,4 +55,40 @@ describe('SignupPage', () => {
     expect(mocks.mockSetToken).toHaveBeenCalledExactlyOnceWith(token);
     expect(mocks.mockNavigate).toHaveBeenCalledExactlyOnceWith('/');
   });
+
+  it('should reject usernames with illegal characters', async () => {
+    render(inMemRouter({ children: <SignupPage /> }));
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText('Name:'), 'Alice User');
+    await user.type(screen.getByLabelText('Email:'), 'alice@example.com');
+    await user.type(screen.getByLabelText('Password:'), 'secret_password_12345');
+
+    const usernameInput = screen.getByLabelText('Username:');
+
+    const badUsernames = [
+      'w^33b',
+      '8()',
+      'やっほー',
+      'space space',
+      'spacious　space',
+      'abc\t123',
+      'hello🥸789',
+      '~-_-~',
+    ];
+
+    for (const username of badUsernames) {
+      expect(usernameInput).toHaveValue('');
+      await user.type(usernameInput, username);
+      expect(usernameInput).toHaveValue(username);
+      expect(usernameInput).toBeInvalid();
+      expect(usernameInput).toBeInstanceOf(HTMLInputElement);
+      if (usernameInput instanceof HTMLInputElement) {
+        expect(usernameInput.validationMessage).toBe(
+          'username may only contain ASCII letters, numbers, underscores, and hyphens',
+        );
+      }
+      await user.clear(usernameInput);
+    }
+  });
 });

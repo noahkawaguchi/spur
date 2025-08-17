@@ -72,6 +72,13 @@ const SignupPage = () => {
             placeholder='your_username123'
             disabled={loading}
             required
+            pattern='^[A-Za-z0-9_\-]+$'
+            title='username may only contain ASCII letters, numbers, underscores, and hyphens'
+            onInvalid={e => {
+              if (e.currentTarget.value !== '')
+                e.currentTarget.setCustomValidity(e.currentTarget.title);
+            }}
+            onInput={e => e.currentTarget.setCustomValidity('')}
           />
         </label>
         <br />
