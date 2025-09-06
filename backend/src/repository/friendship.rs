@@ -16,7 +16,7 @@ impl FriendshipStore for FriendshipRepo {
     async fn new_request(&self, ids: &UserIdPair, requester_id: i32) -> Result<(), RepoError> {
         sqlx::query!(
             "
-            INSERT INTO friendships (first_id, second_id, requester_first)
+            INSERT INTO friendship (lesser_id, greater_id, lesser_requested)
             VALUES ($1, $2, $3)
             ",
             ids.lesser(),
@@ -32,9 +32,9 @@ impl FriendshipStore for FriendshipRepo {
     async fn accept_request(&self, ids: &UserIdPair) -> Result<(), RepoError> {
         sqlx::query!(
             "
-            UPDATE friendships
-            SET confirmed = TRUE, confirmed_at = CURRENT_TIMESTAMP
-            WHERE first_id = $1 AND second_id = $2
+            UPDATE friendship
+            SET confirmed_at = CURRENT_TIMESTAMP
+            WHERE lesser_id = $1 AND greater_id = $2
             ",
             ids.lesser(),
             ids.greater(),
@@ -47,10 +47,11 @@ impl FriendshipStore for FriendshipRepo {
 
     async fn get_status(&self, ids: &UserIdPair) -> Result<FriendshipStatus, RepoError> {
         sqlx::query!(
-            "
-            SELECT requester_first, confirmed FROM friendships
-            WHERE first_id = $1 AND second_id = $2
-            ",
+            r#"
+            SELECT lesser_requested, confirmed_at IS NOT NULL AS "confirmed!"
+            FROM friendship
+            WHERE lesser_id = $1 AND greater_id = $2
+            "#,
             ids.lesser(),
             ids.greater(),
         )
@@ -60,7 +61,7 @@ impl FriendshipStore for FriendshipRepo {
         .map(|row| match row {
             None => FriendshipStatus::Nil,
             Some(friends) if friends.confirmed => FriendshipStatus::Friends,
-            Some(pair) if pair.requester_first => FriendshipStatus::PendingFrom(ids.lesser()),
+            Some(pair) if pair.lesser_requested => FriendshipStatus::PendingFrom(ids.lesser()),
             Some(_) => FriendshipStatus::PendingFrom(ids.greater()),
         })
     }
@@ -70,12 +71,12 @@ impl FriendshipStore for FriendshipRepo {
             "
             SELECT
                 CASE
-                    WHEN first_id = $1 THEN second_id
-                    ELSE first_id
+                    WHEN lesser_id = $1 THEN greater_id
+                    ELSE lesser_id
                 END AS friend_id
-            FROM friendships
-            WHERE confirmed
-            AND (first_id = $1 OR second_id = $1)
+            FROM friendship
+            WHERE confirmed_at IS NOT NULL
+            AND (lesser_id = $1 OR greater_id = $1)
             ",
             id,
         )
@@ -88,17 +89,17 @@ impl FriendshipStore for FriendshipRepo {
     async fn get_requests(&self, id: i32) -> Result<Vec<i32>, RepoError> {
         sqlx::query_scalar!(
             "
-            SELECT first_id AS requester_id FROM friendships
-            WHERE NOT confirmed
-            AND second_id = $1
-            AND requester_first
+            SELECT lesser_id AS requester_id FROM friendship
+            WHERE confirmed_at IS NULL
+            AND greater_id = $1
+            AND lesser_requested
 
             UNION ALL
 
-            SELECT second_id AS requester_id FROM friendships
-            WHERE NOT confirmed
-            AND first_id = $1
-            AND NOT requester_first
+            SELECT greater_id AS requester_id FROM friendship
+            WHERE confirmed_at IS NULL
+            AND lesser_id = $1
+            AND NOT lesser_requested
             ",
             id,
         )
@@ -119,10 +120,9 @@ mod tests {
     use sqlx::PgPool;
 
     struct Friendship {
-        first_id: i32,
-        second_id: i32,
-        requester_first: bool,
-        confirmed: bool,
+        lesser_id: i32,
+        greater_id: i32,
+        lesser_requested: bool,
         requested_at: DateTime<Utc>,
         confirmed_at: Option<DateTime<Utc>>,
     }
@@ -130,7 +130,7 @@ mod tests {
     async fn must_get_friendship(pool: PgPool, first_id: i32, second_id: i32) -> Friendship {
         sqlx::query_as!(
             Friendship,
-            "SELECT * FROM friendships WHERE first_id = $1 AND second_id = $2",
+            "SELECT * FROM friendship WHERE lesser_id = $1 AND greater_id = $2",
             first_id,
             second_id,
         )
@@ -151,10 +151,9 @@ mod tests {
 
             let friendship = must_get_friendship(pool, 1, 2).await;
 
-            assert_eq!(friendship.first_id, 1);
-            assert_eq!(friendship.second_id, 2);
-            assert!(friendship.requester_first);
-            assert!(!friendship.confirmed);
+            assert_eq!(friendship.lesser_id, 1);
+            assert_eq!(friendship.greater_id, 2);
+            assert!(friendship.lesser_requested);
             assert!(within_one_second(friendship.requested_at, Utc::now()));
             assert!(friendship.confirmed_at.is_none());
         })
@@ -178,10 +177,9 @@ mod tests {
 
             let friendship = must_get_friendship(pool, 1, 3).await;
 
-            assert_eq!(friendship.first_id, 1);
-            assert_eq!(friendship.second_id, 3);
-            assert!(!friendship.requester_first);
-            assert!(friendship.confirmed);
+            assert_eq!(friendship.lesser_id, 1);
+            assert_eq!(friendship.greater_id, 3);
+            assert!(!friendship.lesser_requested);
             assert!(within_one_second(friendship.requested_at, Utc::now()));
             assert!(within_one_second(
                 friendship
