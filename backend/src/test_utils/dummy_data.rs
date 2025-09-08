@@ -52,5 +52,5 @@ pub mod user {
         }
     }
 
-    pub fn all() -> [User; 4] { [number1(), number2(), number3(), number4()] }
+    // pub fn all() -> [User; 4] { [number1(), number2(), number3(), number4()] }
 }

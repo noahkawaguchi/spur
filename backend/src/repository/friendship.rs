@@ -74,51 +74,57 @@ impl FriendshipStore for FriendshipRepo {
         })
     }
 
-    async fn get_friends(&self, exec: impl PgExecutor<'_>, id: i32) -> Result<Vec<i32>, RepoError> {
+    async fn get_friends(
+        &self,
+        exec: impl PgExecutor<'_>,
+        id: i32,
+    ) -> Result<Vec<String>, RepoError> {
         sqlx::query_scalar!(
             "
-            SELECT
-                CASE
-                    WHEN lesser_id = $1 THEN greater_id
-                    ELSE lesser_id
-                END AS friend_id
-            FROM friendship
-            WHERE confirmed_at IS NOT NULL
-            AND (lesser_id = $1 OR greater_id = $1)
+            SELECT username FROM users WHERE id IN (
+                SELECT
+                    CASE
+                        WHEN lesser_id = $1 THEN greater_id
+                        ELSE lesser_id
+                    END AS friend_id
+                FROM friendship
+                WHERE confirmed_at IS NOT NULL
+                AND (lesser_id = $1 OR greater_id = $1)
+            )
             ",
             id,
         )
         .fetch_all(exec)
         .await
         .map_err(Into::into)
-        .map(|friends| friends.into_iter().flatten().collect())
     }
 
     async fn get_requests(
         &self,
         exec: impl PgExecutor<'_>,
         id: i32,
-    ) -> Result<Vec<i32>, RepoError> {
+    ) -> Result<Vec<String>, RepoError> {
         sqlx::query_scalar!(
             "
-            SELECT lesser_id AS requester_id FROM friendship
-            WHERE confirmed_at IS NULL
-            AND greater_id = $1
-            AND lesser_requested
+            SELECT username FROM users WHERE id IN (
+                SELECT lesser_id AS requester_id FROM friendship
+                WHERE confirmed_at IS NULL
+                AND greater_id = $1
+                AND lesser_requested
 
-            UNION ALL
+                UNION ALL
 
-            SELECT greater_id AS requester_id FROM friendship
-            WHERE confirmed_at IS NULL
-            AND lesser_id = $1
-            AND NOT lesser_requested
+                SELECT greater_id AS requester_id FROM friendship
+                WHERE confirmed_at IS NULL
+                AND lesser_id = $1
+                AND NOT lesser_requested
+            )
             ",
             id,
         )
         .fetch_all(exec)
         .await
         .map_err(Into::into)
-        .map(|requesters| requesters.into_iter().flatten().collect())
     }
 }
 
@@ -254,7 +260,7 @@ mod tests {
     async fn gets_all_requests_and_friends() {
         with_test_pool(|pool| async move {
             let repo = FriendshipRepo;
-            seed_users(pool.clone()).await;
+            let [u1, u2, _, _] = seed_users(pool.clone()).await;
 
             let ids1 = UserIdPair::new(1, 3).unwrap();
             let ids2 = UserIdPair::new(2, 3).unwrap();
@@ -282,7 +288,7 @@ mod tests {
                 .get_requests(&pool, 3)
                 .await
                 .expect("failed to get requests");
-            assert_eq!(requests, vec![1, 2]);
+            assert_eq!(requests, vec![u1.username.clone(), u2.username.clone()]);
             let friends = repo
                 .get_friends(&pool, 3)
                 .await
@@ -297,12 +303,12 @@ mod tests {
                 .get_requests(&pool, 3)
                 .await
                 .expect("failed to get single request");
-            assert_eq!(requests, vec![2]);
+            assert_eq!(requests, vec![u2.username.clone()]);
             let friends = repo
                 .get_friends(&pool, 3)
                 .await
                 .expect("failed to get single friend");
-            assert_eq!(friends, vec![1]);
+            assert_eq!(friends, vec![u1.username.clone()]);
 
             // No requests, two friends
             repo.accept_request(&pool, &ids2)
@@ -317,7 +323,7 @@ mod tests {
                 .get_friends(&pool, 3)
                 .await
                 .expect("failed to get friends");
-            assert_eq!(friends, vec![1, 2]);
+            assert_eq!(friends, vec![u1.username, u2.username]);
         })
         .await;
     }

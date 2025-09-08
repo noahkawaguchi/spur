@@ -67,25 +67,17 @@ where
     }
 
     async fn get_friends(&self, id: i32) -> Result<Vec<String>, FriendshipError> {
-        futures::future::try_join_all(
-            self.store
-                .get_friends(self.uow.single_exec(), id)
-                .await?
-                .into_iter()
-                .map(|id| async move { Ok(self.user_svc.get_by_id(id).await?.username) }),
-        )
-        .await
+        self.store
+            .get_friends(self.uow.single_exec(), id)
+            .await
+            .map_err(Into::into)
     }
 
     async fn get_requests(&self, id: i32) -> Result<Vec<String>, FriendshipError> {
-        futures::future::try_join_all(
-            self.store
-                .get_requests(self.uow.single_exec(), id)
-                .await?
-                .into_iter()
-                .map(|id| async move { Ok(self.user_svc.get_by_id(id).await?.username) }),
-        )
-        .await
+        self.store
+            .get_requests(self.uow.single_exec(), id)
+            .await
+            .map_err(Into::into)
     }
 
     async fn are_friends(&self, ids: &UserIdPair) -> Result<bool, FriendshipError> {
@@ -114,8 +106,8 @@ mod tests {
         accept_request: Option<Box<dyn Fn(&UserIdPair) -> Result<(), RepoError> + Send + Sync>>,
         get_status:
             Option<Box<dyn Fn(&UserIdPair) -> Result<FriendshipStatus, RepoError> + Send + Sync>>,
-        get_friends: Option<Box<dyn Fn(i32) -> Result<Vec<i32>, RepoError> + Send + Sync>>,
-        get_requests: Option<Box<dyn Fn(i32) -> Result<Vec<i32>, RepoError> + Send + Sync>>,
+        get_friends: Option<Box<dyn Fn(i32) -> Result<Vec<String>, RepoError> + Send + Sync>>,
+        get_requests: Option<Box<dyn Fn(i32) -> Result<Vec<String>, RepoError> + Send + Sync>>,
     }
 
     #[async_trait::async_trait]
@@ -149,7 +141,7 @@ mod tests {
             &self,
             _exec: impl PgExecutor<'_>,
             id: i32,
-        ) -> Result<Vec<i32>, RepoError> {
+        ) -> Result<Vec<String>, RepoError> {
             (self.get_friends.as_ref().unwrap())(id)
         }
 
@@ -157,7 +149,7 @@ mod tests {
             &self,
             _exec: impl PgExecutor<'_>,
             id: i32,
-        ) -> Result<Vec<i32>, RepoError> {
+        ) -> Result<Vec<String>, RepoError> {
             (self.get_requests.as_ref().unwrap())(id)
         }
     }
@@ -308,96 +300,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn gets_all_friends_usernames() {
-        let [friend1, me, friend2, friend3] = dummy_data::user::all();
-
-        let friend_usernames = vec![
-            friend1.username.clone(),
-            friend2.username.clone(),
-            friend3.username.clone(),
-        ];
-
-        let mock_friendship_repo = MockFriendshipStore {
-            get_friends: Some(Box::new(move |passed_id| {
-                assert_eq!(me.id, passed_id);
-                Ok(vec![friend1.id, friend2.id, friend3.id])
-            })),
-            ..Default::default()
-        };
-
-        let mut mock_user_svc = MockUserManager::new();
-        mock_user_svc
-            .expect_get_by_id()
-            .with(eq(friend1.id))
-            .once()
-            .return_once(|_| Ok(friend1));
-        mock_user_svc
-            .expect_get_by_id()
-            .with(eq(friend2.id))
-            .once()
-            .return_once(|_| Ok(friend2));
-        mock_user_svc
-            .expect_get_by_id()
-            .with(eq(friend3.id))
-            .once()
-            .return_once(|_| Ok(friend3));
-
-        let friendship_svc =
-            FriendshipSvc::new(fake_pool(), mock_friendship_repo, Arc::new(mock_user_svc));
-        let result = friendship_svc
-            .get_friends(me.id)
-            .await
-            .expect("failed to get friends");
-
-        assert_eq!(result, friend_usernames);
-    }
-
-    #[tokio::test]
-    async fn gets_pending_request_usernames() {
-        let [requester3, requester2, requester1, me] = dummy_data::user::all();
-
-        let requester_usernames = vec![
-            requester1.username.clone(),
-            requester2.username.clone(),
-            requester3.username.clone(),
-        ];
-
-        let mock_friendship_repo = MockFriendshipStore {
-            get_requests: Some(Box::new(move |passed_id| {
-                assert_eq!(me.id, passed_id);
-                Ok(vec![requester1.id, requester2.id, requester3.id])
-            })),
-            ..Default::default()
-        };
-
-        let mut mock_user_svc = MockUserManager::new();
-        mock_user_svc
-            .expect_get_by_id()
-            .with(eq(requester1.id))
-            .once()
-            .return_once(|_| Ok(requester1));
-        mock_user_svc
-            .expect_get_by_id()
-            .with(eq(requester2.id))
-            .once()
-            .return_once(|_| Ok(requester2));
-        mock_user_svc
-            .expect_get_by_id()
-            .with(eq(requester3.id))
-            .once()
-            .return_once(|_| Ok(requester3));
-
-        let friendship_svc =
-            FriendshipSvc::new(fake_pool(), mock_friendship_repo, Arc::new(mock_user_svc));
-        let result = friendship_svc
-            .get_requests(me.id)
-            .await
-            .expect("failed to get requests");
-
-        assert_eq!(result, requester_usernames);
-    }
-
-    #[tokio::test]
     async fn correctly_reports_friendship_as_bool() {
         let ids1 = UserIdPair::new(15, 2).unwrap();
         let ids2 = UserIdPair::new(999, 55).unwrap();
@@ -431,4 +333,7 @@ mod tests {
         assert!(!friendship_svc.are_friends(&ids3).await.unwrap());
         assert!(!friendship_svc.are_friends(&ids4).await.unwrap());
     }
+
+    // Determined that testing `get_friends` and `get_requests` would be trivial now that the
+    // repository returns the usernames directly
 }

@@ -29,10 +29,18 @@ pub trait FriendshipStore: Send + Sync {
         ids: &UserIdPair,
     ) -> Result<FriendshipStatus, RepoError>;
 
-    /// Retrieves the IDs of all confirmed friends of the user with the provided ID.
-    async fn get_friends(&self, exec: impl PgExecutor<'_>, id: i32) -> Result<Vec<i32>, RepoError>;
+    /// Retrieves the usernames of all confirmed friends of the user with the provided ID.
+    async fn get_friends(
+        &self,
+        exec: impl PgExecutor<'_>,
+        id: i32,
+    ) -> Result<Vec<String>, RepoError>;
 
-    /// Retrieves the IDs of all users who have pending requests to the user with the provided ID.
-    async fn get_requests(&self, exec: impl PgExecutor<'_>, id: i32)
-    -> Result<Vec<i32>, RepoError>;
+    /// Retrieves the usernames of all users who have pending requests to the user with the provided
+    /// ID.
+    async fn get_requests(
+        &self,
+        exec: impl PgExecutor<'_>,
+        id: i32,
+    ) -> Result<Vec<String>, RepoError>;
 }
