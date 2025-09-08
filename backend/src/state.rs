@@ -20,7 +20,8 @@ impl AppState {
         let user_svc = Arc::new(UserSvc::new(UserRepo::new(pool.clone()))) as Arc<dyn UserManager>;
 
         let friendship_svc = Arc::new(FriendshipSvc::new(
-            FriendshipRepo::new(pool.clone()),
+            pool.clone(),
+            FriendshipRepo,
             Arc::clone(&user_svc),
         )) as Arc<dyn FriendshipManager>;
 

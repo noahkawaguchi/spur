@@ -109,19 +109,19 @@ pub async fn seed_friends(pool: sqlx::PgPool) {
     let two_and_three = UserIdPair::new(2, 3).unwrap();
     let two_and_four = UserIdPair::new(4, 2).unwrap();
 
-    let repo = FriendshipRepo::new(pool.clone());
+    let repo = FriendshipRepo;
 
     // Confirmed requests
-    repo.new_request(&two_and_three, 2).await.unwrap();
-    repo.new_request(&two_and_four, 4).await.unwrap();
-    repo.accept_request(&two_and_three).await.unwrap();
-    repo.accept_request(&two_and_four).await.unwrap();
+    repo.new_request(&pool, &two_and_three, 2).await.unwrap();
+    repo.new_request(&pool, &two_and_four, 4).await.unwrap();
+    repo.accept_request(&pool, &two_and_three).await.unwrap();
+    repo.accept_request(&pool, &two_and_four).await.unwrap();
 
     // Unconfirmed requests
-    repo.new_request(&UserIdPair::new(1, 3).unwrap(), 3)
+    repo.new_request(&pool, &UserIdPair::new(1, 3).unwrap(), 3)
         .await
         .unwrap();
-    repo.new_request(&UserIdPair::new(4, 3).unwrap(), 3)
+    repo.new_request(&pool, &UserIdPair::new(4, 3).unwrap(), 3)
         .await
         .unwrap();
 }
