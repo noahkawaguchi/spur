@@ -1,0 +1,53 @@
+####################################################################################################
+# Dev DB container
+# Requires the Docker CLI and a running VM such as Docker Desktop or Colima
+####################################################################################################
+
+# Initialize DB
+db-up:
+	docker compose -p spur up -d
+
+# Stop services and remove volumes (delete data)
+db-rm:
+	docker compose down -v
+
+# Start the dev DB container
+db-start:
+	docker start spur_dev
+
+# Stop the dev DB container
+db-stop:
+	docker stop spur_dev
+
+####################################################################################################
+# Migrations
+#
+# `sqlx` commands require the SQLx CLI with the feature flag for Postgres. TLS is not required to
+# use the local development database in Docker. Therefore, the minimal sqlx-cli installation
+# required for this project is: `cargo install sqlx-cli --no-default-features --features postgres`
+####################################################################################################
+
+# Create a new migration
+migration name:
+	sqlx migrate add {{name}}
+
+# Run pending migrations
+migrate:
+	sqlx migrate run
+
+# (Interactively) remove some or all migration files
+migrate-clean:
+	rm -i migrations/*
+
+# Drop, recreate, and run migrations on the DB
+db-reset:
+	sqlx database reset
+
+####################################################################################################
+# Miscellaneous
+####################################################################################################
+
+# Test coverage (requires `cargo install cargo-llvm-cov`)
+coverage:
+	cargo llvm-cov --open
+
