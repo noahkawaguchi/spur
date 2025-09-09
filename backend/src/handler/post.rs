@@ -3,6 +3,7 @@ use crate::{
     domain::post::PostManager,
     dto::{requests::CreatePostRequest, responses::PostResponse},
     map_into::MapInto,
+    read::SocialRead,
     state::AppState,
 };
 use axum::{
@@ -60,12 +61,12 @@ async fn get_by_parent_id(
 
 /// Retrieves posts written by the requester's friends.
 async fn all_friend_posts(
-    post_svc: State<Arc<dyn PostManager>>,
+    social_read: State<Arc<dyn SocialRead>>,
     Extension(requester_id): Extension<i32>,
 ) -> api_result!(Vec<PostResponse>) {
     Ok((
         StatusCode::OK,
-        Json(post_svc.all_friend_posts(requester_id).await?.map_into()),
+        Json(social_read.all_friend_posts(requester_id).await?.map_into()),
     ))
 }
 

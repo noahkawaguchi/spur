@@ -79,8 +79,6 @@ pub trait PostManager: Send + Sync {
         &self,
         author_username: &str,
     ) -> Result<Vec<PostInfo>, PostError>;
-    /// Retrieves all posts written by friends of a specific user.
-    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostInfo>, PostError>;
 }
 
 #[cfg_attr(test, mockall::automock)]
@@ -104,6 +102,4 @@ pub trait PostStore: Send + Sync {
         &self,
         author_username: &str,
     ) -> Result<Vec<PostInfo>, RepoError>;
-    /// Retrieves all posts written by friends of a specific user.
-    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostInfo>, RepoError>;
 }

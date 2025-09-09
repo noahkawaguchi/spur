@@ -56,13 +56,6 @@ impl<S: PostStore> PostManager for PostSvc<S> {
             .await
             .map_err(Into::into)
     }
-
-    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostInfo>, PostError> {
-        self.store
-            .all_friend_posts(user_id)
-            .await
-            .map_err(Into::into)
-    }
 }
 
 #[cfg(test)]
