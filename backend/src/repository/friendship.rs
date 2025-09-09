@@ -73,59 +73,6 @@ impl FriendshipStore for FriendshipRepo {
             Some(_) => FriendshipStatus::PendingFrom(ids.greater()),
         })
     }
-
-    async fn get_friends(
-        &self,
-        exec: impl PgExecutor<'_>,
-        id: i32,
-    ) -> Result<Vec<String>, RepoError> {
-        sqlx::query_scalar!(
-            "
-            SELECT username FROM users WHERE id IN (
-                SELECT
-                    CASE
-                        WHEN lesser_id = $1 THEN greater_id
-                        ELSE lesser_id
-                    END AS friend_id
-                FROM friendship
-                WHERE confirmed_at IS NOT NULL
-                AND (lesser_id = $1 OR greater_id = $1)
-            )
-            ",
-            id,
-        )
-        .fetch_all(exec)
-        .await
-        .map_err(Into::into)
-    }
-
-    async fn get_requests(
-        &self,
-        exec: impl PgExecutor<'_>,
-        id: i32,
-    ) -> Result<Vec<String>, RepoError> {
-        sqlx::query_scalar!(
-            "
-            SELECT username FROM users WHERE id IN (
-                SELECT lesser_id AS requester_id FROM friendship
-                WHERE confirmed_at IS NULL
-                AND greater_id = $1
-                AND lesser_requested
-
-                UNION ALL
-
-                SELECT greater_id AS requester_id FROM friendship
-                WHERE confirmed_at IS NULL
-                AND lesser_id = $1
-                AND NOT lesser_requested
-            )
-            ",
-            id,
-        )
-        .fetch_all(exec)
-        .await
-        .map_err(Into::into)
-    }
 }
 
 #[cfg(test)]
@@ -252,78 +199,6 @@ mod tests {
                 .await
                 .expect("failed to get status");
             assert_eq!(status, FriendshipStatus::Friends);
-        })
-        .await;
-    }
-
-    #[tokio::test]
-    async fn gets_all_requests_and_friends() {
-        with_test_pool(|pool| async move {
-            let repo = FriendshipRepo;
-            let [u1, u2, _, _] = seed_users(pool.clone()).await;
-
-            let ids1 = UserIdPair::new(1, 3).unwrap();
-            let ids2 = UserIdPair::new(2, 3).unwrap();
-
-            // No requests, no friends
-            let requests = repo
-                .get_requests(&pool, 3)
-                .await
-                .expect("failed to get empty requests");
-            assert!(requests.is_empty());
-            let friends = repo
-                .get_friends(&pool, 3)
-                .await
-                .expect("failed to get empty friends");
-            assert!(friends.is_empty());
-
-            // Two requests, no friends
-            repo.new_request(&pool, &ids1, 1)
-                .await
-                .expect("failed to create new request");
-            repo.new_request(&pool, &ids2, 2)
-                .await
-                .expect("failed to create new request");
-            let requests = repo
-                .get_requests(&pool, 3)
-                .await
-                .expect("failed to get requests");
-            assert_eq!(requests, vec![u1.username.clone(), u2.username.clone()]);
-            let friends = repo
-                .get_friends(&pool, 3)
-                .await
-                .expect("failed to get empty friends");
-            assert!(friends.is_empty());
-
-            // One request, one friend
-            repo.accept_request(&pool, &ids1)
-                .await
-                .expect("failed to accept request");
-            let requests = repo
-                .get_requests(&pool, 3)
-                .await
-                .expect("failed to get single request");
-            assert_eq!(requests, vec![u2.username.clone()]);
-            let friends = repo
-                .get_friends(&pool, 3)
-                .await
-                .expect("failed to get single friend");
-            assert_eq!(friends, vec![u1.username.clone()]);
-
-            // No requests, two friends
-            repo.accept_request(&pool, &ids2)
-                .await
-                .expect("failed to accept request");
-            let requests = repo
-                .get_requests(&pool, 3)
-                .await
-                .expect("failed to get empty requests");
-            assert!(requests.is_empty());
-            let friends = repo
-                .get_friends(&pool, 3)
-                .await
-                .expect("failed to get friends");
-            assert_eq!(friends, vec![u1.username, u2.username]);
         })
         .await;
     }

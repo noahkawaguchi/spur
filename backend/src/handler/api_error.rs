@@ -3,6 +3,7 @@ use crate::{
         auth::AuthError, friendship::error::FriendshipError, post::PostError, user::UserError,
     },
     dto::responses::ErrorResponse,
+    read::ReadError,
 };
 use axum::{
     Json,
@@ -24,6 +25,8 @@ pub enum ApiError {
     Friendship(#[from] FriendshipError),
     #[error(transparent)]
     Post(#[from] PostError),
+    #[error(transparent)]
+    Read(#[from] ReadError),
 }
 
 impl IntoResponse for ApiError {
@@ -56,7 +59,8 @@ impl IntoResponse for ApiError {
             Self::Auth(AuthError::Internal(_))
             | Self::User(UserError::Internal(_))
             | Self::Friendship(FriendshipError::Internal(_))
-            | Self::Post(PostError::Internal(_)) => (StatusCode::INTERNAL_SERVER_ERROR, {
+            | Self::Post(PostError::Internal(_))
+            | Self::Read(ReadError::Technical(_)) => (StatusCode::INTERNAL_SERVER_ERROR, {
                 // TODO: use a logger
                 eprintln!("{}", self.to_string().red());
                 String::from("internal server error")

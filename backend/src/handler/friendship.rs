@@ -2,6 +2,7 @@ use super::{api_result, validated_json::ValidatedJson};
 use crate::{
     domain::friendship::service::FriendshipManager,
     dto::{requests::AddFriendRequest, responses::SuccessResponse},
+    read::SocialRead,
     state::AppState,
 };
 use axum::{
@@ -46,22 +47,22 @@ async fn add_friend(
 
 /// Retrieves the usernames of the requester's friends.
 async fn get_friends(
-    friendship_svc: State<Arc<dyn FriendshipManager>>,
+    social_read: State<Arc<dyn SocialRead>>,
     Extension(requester_id): Extension<i32>,
 ) -> api_result!(Vec<String>) {
     Ok((
         StatusCode::OK,
-        Json(friendship_svc.get_friends(requester_id).await?),
+        Json(social_read.friend_usernames(requester_id).await?),
     ))
 }
 
 /// Retrieves the usernames of users who have pending friend requests to the requester.
 async fn get_requests(
-    friendship_svc: State<Arc<dyn FriendshipManager>>,
+    social_read: State<Arc<dyn SocialRead>>,
     Extension(requester_id): Extension<i32>,
 ) -> api_result!(Vec<String>) {
     Ok((
         StatusCode::OK,
-        Json(friendship_svc.get_requests(requester_id).await?),
+        Json(social_read.pending_requests(requester_id).await?),
     ))
 }

@@ -66,20 +66,6 @@ where
         result
     }
 
-    async fn get_friends(&self, id: i32) -> Result<Vec<String>, FriendshipError> {
-        self.store
-            .get_friends(self.uow.single_exec(), id)
-            .await
-            .map_err(Into::into)
-    }
-
-    async fn get_requests(&self, id: i32) -> Result<Vec<String>, FriendshipError> {
-        self.store
-            .get_requests(self.uow.single_exec(), id)
-            .await
-            .map_err(Into::into)
-    }
-
     async fn are_friends(&self, ids: &UserIdPair) -> Result<bool, FriendshipError> {
         Ok(self.store.get_status(self.uow.single_exec(), ids).await? == FriendshipStatus::Friends)
     }
@@ -106,8 +92,6 @@ mod tests {
         accept_request: Option<Box<dyn Fn(&UserIdPair) -> Result<(), RepoError> + Send + Sync>>,
         get_status:
             Option<Box<dyn Fn(&UserIdPair) -> Result<FriendshipStatus, RepoError> + Send + Sync>>,
-        get_friends: Option<Box<dyn Fn(i32) -> Result<Vec<String>, RepoError> + Send + Sync>>,
-        get_requests: Option<Box<dyn Fn(i32) -> Result<Vec<String>, RepoError> + Send + Sync>>,
     }
 
     #[async_trait::async_trait]
@@ -135,22 +119,6 @@ mod tests {
             ids: &UserIdPair,
         ) -> Result<FriendshipStatus, RepoError> {
             (self.get_status.as_ref().unwrap())(ids)
-        }
-
-        async fn get_friends(
-            &self,
-            _exec: impl PgExecutor<'_>,
-            id: i32,
-        ) -> Result<Vec<String>, RepoError> {
-            (self.get_friends.as_ref().unwrap())(id)
-        }
-
-        async fn get_requests(
-            &self,
-            _exec: impl PgExecutor<'_>,
-            id: i32,
-        ) -> Result<Vec<String>, RepoError> {
-            (self.get_requests.as_ref().unwrap())(id)
         }
     }
 
@@ -333,7 +301,4 @@ mod tests {
         assert!(!friendship_svc.are_friends(&ids3).await.unwrap());
         assert!(!friendship_svc.are_friends(&ids4).await.unwrap());
     }
-
-    // Determined that testing `get_friends` and `get_requests` would be trivial now that the
-    // repository returns the usernames directly
 }

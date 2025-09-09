@@ -22,13 +22,6 @@ pub trait FriendshipManager: Send + Sync {
         recipient_username: &str,
     ) -> Result<bool, FriendshipError>;
 
-    /// Retrieves the usernames of all confirmed friends of the user with the provided ID.
-    async fn get_friends(&self, id: i32) -> Result<Vec<String>, FriendshipError>;
-
-    /// Retrieves the usernames of all users who have pending requests to the user with the
-    /// provided ID.
-    async fn get_requests(&self, id: i32) -> Result<Vec<String>, FriendshipError>;
-
     /// Determines whether two users are confirmed friends.
     async fn are_friends(&self, ids: &UserIdPair) -> Result<bool, FriendshipError>;
 }

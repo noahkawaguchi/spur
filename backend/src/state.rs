@@ -1,5 +1,7 @@
 use crate::{
     domain::{friendship::service::FriendshipManager, post::PostManager, user::UserManager},
+    infra::social_read::PgSocialRead,
+    read::SocialRead,
     repository::{friendship::FriendshipRepo, post::PostRepo, user::UserRepo},
     service::{friendship::FriendshipSvc, post::PostSvc, user::UserSvc},
 };
@@ -12,6 +14,7 @@ pub struct AppState {
     pub user_svc: Arc<dyn UserManager>,
     pub friendship_svc: Arc<dyn FriendshipManager>,
     pub post_svc: Arc<dyn PostManager>,
+    pub social_read: Arc<dyn SocialRead>,
 }
 
 impl AppState {
@@ -25,8 +28,10 @@ impl AppState {
             Arc::clone(&user_svc),
         )) as Arc<dyn FriendshipManager>;
 
-        let post_svc = Arc::new(PostSvc::new(PostRepo::new(pool))) as Arc<dyn PostManager>;
+        let post_svc = Arc::new(PostSvc::new(PostRepo::new(pool.clone()))) as Arc<dyn PostManager>;
 
-        Self { jwt_secret, user_svc, friendship_svc, post_svc }
+        let social_read = Arc::new(PgSocialRead::new(pool)) as Arc<dyn SocialRead>;
+
+        Self { jwt_secret, user_svc, friendship_svc, post_svc, social_read }
     }
 }
