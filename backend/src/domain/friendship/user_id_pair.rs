@@ -3,7 +3,8 @@ use anyhow::{Result, anyhow};
 use std::cmp::Ordering::{Equal, Greater, Less};
 
 /// A pair of user IDs that are guaranteed to be distinct.
-#[cfg_attr(test, derive(Debug, PartialEq, Eq, Clone))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
+#[derive(Clone, Copy)]
 pub struct UserIdPair(i32, i32);
 
 impl UserIdPair {
@@ -18,14 +19,14 @@ impl UserIdPair {
     }
 
     /// Gets the user ID of strictly lesser numeric value.
-    pub const fn lesser(&self) -> i32 { self.0 }
+    pub const fn lesser(self) -> i32 { self.0 }
 
     /// Gets the user ID of strictly greater numeric value.
-    pub const fn greater(&self) -> i32 { self.1 }
+    pub const fn greater(self) -> i32 { self.1 }
 
     /// Gets whether the provided ID is the lesser (true) or the greater (false) of the pair.
     /// Returns `Err` if the provided ID is not one of the IDs in the pair.
-    pub fn is_lesser(&self, id: i32) -> Result<bool> {
+    pub fn is_lesser(self, id: i32) -> Result<bool> {
         match (id == self.0, id == self.1) {
             (true, true) => Err(anyhow!(
                 "Internal logic error: UserIdPair distinct invariant broken",

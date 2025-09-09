@@ -155,11 +155,11 @@ impl PostStore for PostRepo {
             JOIN (
                 SELECT
                     CASE
-                        WHEN f.first_id = $1 THEN f.second_id
-                        ELSE f.first_id
+                        WHEN f.lesser_id = $1 THEN f.greater_id
+                        ELSE f.lesser_id
                     END AS friend_id
-                FROM friendships f
-                WHERE f.confirmed AND (f.first_id = $1 OR f.second_id = $1)
+                FROM friendship f
+                WHERE f.confirmed_at IS NOT NULL AND (f.lesser_id = $1 OR f.greater_id = $1)
             ) AS friends
             ON p.author_id = friends.friend_id
             ORDER BY p.created_at DESC

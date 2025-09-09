@@ -12,7 +12,6 @@ bcrypt = "0.17.0"
 chrono = "0.4.41"
 colored = "3.0.0"
 dotenvy = "0.15.7"
-futures = "0.3.31"
 jsonwebtoken = "9.3.1"
 lazy-regex = "3.4.1"
 serde = { version = "1.0.219", features = ["derive"] }

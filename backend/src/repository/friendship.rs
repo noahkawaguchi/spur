@@ -2,110 +2,129 @@ use super::error::RepoError;
 use crate::domain::friendship::{
     FriendshipStatus, repository::FriendshipStore, user_id_pair::UserIdPair,
 };
+use sqlx::PgExecutor;
 
-pub struct FriendshipRepo {
-    pool: sqlx::PgPool,
-}
-
-impl FriendshipRepo {
-    pub const fn new(pool: sqlx::PgPool) -> Self { Self { pool } }
-}
+pub struct FriendshipRepo;
 
 #[async_trait::async_trait]
 impl FriendshipStore for FriendshipRepo {
-    async fn new_request(&self, ids: &UserIdPair, requester_id: i32) -> Result<(), RepoError> {
+    async fn new_request(
+        &self,
+        exec: impl PgExecutor<'_>,
+        ids: &UserIdPair,
+        requester_id: i32,
+    ) -> Result<(), RepoError> {
         sqlx::query!(
             "
-            INSERT INTO friendships (first_id, second_id, requester_first)
+            INSERT INTO friendship (lesser_id, greater_id, lesser_requested)
             VALUES ($1, $2, $3)
             ",
             ids.lesser(),
             ids.greater(),
             ids.is_lesser(requester_id)?,
         )
-        .execute(&self.pool)
+        .execute(exec)
         .await
         .map_err(Into::into)
         .map(|_| ())
     }
 
-    async fn accept_request(&self, ids: &UserIdPair) -> Result<(), RepoError> {
+    async fn accept_request(
+        &self,
+        exec: impl PgExecutor<'_>,
+        ids: &UserIdPair,
+    ) -> Result<(), RepoError> {
         sqlx::query!(
             "
-            UPDATE friendships
-            SET confirmed = TRUE, confirmed_at = CURRENT_TIMESTAMP
-            WHERE first_id = $1 AND second_id = $2
+            UPDATE friendship
+            SET confirmed_at = CURRENT_TIMESTAMP
+            WHERE lesser_id = $1 AND greater_id = $2
             ",
             ids.lesser(),
             ids.greater(),
         )
-        .execute(&self.pool)
+        .execute(exec)
         .await
         .map_err(Into::into)
         .map(|_| ())
     }
 
-    async fn get_status(&self, ids: &UserIdPair) -> Result<FriendshipStatus, RepoError> {
+    async fn get_status(
+        &self,
+        exec: impl PgExecutor<'_>,
+        ids: &UserIdPair,
+    ) -> Result<FriendshipStatus, RepoError> {
         sqlx::query!(
-            "
-            SELECT requester_first, confirmed FROM friendships
-            WHERE first_id = $1 AND second_id = $2
-            ",
+            r#"
+            SELECT lesser_requested, confirmed_at IS NOT NULL AS "confirmed!"
+            FROM friendship
+            WHERE lesser_id = $1 AND greater_id = $2
+            "#,
             ids.lesser(),
             ids.greater(),
         )
-        .fetch_optional(&self.pool)
+        .fetch_optional(exec)
         .await
         .map_err(Into::into)
         .map(|row| match row {
             None => FriendshipStatus::Nil,
             Some(friends) if friends.confirmed => FriendshipStatus::Friends,
-            Some(pair) if pair.requester_first => FriendshipStatus::PendingFrom(ids.lesser()),
+            Some(pair) if pair.lesser_requested => FriendshipStatus::PendingFrom(ids.lesser()),
             Some(_) => FriendshipStatus::PendingFrom(ids.greater()),
         })
     }
 
-    async fn get_friends(&self, id: i32) -> Result<Vec<i32>, RepoError> {
+    async fn get_friends(
+        &self,
+        exec: impl PgExecutor<'_>,
+        id: i32,
+    ) -> Result<Vec<String>, RepoError> {
         sqlx::query_scalar!(
             "
-            SELECT
-                CASE
-                    WHEN first_id = $1 THEN second_id
-                    ELSE first_id
-                END AS friend_id
-            FROM friendships
-            WHERE confirmed
-            AND (first_id = $1 OR second_id = $1)
+            SELECT username FROM users WHERE id IN (
+                SELECT
+                    CASE
+                        WHEN lesser_id = $1 THEN greater_id
+                        ELSE lesser_id
+                    END AS friend_id
+                FROM friendship
+                WHERE confirmed_at IS NOT NULL
+                AND (lesser_id = $1 OR greater_id = $1)
+            )
             ",
             id,
         )
-        .fetch_all(&self.pool)
+        .fetch_all(exec)
         .await
         .map_err(Into::into)
-        .map(|friends| friends.into_iter().flatten().collect())
     }
 
-    async fn get_requests(&self, id: i32) -> Result<Vec<i32>, RepoError> {
+    async fn get_requests(
+        &self,
+        exec: impl PgExecutor<'_>,
+        id: i32,
+    ) -> Result<Vec<String>, RepoError> {
         sqlx::query_scalar!(
             "
-            SELECT first_id AS requester_id FROM friendships
-            WHERE NOT confirmed
-            AND second_id = $1
-            AND requester_first
+            SELECT username FROM users WHERE id IN (
+                SELECT lesser_id AS requester_id FROM friendship
+                WHERE confirmed_at IS NULL
+                AND greater_id = $1
+                AND lesser_requested
 
-            UNION ALL
+                UNION ALL
 
-            SELECT second_id AS requester_id FROM friendships
-            WHERE NOT confirmed
-            AND first_id = $1
-            AND NOT requester_first
+                SELECT greater_id AS requester_id FROM friendship
+                WHERE confirmed_at IS NULL
+                AND lesser_id = $1
+                AND NOT lesser_requested
+            )
             ",
             id,
         )
-        .fetch_all(&self.pool)
+        .fetch_all(exec)
         .await
         .map_err(Into::into)
-        .map(|requesters| requesters.into_iter().flatten().collect())
     }
 }
 
@@ -119,10 +138,9 @@ mod tests {
     use sqlx::PgPool;
 
     struct Friendship {
-        first_id: i32,
-        second_id: i32,
-        requester_first: bool,
-        confirmed: bool,
+        lesser_id: i32,
+        greater_id: i32,
+        lesser_requested: bool,
         requested_at: DateTime<Utc>,
         confirmed_at: Option<DateTime<Utc>>,
     }
@@ -130,7 +148,7 @@ mod tests {
     async fn must_get_friendship(pool: PgPool, first_id: i32, second_id: i32) -> Friendship {
         sqlx::query_as!(
             Friendship,
-            "SELECT * FROM friendships WHERE first_id = $1 AND second_id = $2",
+            "SELECT * FROM friendship WHERE lesser_id = $1 AND greater_id = $2",
             first_id,
             second_id,
         )
@@ -142,19 +160,18 @@ mod tests {
     #[tokio::test]
     async fn sets_initial_values_on_insertion() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new(pool.clone());
+            let repo = FriendshipRepo;
             seed_users(pool.clone()).await;
 
-            repo.new_request(&UserIdPair::new(1, 2).unwrap(), 1)
+            repo.new_request(&pool, &UserIdPair::new(1, 2).unwrap(), 1)
                 .await
                 .expect("failed to insert new request");
 
             let friendship = must_get_friendship(pool, 1, 2).await;
 
-            assert_eq!(friendship.first_id, 1);
-            assert_eq!(friendship.second_id, 2);
-            assert!(friendship.requester_first);
-            assert!(!friendship.confirmed);
+            assert_eq!(friendship.lesser_id, 1);
+            assert_eq!(friendship.greater_id, 2);
+            assert!(friendship.lesser_requested);
             assert!(within_one_second(friendship.requested_at, Utc::now()));
             assert!(friendship.confirmed_at.is_none());
         })
@@ -164,24 +181,23 @@ mod tests {
     #[tokio::test]
     async fn updates_values_for_accepted_request() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new(pool.clone());
+            let repo = FriendshipRepo;
             seed_users(pool.clone()).await;
             let ids = UserIdPair::new(1, 3).unwrap();
 
-            repo.new_request(&ids, 3)
+            repo.new_request(&pool, &ids, 3)
                 .await
                 .expect("failed to insert new request");
 
-            repo.accept_request(&ids)
+            repo.accept_request(&pool, &ids)
                 .await
                 .expect("failed to accept request");
 
             let friendship = must_get_friendship(pool, 1, 3).await;
 
-            assert_eq!(friendship.first_id, 1);
-            assert_eq!(friendship.second_id, 3);
-            assert!(!friendship.requester_first);
-            assert!(friendship.confirmed);
+            assert_eq!(friendship.lesser_id, 1);
+            assert_eq!(friendship.greater_id, 3);
+            assert!(!friendship.lesser_requested);
             assert!(within_one_second(friendship.requested_at, Utc::now()));
             assert!(within_one_second(
                 friendship
@@ -198,31 +214,43 @@ mod tests {
     #[tokio::test]
     async fn gets_all_four_possible_statuses() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new(pool.clone());
-            seed_users(pool).await;
+            let repo = FriendshipRepo;
+            seed_users(pool.clone()).await;
 
             let ids1 = UserIdPair::new(1, 3).unwrap();
             let ids2 = UserIdPair::new(2, 3).unwrap();
 
-            let status = repo.get_status(&ids2).await.expect("failed to get status");
+            let status = repo
+                .get_status(&pool, &ids2)
+                .await
+                .expect("failed to get status");
             assert_eq!(status, FriendshipStatus::Nil);
 
-            repo.new_request(&ids2, 3)
+            repo.new_request(&pool, &ids2, 3)
                 .await
                 .expect("failed to create new request");
-            let status = repo.get_status(&ids2).await.expect("failed to get status");
+            let status = repo
+                .get_status(&pool, &ids2)
+                .await
+                .expect("failed to get status");
             assert_eq!(status, FriendshipStatus::PendingFrom(3));
 
-            repo.new_request(&ids1, 1)
+            repo.new_request(&pool, &ids1, 1)
                 .await
                 .expect("failed to create new request");
-            let status = repo.get_status(&ids1).await.expect("failed to get status");
+            let status = repo
+                .get_status(&pool, &ids1)
+                .await
+                .expect("failed to get status");
             assert_eq!(status, FriendshipStatus::PendingFrom(1));
 
-            repo.accept_request(&ids2)
+            repo.accept_request(&pool, &ids2)
                 .await
                 .expect("failed to accept request");
-            let status = repo.get_status(&ids2).await.expect("failed to get status");
+            let status = repo
+                .get_status(&pool, &ids2)
+                .await
+                .expect("failed to get status");
             assert_eq!(status, FriendshipStatus::Friends);
         })
         .await;
@@ -231,65 +259,71 @@ mod tests {
     #[tokio::test]
     async fn gets_all_requests_and_friends() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo::new(pool.clone());
-            seed_users(pool).await;
+            let repo = FriendshipRepo;
+            let [u1, u2, _, _] = seed_users(pool.clone()).await;
 
             let ids1 = UserIdPair::new(1, 3).unwrap();
             let ids2 = UserIdPair::new(2, 3).unwrap();
 
             // No requests, no friends
             let requests = repo
-                .get_requests(3)
+                .get_requests(&pool, 3)
                 .await
                 .expect("failed to get empty requests");
             assert!(requests.is_empty());
             let friends = repo
-                .get_friends(3)
+                .get_friends(&pool, 3)
                 .await
                 .expect("failed to get empty friends");
             assert!(friends.is_empty());
 
             // Two requests, no friends
-            repo.new_request(&ids1, 1)
+            repo.new_request(&pool, &ids1, 1)
                 .await
                 .expect("failed to create new request");
-            repo.new_request(&ids2, 2)
+            repo.new_request(&pool, &ids2, 2)
                 .await
                 .expect("failed to create new request");
-            let requests = repo.get_requests(3).await.expect("failed to get requests");
-            assert_eq!(requests, vec![1, 2]);
+            let requests = repo
+                .get_requests(&pool, 3)
+                .await
+                .expect("failed to get requests");
+            assert_eq!(requests, vec![u1.username.clone(), u2.username.clone()]);
             let friends = repo
-                .get_friends(3)
+                .get_friends(&pool, 3)
                 .await
                 .expect("failed to get empty friends");
             assert!(friends.is_empty());
 
             // One request, one friend
-            repo.accept_request(&ids1)
+            repo.accept_request(&pool, &ids1)
                 .await
                 .expect("failed to accept request");
             let requests = repo
-                .get_requests(3)
+                .get_requests(&pool, 3)
                 .await
                 .expect("failed to get single request");
-            assert_eq!(requests, vec![2]);
+            assert_eq!(requests, vec![u2.username.clone()]);
             let friends = repo
-                .get_friends(3)
+                .get_friends(&pool, 3)
                 .await
                 .expect("failed to get single friend");
-            assert_eq!(friends, vec![1]);
+            assert_eq!(friends, vec![u1.username.clone()]);
 
             // No requests, two friends
-            repo.accept_request(&ids2)
+            repo.accept_request(&pool, &ids2)
                 .await
                 .expect("failed to accept request");
             let requests = repo
-                .get_requests(3)
+                .get_requests(&pool, 3)
                 .await
                 .expect("failed to get empty requests");
             assert!(requests.is_empty());
-            let friends = repo.get_friends(3).await.expect("failed to get friends");
-            assert_eq!(friends, vec![1, 2]);
+            let friends = repo
+                .get_friends(&pool, 3)
+                .await
+                .expect("failed to get friends");
+            assert_eq!(friends, vec![u1.username, u2.username]);
         })
         .await;
     }

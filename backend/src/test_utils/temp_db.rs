@@ -8,7 +8,7 @@
 pub async fn with_test_pool<F, Fut>(test: F)
 where
     F: FnOnce(sqlx::PgPool) -> Fut,
-    Fut: std::future::Future<Output = ()>,
+    Fut: Future<Output = ()>,
 {
     // Establish the normal dev database connection in order to create the test database
     dotenvy::dotenv().expect("failed to load .env file");
