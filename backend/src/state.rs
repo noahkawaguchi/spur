@@ -1,9 +1,13 @@
 use crate::{
-    domain::{friendship::service::FriendshipManager, post::PostManager, user::UserManager},
+    app_services::{
+        MutateFriendshipByUsername,
+        mutate_friendship_by_username_svc::MutateFriendshipByUsernameSvc,
+    },
+    domain::{post::PostManager, user::UserManager},
     infra::{post_with_author_read::PgPostWithAuthorRead, social_read::PgSocialRead},
     read_models::{PostWithAuthorRead, SocialRead},
     repository::{friendship::PgFriendshipRepo, post::PgPostRepo, user::PgUserRepo},
-    service::{friendship::FriendshipSvc, post::PostSvc, user::UserSvc},
+    service::{post::PostSvc, user::UserSvc},
 };
 use axum::extract::FromRef;
 use std::sync::Arc;
@@ -12,7 +16,7 @@ use std::sync::Arc;
 pub struct AppState {
     pub jwt_secret: String,
     pub user_svc: Arc<dyn UserManager>,
-    pub friendship_svc: Arc<dyn FriendshipManager>,
+    pub mutate_friendship_by_username: Arc<dyn MutateFriendshipByUsername>,
     pub post_svc: Arc<dyn PostManager>,
     pub social_read: Arc<dyn SocialRead>,
     pub post_with_author_read: Arc<dyn PostWithAuthorRead>,
@@ -21,14 +25,14 @@ pub struct AppState {
 impl AppState {
     /// Wires together the repository and service layers for use as `State` in routers/handlers.
     pub fn build(pool: sqlx::PgPool, jwt_secret: String) -> Self {
-        let user_svc =
-            Arc::new(UserSvc::new(PgUserRepo::new(pool.clone()))) as Arc<dyn UserManager>;
+        let user_repo = Arc::new(PgUserRepo::new(pool.clone()));
+        let user_svc = Arc::new(UserSvc::new(user_repo.clone())) as Arc<dyn UserManager>;
 
-        let friendship_svc = Arc::new(FriendshipSvc::new(
+        let mutate_friendship_by_username = Arc::new(MutateFriendshipByUsernameSvc::new(
             pool.clone(),
+            user_repo,
             PgFriendshipRepo,
-            Arc::clone(&user_svc),
-        )) as Arc<dyn FriendshipManager>;
+        )) as Arc<dyn MutateFriendshipByUsername>;
 
         let post_svc =
             Arc::new(PostSvc::new(PgPostRepo::new(pool.clone()))) as Arc<dyn PostManager>;
@@ -37,6 +41,13 @@ impl AppState {
         let post_with_author_read =
             Arc::new(PgPostWithAuthorRead::new(pool)) as Arc<dyn PostWithAuthorRead>;
 
-        Self { jwt_secret, user_svc, friendship_svc, post_svc, social_read, post_with_author_read }
+        Self {
+            jwt_secret,
+            user_svc,
+            mutate_friendship_by_username,
+            post_svc,
+            social_read,
+            post_with_author_read,
+        }
     }
 }

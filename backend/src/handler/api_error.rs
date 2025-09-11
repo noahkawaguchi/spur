@@ -64,20 +64,6 @@ impl IntoResponse for ApiError {
                 eprintln!("{}", self.to_string().red());
                 String::from("internal server error")
             }),
-
-            // TODO: This redundant matching on UserError should not be here after the friendship
-            // domain is redesigned
-            Self::Friendship(FriendshipError::User(err)) => match err {
-                UserError::NotFound => (StatusCode::NOT_FOUND, err.to_string()),
-                UserError::DuplicateEmail | UserError::DuplicateUsername => {
-                    (StatusCode::CONFLICT, err.to_string())
-                }
-                UserError::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, {
-                    // TODO: use a logger
-                    eprintln!("{}", err.to_string().red());
-                    String::from("Internal server error")
-                }),
-            },
         };
 
         (status, Json(ErrorResponse { error: message })).into_response()

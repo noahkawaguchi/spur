@@ -1,6 +1,5 @@
 pub mod error;
 pub mod repository;
-pub mod service;
 pub mod user_id_pair;
 
 #[derive(Debug, PartialEq, Eq)]

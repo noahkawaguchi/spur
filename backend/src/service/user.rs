@@ -2,34 +2,35 @@ use crate::{
     domain::user::{UserError, UserManager, UserRepo},
     models::user::{NewUser, User},
 };
+use std::sync::Arc;
 
-pub struct UserSvc<S: UserRepo> {
-    store: S,
+pub struct UserSvc {
+    repo: Arc<dyn UserRepo>,
 }
 
-impl<S: UserRepo> UserSvc<S> {
-    pub const fn new(store: S) -> Self { Self { store } }
+impl UserSvc {
+    pub const fn new(repo: Arc<dyn UserRepo>) -> Self { Self { repo } }
 }
 
 #[async_trait::async_trait]
-impl<S: UserRepo> UserManager for UserSvc<S> {
+impl UserManager for UserSvc {
     async fn insert_new(&self, new_user: &NewUser) -> Result<User, UserError> {
-        self.store.insert_new(new_user).await.map_err(Into::into)
+        self.repo.insert_new(new_user).await.map_err(Into::into)
     }
 
     async fn get_by_id(&self, id: i32) -> Result<User, UserError> {
-        self.store.get_by_id(id).await?.ok_or(UserError::NotFound)
+        self.repo.get_by_id(id).await?.ok_or(UserError::NotFound)
     }
 
     async fn get_by_email(&self, email: &str) -> Result<User, UserError> {
-        self.store
+        self.repo
             .get_by_email(email)
             .await?
             .ok_or(UserError::NotFound)
     }
 
     async fn get_by_username(&self, username: &str) -> Result<User, UserError> {
-        self.store
+        self.repo
             .get_by_username(username)
             .await?
             .ok_or(UserError::NotFound)
@@ -111,7 +112,7 @@ mod tests {
                     )))
                 });
 
-            let user_svc = UserSvc::new(mock_repo);
+            let user_svc = UserSvc::new(Arc::new(mock_repo));
             let result = user_svc.insert_new(&alice).await;
 
             assert!(matches!(result, Err(UserError::DuplicateEmail)));
@@ -138,7 +139,7 @@ mod tests {
                     )))
                 });
 
-            let user_svc = UserSvc::new(mock_repo);
+            let user_svc = UserSvc::new(Arc::new(mock_repo));
             let result = user_svc.insert_new(&alice).await;
 
             assert!(matches!(result, Err(UserError::DuplicateUsername)));
@@ -163,7 +164,7 @@ mod tests {
                 .once()
                 .return_once(move |_| Ok(bob));
 
-            let user_svc = UserSvc::new(mock_repo);
+            let user_svc = UserSvc::new(Arc::new(mock_repo));
 
             assert!(
                 user_svc
@@ -200,7 +201,7 @@ mod tests {
                 .once()
                 .return_once(|_| Ok(None));
 
-            let user_svc = UserSvc::new(mock_user_repo);
+            let user_svc = UserSvc::new(Arc::new(mock_user_repo));
 
             let id_result = user_svc.get_by_id(nonexistent_id).await;
             let email_result = user_svc.get_by_email(nonexistent_email).await;
@@ -241,7 +242,7 @@ mod tests {
                 .once()
                 .return_once(|_| Ok(Some(charlie_clone)));
 
-            let user_svc = UserSvc::new(mock_user_repo);
+            let user_svc = UserSvc::new(Arc::new(mock_user_repo));
 
             let id_result = user_svc
                 .get_by_id(alice.id)

@@ -1,6 +1,6 @@
 use super::{api_result, validated_json::ValidatedJson};
 use crate::{
-    domain::friendship::service::FriendshipManager,
+    app_services::MutateFriendshipByUsername,
     dto::{requests::AddFriendRequest, responses::SuccessResponse},
     read_models::SocialRead,
     state::AppState,
@@ -21,13 +21,13 @@ pub fn routes() -> Router<AppState> {
 
 /// Creates a new friend request or accepts an existing friend request.
 async fn add_friend(
-    friendship_svc: State<Arc<dyn FriendshipManager>>,
+    mutate_friendship_by_username: State<Arc<dyn MutateFriendshipByUsername>>,
     Extension(requester_id): Extension<i32>,
     payload: ValidatedJson<AddFriendRequest>,
 ) -> api_result!(SuccessResponse) {
     // Try to add the friend
-    let became_friends = friendship_svc
-        .add_friend(requester_id, &payload.recipient_username)
+    let became_friends = mutate_friendship_by_username
+        .add_friend_by_username(requester_id, &payload.recipient_username)
         .await?;
 
     let (status_code, message) = if became_friends {
