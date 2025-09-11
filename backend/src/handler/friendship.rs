@@ -2,7 +2,7 @@ use super::{api_result, validated_json::ValidatedJson};
 use crate::{
     domain::friendship::service::FriendshipManager,
     dto::{requests::AddFriendRequest, responses::SuccessResponse},
-    read::SocialRead,
+    read_models::SocialRead,
     state::AppState,
 };
 use axum::{

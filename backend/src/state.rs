@@ -1,7 +1,7 @@
 use crate::{
     domain::{friendship::service::FriendshipManager, post::PostManager, user::UserManager},
     infra::{post_with_author_read::PgPostWithAuthorRead, social_read::PgSocialRead},
-    read::{PostWithAuthorRead, SocialRead},
+    read_models::{PostWithAuthorRead, SocialRead},
     repository::{friendship::FriendshipRepo, post::PostRepo, user::UserRepo},
     service::{friendship::FriendshipSvc, post::PostSvc, user::UserSvc},
 };

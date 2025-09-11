@@ -1,6 +1,6 @@
 use crate::{
     models::post::PostWithAuthor,
-    read::{PostWithAuthorRead, ReadError},
+    read_models::{PostWithAuthorRead, ReadError},
 };
 use sqlx::PgPool;
 

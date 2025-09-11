@@ -3,7 +3,7 @@ use crate::{
     domain::post::PostManager,
     dto::{requests::CreatePostRequest, responses::PostResponse},
     map_into::MapInto,
-    read::{PostWithAuthorRead, SocialRead},
+    read_models::{PostWithAuthorRead, SocialRead},
     state::AppState,
 };
 use axum::{

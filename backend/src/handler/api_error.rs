@@ -3,7 +3,7 @@ use crate::{
         auth::AuthError, friendship::error::FriendshipError, post::PostError, user::UserError,
     },
     dto::responses::ErrorResponse,
-    read::ReadError,
+    read_models::ReadError,
 };
 use axum::{
     Json,

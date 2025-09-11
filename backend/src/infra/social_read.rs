@@ -1,6 +1,6 @@
 use crate::{
     models::post::PostWithAuthor,
-    read::{ReadError, SocialRead},
+    read_models::{ReadError, SocialRead},
 };
 use sqlx::PgPool;
 
@@ -95,7 +95,7 @@ mod tests {
             post::PostStore,
         },
         infra::post_with_author_read::PgPostWithAuthorRead,
-        read::PostWithAuthorRead,
+        read_models::PostWithAuthorRead,
         repository::{friendship::FriendshipRepo, post::PostRepo},
         test_utils::{
             seed_data::{seed_friends, seed_root_post, seed_users},

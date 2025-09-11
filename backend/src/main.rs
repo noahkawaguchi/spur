@@ -2,7 +2,7 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
-mod app;
+mod app_services;
 mod config;
 mod domain;
 mod dto;
@@ -11,7 +11,7 @@ mod infra;
 mod map_into;
 mod middleware;
 mod models;
-mod read;
+mod read_models;
 mod repository;
 mod router;
 mod service;

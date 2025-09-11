@@ -1,4 +1,4 @@
-use crate::read::ReadError;
+use crate::read_models::ReadError;
 
 pub mod post_with_author_read;
 pub mod social_read;
