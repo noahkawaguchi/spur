@@ -1,4 +1,4 @@
-use super::{error::FriendshipError, user_id_pair::UserIdPair};
+use super::error::FriendshipError;
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
@@ -21,7 +21,4 @@ pub trait FriendshipManager: Send + Sync {
         sender_id: i32,
         recipient_username: &str,
     ) -> Result<bool, FriendshipError>;
-
-    /// Determines whether two users are confirmed friends.
-    async fn are_friends(&self, ids: &UserIdPair) -> Result<bool, FriendshipError>;
 }

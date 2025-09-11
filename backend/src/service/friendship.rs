@@ -65,10 +65,6 @@ where
         tx.commit_uow().await?;
         result
     }
-
-    async fn are_friends(&self, ids: &UserIdPair) -> Result<bool, FriendshipError> {
-        Ok(self.store.get_status(self.uow.single_exec(), ids).await? == FriendshipStatus::Friends)
-    }
 }
 
 #[cfg(test)]
@@ -77,10 +73,7 @@ mod tests {
     use crate::{
         domain::user::MockUserManager,
         repository::error::RepoError,
-        test_utils::{
-            dummy_data,
-            fake_db::{FakeUow, fake_pool},
-        },
+        test_utils::{dummy_data, fake_db::FakeUow},
     };
     use mockall::predicate::eq;
     use sqlx::PgExecutor;
@@ -265,40 +258,5 @@ mod tests {
             assert!(matches!(result, Ok(false)));
             assert!(probe.commit_called());
         }
-    }
-
-    #[tokio::test]
-    async fn correctly_reports_friendship_as_bool() {
-        let ids1 = UserIdPair::new(15, 2).unwrap();
-        let ids2 = UserIdPair::new(999, 55).unwrap();
-        let ids3 = UserIdPair::new(739, 24252).unwrap();
-        let ids4 = UserIdPair::new(9, 10).unwrap();
-
-        let ids2_lesser = ids2.lesser();
-        let ids3_greater = ids3.greater();
-
-        let mock_friendship_repo = MockFriendshipStore {
-            get_status: Some(Box::new(move |&passed_ids| {
-                Ok(match passed_ids {
-                    ids if ids == ids1 => FriendshipStatus::Friends,
-                    ids if ids == ids2 => FriendshipStatus::PendingFrom(ids2_lesser),
-                    ids if ids == ids3 => FriendshipStatus::PendingFrom(ids3_greater),
-                    ids if ids == ids4 => FriendshipStatus::Nil,
-                    _ => panic!("unexpected IDs passed"),
-                })
-            })),
-            ..Default::default()
-        };
-
-        let friendship_svc = FriendshipSvc::new(
-            fake_pool(),
-            mock_friendship_repo,
-            Arc::new(MockUserManager::new()),
-        );
-
-        assert!(friendship_svc.are_friends(&ids1).await.unwrap());
-        assert!(!friendship_svc.are_friends(&ids2).await.unwrap());
-        assert!(!friendship_svc.are_friends(&ids3).await.unwrap());
-        assert!(!friendship_svc.are_friends(&ids4).await.unwrap());
     }
 }
