@@ -1,37 +1,48 @@
 use crate::{
+    app_services::uow::UnitOfWork,
     domain::user::{UserError, UserManager, UserRepo},
     models::user::{NewUser, User},
 };
-use std::sync::Arc;
 
-pub struct UserSvc {
-    repo: Arc<dyn UserRepo>,
+pub struct UserSvc<U, R> {
+    uow: U,
+    repo: R,
 }
 
-impl UserSvc {
-    pub const fn new(repo: Arc<dyn UserRepo>) -> Self { Self { repo } }
+impl<U, R> UserSvc<U, R> {
+    pub const fn new(uow: U, repo: R) -> Self { Self { uow, repo } }
 }
 
 #[async_trait::async_trait]
-impl UserManager for UserSvc {
+impl<U, R> UserManager for UserSvc<U, R>
+where
+    U: UnitOfWork,
+    R: UserRepo,
+{
     async fn insert_new(&self, new_user: &NewUser) -> Result<User, UserError> {
-        self.repo.insert_new(new_user).await.map_err(Into::into)
+        self.repo
+            .insert_new(self.uow.single_exec(), new_user)
+            .await
+            .map_err(Into::into)
     }
 
     async fn get_by_id(&self, id: i32) -> Result<User, UserError> {
-        self.repo.get_by_id(id).await?.ok_or(UserError::NotFound)
+        self.repo
+            .get_by_id(self.uow.single_exec(), id)
+            .await?
+            .ok_or(UserError::NotFound)
     }
 
     async fn get_by_email(&self, email: &str) -> Result<User, UserError> {
         self.repo
-            .get_by_email(email)
+            .get_by_email(self.uow.single_exec(), email)
             .await?
             .ok_or(UserError::NotFound)
     }
 
     async fn get_by_username(&self, username: &str) -> Result<User, UserError> {
         self.repo
-            .get_by_username(username)
+            .get_by_username(self.uow.single_exec(), username)
             .await?
             .ok_or(UserError::NotFound)
     }
@@ -40,9 +51,11 @@ impl UserManager for UserSvc {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{domain::user::MockUserRepo, repository::error::RepoError};
+    use crate::{
+        repository::error::RepoError,
+        test_utils::{fake_db::fake_pool, mock_repos::MockUserRepo},
+    };
     use chrono::{Months, Utc};
-    use mockall::predicate::eq;
 
     fn make_alice() -> User {
         User {
@@ -96,23 +109,22 @@ mod tests {
             let alice = new_user_alice();
             let alice_clone = alice.clone();
 
-            let mut mock_repo = MockUserRepo::new();
-            mock_repo
-                .expect_insert_new()
-                .withf(move |u| {
-                    u.name == alice_clone.name
-                        && u.email == alice_clone.email
-                        && u.username == alice_clone.username
-                        && u.password_hash == alice_clone.password_hash
-                })
-                .once()
-                .return_once(|_| {
+            let mock_repo = MockUserRepo {
+                insert_new: Some(Box::new(move |u| {
+                    assert!(
+                        u.name == alice_clone.name
+                            && u.email == alice_clone.email
+                            && u.username == alice_clone.username
+                            && u.password_hash == alice_clone.password_hash,
+                    );
                     Err(RepoError::UniqueViolation(String::from(
                         "users_email_unique",
                     )))
-                });
+                })),
+                ..Default::default()
+            };
 
-            let user_svc = UserSvc::new(Arc::new(mock_repo));
+            let user_svc = UserSvc::new(fake_pool(), mock_repo);
             let result = user_svc.insert_new(&alice).await;
 
             assert!(matches!(result, Err(UserError::DuplicateEmail)));
@@ -123,23 +135,22 @@ mod tests {
             let alice = new_user_alice();
             let alice_clone = alice.clone();
 
-            let mut mock_repo = MockUserRepo::new();
-            mock_repo
-                .expect_insert_new()
-                .withf(move |u| {
-                    u.name == alice_clone.name
-                        && u.email == alice_clone.email
-                        && u.username == alice_clone.username
-                        && u.password_hash == alice_clone.password_hash
-                })
-                .once()
-                .return_once(|_| {
+            let mock_repo = MockUserRepo {
+                insert_new: Some(Box::new(move |u| {
+                    assert!(
+                        u.name == alice_clone.name
+                            && u.email == alice_clone.email
+                            && u.username == alice_clone.username
+                            && u.password_hash == alice_clone.password_hash
+                    );
                     Err(RepoError::UniqueViolation(String::from(
                         "users_username_unique",
                     )))
-                });
+                })),
+                ..Default::default()
+            };
 
-            let user_svc = UserSvc::new(Arc::new(mock_repo));
+            let user_svc = UserSvc::new(fake_pool(), mock_repo);
             let result = user_svc.insert_new(&alice).await;
 
             assert!(matches!(result, Err(UserError::DuplicateUsername)));
@@ -152,19 +163,20 @@ mod tests {
             let new_bob = NewUser::from(bob.clone());
             let new_bob_clone = new_bob.clone();
 
-            let mut mock_repo = MockUserRepo::new();
-            mock_repo
-                .expect_insert_new()
-                .withf(move |u| {
-                    u.name == new_bob.name
-                        && u.email == new_bob.email
-                        && u.username == new_bob.username
-                        && u.password_hash == new_bob.password_hash
-                })
-                .once()
-                .return_once(move |_| Ok(bob));
+            let mock_repo = MockUserRepo {
+                insert_new: Some(Box::new(move |u| {
+                    assert!(
+                        u.name == new_bob.name
+                            && u.email == new_bob.email
+                            && u.username == new_bob.username
+                            && u.password_hash == new_bob.password_hash
+                    );
+                    Ok(bob.clone())
+                })),
+                ..Default::default()
+            };
 
-            let user_svc = UserSvc::new(Arc::new(mock_repo));
+            let user_svc = UserSvc::new(fake_pool(), mock_repo);
 
             assert!(
                 user_svc
@@ -184,24 +196,23 @@ mod tests {
             let nonexistent_email = "ghost@spectral.nz";
             let nonexistent_username = "not_real";
 
-            let mut mock_user_repo = MockUserRepo::new();
-            mock_user_repo
-                .expect_get_by_id()
-                .with(eq(nonexistent_id))
-                .once()
-                .return_once(|_| Ok(None));
-            mock_user_repo
-                .expect_get_by_email()
-                .with(eq(nonexistent_email))
-                .once()
-                .return_once(|_| Ok(None));
-            mock_user_repo
-                .expect_get_by_username()
-                .with(eq(nonexistent_username))
-                .once()
-                .return_once(|_| Ok(None));
+            let mock_user_repo = MockUserRepo {
+                get_by_id: Some(Box::new(move |passed_id| {
+                    assert_eq!(nonexistent_id, passed_id);
+                    Ok(None)
+                })),
+                get_by_email: Some(Box::new(move |passed_email| {
+                    assert_eq!(nonexistent_email, passed_email);
+                    Ok(None)
+                })),
+                get_by_username: Some(Box::new(move |passed_username| {
+                    assert_eq!(nonexistent_username, passed_username);
+                    Ok(None)
+                })),
+                ..Default::default()
+            };
 
-            let user_svc = UserSvc::new(Arc::new(mock_user_repo));
+            let user_svc = UserSvc::new(fake_pool(), mock_user_repo);
 
             let id_result = user_svc.get_by_id(nonexistent_id).await;
             let email_result = user_svc.get_by_email(nonexistent_email).await;
@@ -225,24 +236,23 @@ mod tests {
             let bob_email = bob.email.clone();
             let charlie_username = charlie.username.clone();
 
-            let mut mock_user_repo = MockUserRepo::new();
-            mock_user_repo
-                .expect_get_by_id()
-                .with(eq(alice.id))
-                .once()
-                .return_once(|_| Ok(Some(alice_clone)));
-            mock_user_repo
-                .expect_get_by_email()
-                .with(eq(bob_email))
-                .once()
-                .return_once(|_| Ok(Some(bob_clone)));
-            mock_user_repo
-                .expect_get_by_username()
-                .with(eq(charlie_username))
-                .once()
-                .return_once(|_| Ok(Some(charlie_clone)));
+            let mock_user_repo = MockUserRepo {
+                get_by_id: Some(Box::new(move |passed_id| {
+                    assert_eq!(alice.id, passed_id);
+                    Ok(Some(alice_clone.clone()))
+                })),
+                get_by_email: Some(Box::new(move |passed_email| {
+                    assert_eq!(bob_email, passed_email);
+                    Ok(Some(bob_clone.clone()))
+                })),
+                get_by_username: Some(Box::new(move |passed_username| {
+                    assert_eq!(charlie_username, passed_username);
+                    Ok(Some(charlie_clone.clone()))
+                })),
+                ..Default::default()
+            };
 
-            let user_svc = UserSvc::new(Arc::new(mock_user_repo));
+            let user_svc = UserSvc::new(fake_pool(), mock_user_repo);
 
             let id_result = user_svc
                 .get_by_id(alice.id)

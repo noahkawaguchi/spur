@@ -25,12 +25,11 @@ pub struct AppState {
 impl AppState {
     /// Wires together the repository and service layers for use as `State` in routers/handlers.
     pub fn build(pool: sqlx::PgPool, jwt_secret: String) -> Self {
-        let user_repo = Arc::new(PgUserRepo::new(pool.clone()));
-        let user_svc = Arc::new(UserSvc::new(user_repo.clone())) as Arc<dyn UserManager>;
+        let user_svc = Arc::new(UserSvc::new(pool.clone(), PgUserRepo)) as Arc<dyn UserManager>;
 
         let mutate_friendship_by_username = Arc::new(MutateFriendshipByUsernameSvc::new(
             pool.clone(),
-            user_repo,
+            PgUserRepo,
             PgFriendshipRepo,
         )) as Arc<dyn MutateFriendshipByUsername>;
 
