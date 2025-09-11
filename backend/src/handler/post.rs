@@ -3,7 +3,7 @@ use crate::{
     domain::post::PostManager,
     dto::{requests::CreatePostRequest, responses::PostResponse},
     map_into::MapInto,
-    read::SocialRead,
+    read::{PostWithAuthorRead, SocialRead},
     state::AppState,
 };
 use axum::{
@@ -39,23 +39,28 @@ async fn create_new(
 
 /// Retrieves a post using its ID.
 async fn get_by_id(
-    post_svc: State<Arc<dyn PostManager>>,
+    post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Path(post_id): Path<i32>,
 ) -> api_result!(PostResponse) {
     Ok((
         StatusCode::OK,
-        Json(post_svc.get_by_id(post_id).await?.into()),
+        Json(post_with_author_read.get_by_id(post_id).await?.into()),
     ))
 }
 
 /// Retrieves the children of the post with the provided ID.
 async fn get_by_parent_id(
-    post_svc: State<Arc<dyn PostManager>>,
+    post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Path(parent_id): Path<i32>,
 ) -> api_result!(Vec<PostResponse>) {
     Ok((
         StatusCode::OK,
-        Json(post_svc.get_by_parent_id(parent_id).await?.map_into()),
+        Json(
+            post_with_author_read
+                .get_by_parent_id(parent_id)
+                .await?
+                .map_into(),
+        ),
     ))
 }
 
@@ -72,13 +77,13 @@ async fn all_friend_posts(
 
 /// Retrieves posts written by the user with the specified username.
 async fn specific_user_posts(
-    post_svc: State<Arc<dyn PostManager>>,
+    post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Path(author_username): Path<String>,
 ) -> api_result!(Vec<PostResponse>) {
     Ok((
         StatusCode::OK,
         Json(
-            post_svc
+            post_with_author_read
                 .user_posts_by_username(&author_username)
                 .await?
                 .map_into(),
@@ -88,11 +93,16 @@ async fn specific_user_posts(
 
 /// Retrieves the requester's own posts.
 async fn own_posts(
-    post_svc: State<Arc<dyn PostManager>>,
+    post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Extension(requester_id): Extension<i32>,
 ) -> api_result!(Vec<PostResponse>) {
     Ok((
         StatusCode::OK,
-        Json(post_svc.user_posts_by_id(requester_id).await?.map_into()),
+        Json(
+            post_with_author_read
+                .user_posts_by_id(requester_id)
+                .await?
+                .map_into(),
+        ),
     ))
 }

@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 
 /// The post entity as it exists in the database with the addition of the author's username.
 #[cfg_attr(test, derive(Debug, Clone))]
-pub struct PostInfo {
+pub struct PostWithAuthor {
     pub id: i32,
     pub author_id: Option<i32>,
     pub parent_id: Option<i32>,
@@ -16,8 +16,8 @@ pub struct PostInfo {
     pub author_username: Option<String>,
 }
 
-impl From<PostInfo> for PostResponse {
-    fn from(info: PostInfo) -> Self {
+impl From<PostWithAuthor> for PostResponse {
+    fn from(info: PostWithAuthor) -> Self {
         Self {
             id: info.id,
             author_username: info
@@ -38,7 +38,7 @@ mod post_info_test_impl {
     use super::*;
     use crate::test_utils::time::{both_none_or_within_one_second, within_one_second};
 
-    impl PartialEq for PostInfo {
+    impl PartialEq for PostWithAuthor {
         /// Performs standard equality checks for each field, except the time-based ones, for which
         /// two `DateTime`s are considered equal if they are within one second of each other.
         fn eq(&self, other: &Self) -> bool {

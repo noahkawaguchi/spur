@@ -4,8 +4,10 @@ use crate::{
         user::UserStore,
     },
     models::user::NewUser,
-    repository::{friendship::FriendshipRepo, user::UserRepo},
+    repository::{friendship::FriendshipRepo, post::PostRepo, user::UserRepo},
+    test_utils::temp_db::with_test_pool,
 };
+use sqlx::PgPool;
 
 /// Inserts four new users into the test database and returns them as they were inserted.
 /// They will automatically be given IDs 1, 2, 3, and 4 if there are no other existing users.
@@ -67,22 +69,6 @@ pub async fn seed_users(pool: sqlx::PgPool) -> [NewUser; 4] {
     [drake, eunice, felipe, gillian]
 }
 
-/// Inserts the "root" of the tree of posts, the only post allowed to have a NULL parent post. This
-/// post will have an ID of 1. This is necessary for testing purposes, so that other posts can be
-/// inserted in the normal fashion where a non-NULL parent post ID is required.
-///
-/// *Assumes a user with ID 1 already exists,* who will be the author of this post.
-///
-/// # Panics
-///
-/// Panics if the insertion fails for any reason.
-pub async fn seed_root_post(pool: &sqlx::PgPool) {
-    sqlx::query!("INSERT INTO post (author_id, parent_id, body) VALUES (1, NULL, 'root post')")
-        .execute(pool)
-        .await
-        .expect("failed to insert root post");
-}
-
 /// Inserts friend requests and friendships into the test database, assuming users with IDs 1, 2,
 /// 3, and 4 exist. Creates the following relationships:
 ///
@@ -124,4 +110,34 @@ pub async fn seed_friends(pool: sqlx::PgPool) {
     repo.new_request(&pool, &UserIdPair::new(4, 3).unwrap(), 3)
         .await
         .unwrap();
+}
+
+/// Inserts the "root" of the tree of posts, the only post allowed to have a NULL parent post. This
+/// post will have an ID of 1. This is necessary for testing purposes, so that other posts can be
+/// inserted in the normal fashion where a non-NULL parent post ID is required.
+///
+/// *Assumes a user with ID 1 already exists,* who will be the author of this post.
+///
+/// # Panics
+///
+/// Panics if the insertion fails for any reason.
+pub async fn seed_root_post(pool: &sqlx::PgPool) {
+    sqlx::query!("INSERT INTO post (author_id, parent_id, body) VALUES (1, NULL, 'root post')")
+        .execute(pool)
+        .await
+        .expect("failed to insert root post");
+}
+
+/// Runs the provided test with a [`PostRepo`] instance that has users and the root post seeded.
+pub async fn with_seeded_users_and_root_post<F, Fut>(test: F)
+where
+    F: FnOnce(PgPool, PostRepo, [NewUser; 4]) -> Fut,
+    Fut: std::future::Future<Output = ()>,
+{
+    with_test_pool(|pool| async move {
+        let new_users = seed_users(pool.clone()).await;
+        seed_root_post(&pool).await;
+        test(pool.clone(), PostRepo::new(pool), new_users).await;
+    })
+    .await;
 }

@@ -1,5 +1,5 @@
 use crate::{
-    models::post::PostInfo,
+    models::post::PostWithAuthor,
     read::{ReadError, SocialRead},
 };
 use sqlx::PgPool;
@@ -59,9 +59,9 @@ impl SocialRead for PgSocialRead {
         .map_err(Into::into)
     }
 
-    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostInfo>, ReadError> {
+    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
         sqlx::query_as!(
-            PostInfo,
+            PostWithAuthor,
             "
             SELECT p.*, u.username AS author_username
             FROM post p
@@ -94,6 +94,8 @@ mod tests {
             friendship::{repository::FriendshipStore, user_id_pair::UserIdPair},
             post::PostStore,
         },
+        infra::post_with_author_read::PgPostWithAuthorRead,
+        read::PostWithAuthorRead,
         repository::{friendship::FriendshipRepo, post::PostRepo},
         test_utils::{
             seed_data::{seed_friends, seed_root_post, seed_users},
@@ -182,6 +184,7 @@ mod tests {
             seed_friends(pool.clone()).await;
 
             let read = PgSocialRead::new(pool.clone());
+            let post_with_author_read = PgPostWithAuthorRead::new(pool.clone());
             let repo = PostRepo::new(pool);
 
             let u1p2_body = "User one post two";
@@ -202,12 +205,12 @@ mod tests {
             repo.insert_new(2, 2, u2p2_body).await.unwrap(); // ID 8
             repo.insert_new(1, 3, u1p3_body).await.unwrap(); // ID 9
 
-            let u2p1 = repo.get_by_id(4).await.unwrap().unwrap();
-            let u2p2 = repo.get_by_id(8).await.unwrap().unwrap();
-            let u3p1 = repo.get_by_id(3).await.unwrap().unwrap();
-            let u3p2 = repo.get_by_id(7).await.unwrap().unwrap();
-            let u4p1 = repo.get_by_id(2).await.unwrap().unwrap();
-            let u4p2 = repo.get_by_id(6).await.unwrap().unwrap();
+            let u2p1 = post_with_author_read.get_by_id(4).await.unwrap();
+            let u2p2 = post_with_author_read.get_by_id(8).await.unwrap();
+            let u3p1 = post_with_author_read.get_by_id(3).await.unwrap();
+            let u3p2 = post_with_author_read.get_by_id(7).await.unwrap();
+            let u4p1 = post_with_author_read.get_by_id(2).await.unwrap();
+            let u4p2 = post_with_author_read.get_by_id(6).await.unwrap();
 
             let u1_friend_posts = read.all_friend_posts(1).await.unwrap();
             let u2_friend_posts = read.all_friend_posts(2).await.unwrap();
