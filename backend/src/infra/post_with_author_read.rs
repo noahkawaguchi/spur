@@ -14,7 +14,7 @@ impl PgPostWithAuthorRead {
 
 #[async_trait::async_trait]
 impl PostWithAuthorRead for PgPostWithAuthorRead {
-    async fn get_by_id(&self, id: i32) -> Result<PostWithAuthor, ReadError> {
+    async fn by_post_id(&self, id: i32) -> Result<PostWithAuthor, ReadError> {
         sqlx::query_as!(
             PostWithAuthor,
             "
@@ -33,7 +33,7 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
         })
     }
 
-    async fn get_by_parent_id(&self, parent_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
+    async fn by_parent(&self, parent_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
         sqlx::query_as!(
             PostWithAuthor,
             "
@@ -50,7 +50,7 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
         .map_err(Into::into)
     }
 
-    async fn user_posts_by_id(&self, author_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
+    async fn by_author(&self, author_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
         sqlx::query_as!(
             PostWithAuthor,
             "
@@ -67,7 +67,7 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
         .map_err(Into::into)
     }
 
-    async fn user_posts_by_username(
+    async fn by_author_username(
         &self,
         author_username: &str,
     ) -> Result<Vec<PostWithAuthor>, ReadError> {
@@ -102,7 +102,7 @@ mod tests {
             let read = PgPostWithAuthorRead::new(pool);
             let body = "This post exists!";
             repo.insert_new(2, 1, body).await.unwrap();
-            let actual = read.get_by_id(2).await;
+            let actual = read.by_post_id(2).await;
             let expected = PostWithAuthor {
                 id: 2,
                 author_id: Some(2),
@@ -124,7 +124,7 @@ mod tests {
         with_seeded_users_and_root_post(|pool, repo, _| async move {
             let read = PgPostWithAuthorRead::new(pool);
             repo.insert_new(2, 1, "This post exists!").await.unwrap();
-            let actual = read.get_by_id(3).await; // Only posts 1 and 2 exist
+            let actual = read.by_post_id(3).await; // Only posts 1 and 2 exist
             assert!(matches!(
                 actual,
                 Err(ReadError::NotFound(s)) if s == "post not found"
@@ -149,7 +149,7 @@ mod tests {
                 .unwrap();
             // No children at first
             assert!(matches!(
-                read.get_by_parent_id(parent_id).await,
+                read.by_parent(parent_id).await,
                 Ok(v) if v.is_empty()
             ));
             // First child
@@ -160,9 +160,9 @@ mod tests {
             repo.insert_new(2, 4, "I'm your grandchild, not your child") // ID 5
                 .await
                 .unwrap();
-            let first_child = read.get_by_id(4).await.unwrap();
+            let first_child = read.by_post_id(4).await.unwrap();
             assert!(matches!(
-                read.get_by_parent_id(parent_id).await,
+                read.by_parent(parent_id).await,
                 Ok(v) if v.len() == 1 && v[0] == first_child
             ));
             // More children
@@ -172,12 +172,12 @@ mod tests {
             repo.insert_new(3, parent_id, "Third child here") // ID 7
                 .await
                 .unwrap();
-            let second_child = read.get_by_id(6).await.unwrap();
-            let third_child = read.get_by_id(7).await.unwrap();
+            let second_child = read.by_post_id(6).await.unwrap();
+            let third_child = read.by_post_id(7).await.unwrap();
             // Should be sorted in descending order of creation time
             let expected_children = vec![third_child, second_child, first_child];
             assert!(matches!(
-                read.get_by_parent_id(parent_id).await,
+                read.by_parent(parent_id).await,
                 Ok(v) if v == expected_children
             ));
         })
@@ -200,16 +200,16 @@ mod tests {
                 .await
                 .unwrap();
 
-            let expected1 = read.get_by_id(2).await.unwrap();
-            let expected2 = read.get_by_id(5).await.unwrap();
+            let expected1 = read.by_post_id(2).await.unwrap();
+            let expected2 = read.by_post_id(5).await.unwrap();
 
             // Should be sorted by created_at in descending order
             let expected_posts = vec![expected2, expected1];
-            assert!(matches!(read.user_posts_by_id(3).await, Ok(v) if v == expected_posts));
+            assert!(matches!(read.by_author(3).await, Ok(v) if v == expected_posts));
 
             // Searching by username should be the same result
             assert!(matches!(
-                read.user_posts_by_username(&users[2].username).await,
+                read.by_author_username(&users[2].username).await,
                 Ok(v) if v == expected_posts
             ));
         })

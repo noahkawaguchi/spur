@@ -59,7 +59,7 @@ impl SocialRead for PgSocialRead {
         .map_err(Into::into)
     }
 
-    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
+    async fn friend_posts(&self, user_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
         sqlx::query_as!(
             PostWithAuthor,
             "
@@ -205,17 +205,17 @@ mod tests {
             repo.insert_new(2, 2, u2p2_body).await.unwrap(); // ID 8
             repo.insert_new(1, 3, u1p3_body).await.unwrap(); // ID 9
 
-            let u2p1 = post_with_author_read.get_by_id(4).await.unwrap();
-            let u2p2 = post_with_author_read.get_by_id(8).await.unwrap();
-            let u3p1 = post_with_author_read.get_by_id(3).await.unwrap();
-            let u3p2 = post_with_author_read.get_by_id(7).await.unwrap();
-            let u4p1 = post_with_author_read.get_by_id(2).await.unwrap();
-            let u4p2 = post_with_author_read.get_by_id(6).await.unwrap();
+            let u2p1 = post_with_author_read.by_post_id(4).await.unwrap();
+            let u2p2 = post_with_author_read.by_post_id(8).await.unwrap();
+            let u3p1 = post_with_author_read.by_post_id(3).await.unwrap();
+            let u3p2 = post_with_author_read.by_post_id(7).await.unwrap();
+            let u4p1 = post_with_author_read.by_post_id(2).await.unwrap();
+            let u4p2 = post_with_author_read.by_post_id(6).await.unwrap();
 
-            let u1_friend_posts = read.all_friend_posts(1).await.unwrap();
-            let u2_friend_posts = read.all_friend_posts(2).await.unwrap();
-            let u3_friend_posts = read.all_friend_posts(3).await.unwrap();
-            let u4_friend_posts = read.all_friend_posts(4).await.unwrap();
+            let u1_friend_posts = read.friend_posts(1).await.unwrap();
+            let u2_friend_posts = read.friend_posts(2).await.unwrap();
+            let u3_friend_posts = read.friend_posts(3).await.unwrap();
+            let u4_friend_posts = read.friend_posts(4).await.unwrap();
 
             // 1 has no friends
             assert!(u1_friend_posts.is_empty());

@@ -44,7 +44,7 @@ async fn get_by_id(
 ) -> api_result!(PostResponse) {
     Ok((
         StatusCode::OK,
-        Json(post_with_author_read.get_by_id(post_id).await?.into()),
+        Json(post_with_author_read.by_post_id(post_id).await?.into()),
     ))
 }
 
@@ -55,12 +55,7 @@ async fn get_by_parent_id(
 ) -> api_result!(Vec<PostResponse>) {
     Ok((
         StatusCode::OK,
-        Json(
-            post_with_author_read
-                .get_by_parent_id(parent_id)
-                .await?
-                .map_into(),
-        ),
+        Json(post_with_author_read.by_parent(parent_id).await?.map_into()),
     ))
 }
 
@@ -71,7 +66,7 @@ async fn all_friend_posts(
 ) -> api_result!(Vec<PostResponse>) {
     Ok((
         StatusCode::OK,
-        Json(social_read.all_friend_posts(requester_id).await?.map_into()),
+        Json(social_read.friend_posts(requester_id).await?.map_into()),
     ))
 }
 
@@ -84,7 +79,7 @@ async fn specific_user_posts(
         StatusCode::OK,
         Json(
             post_with_author_read
-                .user_posts_by_username(&author_username)
+                .by_author_username(&author_username)
                 .await?
                 .map_into(),
         ),
@@ -100,7 +95,7 @@ async fn own_posts(
         StatusCode::OK,
         Json(
             post_with_author_read
-                .user_posts_by_id(requester_id)
+                .by_author(requester_id)
                 .await?
                 .map_into(),
         ),
