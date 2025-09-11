@@ -1,18 +1,18 @@
 use crate::{
-    domain::user::{UserError, UserManager, UserStore},
+    domain::user::{UserError, UserManager, UserRepo},
     models::user::{NewUser, User},
 };
 
-pub struct UserSvc<S: UserStore> {
+pub struct UserSvc<S: UserRepo> {
     store: S,
 }
 
-impl<S: UserStore> UserSvc<S> {
+impl<S: UserRepo> UserSvc<S> {
     pub const fn new(store: S) -> Self { Self { store } }
 }
 
 #[async_trait::async_trait]
-impl<S: UserStore> UserManager for UserSvc<S> {
+impl<S: UserRepo> UserManager for UserSvc<S> {
     async fn insert_new(&self, new_user: &NewUser) -> Result<User, UserError> {
         self.store.insert_new(new_user).await.map_err(Into::into)
     }
@@ -39,7 +39,7 @@ impl<S: UserStore> UserManager for UserSvc<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{domain::user::MockUserStore, repository::error::RepoError};
+    use crate::{domain::user::MockUserRepo, repository::error::RepoError};
     use chrono::{Months, Utc};
     use mockall::predicate::eq;
 
@@ -95,7 +95,7 @@ mod tests {
             let alice = new_user_alice();
             let alice_clone = alice.clone();
 
-            let mut mock_repo = MockUserStore::new();
+            let mut mock_repo = MockUserRepo::new();
             mock_repo
                 .expect_insert_new()
                 .withf(move |u| {
@@ -122,7 +122,7 @@ mod tests {
             let alice = new_user_alice();
             let alice_clone = alice.clone();
 
-            let mut mock_repo = MockUserStore::new();
+            let mut mock_repo = MockUserRepo::new();
             mock_repo
                 .expect_insert_new()
                 .withf(move |u| {
@@ -151,7 +151,7 @@ mod tests {
             let new_bob = NewUser::from(bob.clone());
             let new_bob_clone = new_bob.clone();
 
-            let mut mock_repo = MockUserStore::new();
+            let mut mock_repo = MockUserRepo::new();
             mock_repo
                 .expect_insert_new()
                 .withf(move |u| {
@@ -183,7 +183,7 @@ mod tests {
             let nonexistent_email = "ghost@spectral.nz";
             let nonexistent_username = "not_real";
 
-            let mut mock_user_repo = MockUserStore::new();
+            let mut mock_user_repo = MockUserRepo::new();
             mock_user_repo
                 .expect_get_by_id()
                 .with(eq(nonexistent_id))
@@ -224,7 +224,7 @@ mod tests {
             let bob_email = bob.email.clone();
             let charlie_username = charlie.username.clone();
 
-            let mut mock_user_repo = MockUserStore::new();
+            let mut mock_user_repo = MockUserRepo::new();
             mock_user_repo
                 .expect_get_by_id()
                 .with(eq(alice.id))

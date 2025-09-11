@@ -55,7 +55,7 @@ pub trait UserManager: Send + Sync {
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
-pub trait UserStore: Send + Sync {
+pub trait UserRepo: Send + Sync {
     async fn insert_new(&self, new_user: &NewUser) -> Result<User, RepoError>;
     async fn get_by_id(&self, id: i32) -> Result<Option<User>, RepoError>;
     async fn get_by_email(&self, email: &str) -> Result<Option<User>, RepoError>;

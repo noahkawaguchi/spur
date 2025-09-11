@@ -1,7 +1,7 @@
 use crate::{
     domain::{
         friendship::{
-            FriendshipStatus, error::FriendshipError, repository::FriendshipStore,
+            FriendshipStatus, error::FriendshipError, repository::FriendshipRepo,
             service::FriendshipManager, user_id_pair::UserIdPair,
         },
         user::UserManager,
@@ -26,7 +26,7 @@ impl<U, S> FriendshipSvc<U, S> {
 impl<U, S> FriendshipManager for FriendshipSvc<U, S>
 where
     U: UnitOfWork,
-    S: FriendshipStore,
+    S: FriendshipRepo,
 {
     async fn add_friend(
         &self,
@@ -95,7 +95,7 @@ mod tests {
     }
 
     #[async_trait::async_trait]
-    impl FriendshipStore for MockFriendshipStore {
+    impl FriendshipRepo for MockFriendshipStore {
         async fn new_request(
             &self,
             _exec: impl PgExecutor<'_>,

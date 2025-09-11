@@ -1,15 +1,15 @@
-use crate::domain::post::{PostError, PostManager, PostStore};
+use crate::domain::post::{PostError, PostManager, PostRepo};
 
-pub struct PostSvc<S: PostStore> {
+pub struct PostSvc<S: PostRepo> {
     store: S,
 }
 
-impl<S: PostStore> PostSvc<S> {
+impl<S: PostRepo> PostSvc<S> {
     pub const fn new(store: S) -> Self { Self { store } }
 }
 
 #[async_trait::async_trait]
-impl<S: PostStore> PostManager for PostSvc<S> {
+impl<S: PostRepo> PostManager for PostSvc<S> {
     async fn create_new(
         &self,
         author_id: i32,
@@ -28,7 +28,7 @@ impl<S: PostStore> PostManager for PostSvc<S> {
 mod tests {
     use super::*;
     use crate::{
-        domain::post::{MockPostStore, PostInsertionOutcome},
+        domain::post::{MockPostRepo, PostInsertionOutcome},
         repository::error::RepoError,
     };
     use anyhow::anyhow;
@@ -40,7 +40,7 @@ mod tests {
         let parent_ids = [10, 20, 30, 40];
         let post_bodies = ["super", "cool", "post", "bodies"];
 
-        let mut mock_post_repo = MockPostStore::new();
+        let mut mock_post_repo = MockPostRepo::new();
         let mut seq = Sequence::new();
         mock_post_repo
             .expect_insert_new()
@@ -105,7 +105,7 @@ mod tests {
         let parent_ids = [101, 202, 303, 404, 505];
         let post_bodies = ["very", "awesome", "correspondence", "happening", "here"];
 
-        let mut mock_post_repo = MockPostStore::new();
+        let mut mock_post_repo = MockPostRepo::new();
         let mut seq = Sequence::new();
         mock_post_repo
             .expect_insert_new()

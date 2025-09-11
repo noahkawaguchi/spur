@@ -91,12 +91,12 @@ mod tests {
     use super::*;
     use crate::{
         domain::{
-            friendship::{repository::FriendshipStore, user_id_pair::UserIdPair},
-            post::PostStore,
+            friendship::{repository::FriendshipRepo, user_id_pair::UserIdPair},
+            post::PostRepo,
         },
         infra::post_with_author_read::PgPostWithAuthorRead,
         read_models::PostWithAuthorRead,
-        repository::{friendship::FriendshipRepo, post::PostRepo},
+        repository::{friendship::PgFriendshipRepo, post::PgPostRepo},
         test_utils::{
             seed_data::{seed_friends, seed_root_post, seed_users},
             temp_db::with_test_pool,
@@ -107,7 +107,7 @@ mod tests {
     async fn gets_all_requests_and_friends() {
         with_test_pool(|pool| async move {
             let read = PgSocialRead::new(pool.clone());
-            let repo = FriendshipRepo;
+            let repo = PgFriendshipRepo;
             let [u1, u2, _, _] = seed_users(pool.clone()).await;
 
             let ids1 = UserIdPair::new(1, 3).unwrap();
@@ -185,7 +185,7 @@ mod tests {
 
             let read = PgSocialRead::new(pool.clone());
             let post_with_author_read = PgPostWithAuthorRead::new(pool.clone());
-            let repo = PostRepo::new(pool);
+            let repo = PgPostRepo::new(pool);
 
             let u1p2_body = "User one post two";
             let u1p3_body = "User one post three";

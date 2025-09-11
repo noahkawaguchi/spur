@@ -1,13 +1,13 @@
 use super::error::RepoError;
 use crate::domain::friendship::{
-    FriendshipStatus, repository::FriendshipStore, user_id_pair::UserIdPair,
+    FriendshipStatus, repository::FriendshipRepo, user_id_pair::UserIdPair,
 };
 use sqlx::PgExecutor;
 
-pub struct FriendshipRepo;
+pub struct PgFriendshipRepo;
 
 #[async_trait::async_trait]
-impl FriendshipStore for FriendshipRepo {
+impl FriendshipRepo for PgFriendshipRepo {
     async fn new_request(
         &self,
         exec: impl PgExecutor<'_>,
@@ -107,7 +107,7 @@ mod tests {
     #[tokio::test]
     async fn sets_initial_values_on_insertion() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo;
+            let repo = PgFriendshipRepo;
             seed_users(pool.clone()).await;
 
             repo.new_request(&pool, &UserIdPair::new(1, 2).unwrap(), 1)
@@ -128,7 +128,7 @@ mod tests {
     #[tokio::test]
     async fn updates_values_for_accepted_request() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo;
+            let repo = PgFriendshipRepo;
             seed_users(pool.clone()).await;
             let ids = UserIdPair::new(1, 3).unwrap();
 
@@ -161,7 +161,7 @@ mod tests {
     #[tokio::test]
     async fn gets_all_four_possible_statuses() {
         with_test_pool(|pool| async move {
-            let repo = FriendshipRepo;
+            let repo = PgFriendshipRepo;
             seed_users(pool.clone()).await;
 
             let ids1 = UserIdPair::new(1, 3).unwrap();

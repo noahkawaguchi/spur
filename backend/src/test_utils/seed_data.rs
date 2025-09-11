@@ -1,10 +1,10 @@
 use crate::{
     domain::{
-        friendship::{repository::FriendshipStore, user_id_pair::UserIdPair},
-        user::UserStore,
+        friendship::{repository::FriendshipRepo, user_id_pair::UserIdPair},
+        user::UserRepo,
     },
     models::user::NewUser,
-    repository::{friendship::FriendshipRepo, post::PostRepo, user::UserRepo},
+    repository::{friendship::PgFriendshipRepo, post::PgPostRepo, user::PgUserRepo},
     test_utils::temp_db::with_test_pool,
 };
 use sqlx::PgPool;
@@ -16,7 +16,7 @@ use sqlx::PgPool;
 ///
 /// Panics if any of the insertions fail. This function should only be used in testing.
 pub async fn seed_users(pool: sqlx::PgPool) -> [NewUser; 4] {
-    let user_repo = UserRepo::new(pool);
+    let user_repo = PgUserRepo::new(pool);
 
     let drake = NewUser {
         name: String::from("Drake"),
@@ -95,7 +95,7 @@ pub async fn seed_friends(pool: sqlx::PgPool) {
     let two_and_three = UserIdPair::new(2, 3).unwrap();
     let two_and_four = UserIdPair::new(4, 2).unwrap();
 
-    let repo = FriendshipRepo;
+    let repo = PgFriendshipRepo;
 
     // Confirmed requests
     repo.new_request(&pool, &two_and_three, 2).await.unwrap();
@@ -131,13 +131,13 @@ pub async fn seed_root_post(pool: &sqlx::PgPool) {
 /// Runs the provided test with a [`PostRepo`] instance that has users and the root post seeded.
 pub async fn with_seeded_users_and_root_post<F, Fut>(test: F)
 where
-    F: FnOnce(PgPool, PostRepo, [NewUser; 4]) -> Fut,
+    F: FnOnce(PgPool, PgPostRepo, [NewUser; 4]) -> Fut,
     Fut: std::future::Future<Output = ()>,
 {
     with_test_pool(|pool| async move {
         let new_users = seed_users(pool.clone()).await;
         seed_root_post(&pool).await;
-        test(pool.clone(), PostRepo::new(pool), new_users).await;
+        test(pool.clone(), PgPostRepo::new(pool), new_users).await;
     })
     .await;
 }

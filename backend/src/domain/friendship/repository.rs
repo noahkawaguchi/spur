@@ -3,7 +3,7 @@ use crate::repository::error::RepoError;
 use sqlx::PgExecutor;
 
 #[async_trait::async_trait]
-pub trait FriendshipStore: Send + Sync {
+pub trait FriendshipRepo: Send + Sync {
     /// Creates a new friend request between the two users. `requester_id` must be equal to one of
     /// the IDs in the pair, indicating who initiated the request.
     async fn new_request(

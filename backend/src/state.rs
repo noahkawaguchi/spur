@@ -2,7 +2,7 @@ use crate::{
     domain::{friendship::service::FriendshipManager, post::PostManager, user::UserManager},
     infra::{post_with_author_read::PgPostWithAuthorRead, social_read::PgSocialRead},
     read_models::{PostWithAuthorRead, SocialRead},
-    repository::{friendship::FriendshipRepo, post::PostRepo, user::UserRepo},
+    repository::{friendship::PgFriendshipRepo, post::PgPostRepo, user::PgUserRepo},
     service::{friendship::FriendshipSvc, post::PostSvc, user::UserSvc},
 };
 use axum::extract::FromRef;
@@ -21,15 +21,17 @@ pub struct AppState {
 impl AppState {
     /// Wires together the repository and service layers for use as `State` in routers/handlers.
     pub fn build(pool: sqlx::PgPool, jwt_secret: String) -> Self {
-        let user_svc = Arc::new(UserSvc::new(UserRepo::new(pool.clone()))) as Arc<dyn UserManager>;
+        let user_svc =
+            Arc::new(UserSvc::new(PgUserRepo::new(pool.clone()))) as Arc<dyn UserManager>;
 
         let friendship_svc = Arc::new(FriendshipSvc::new(
             pool.clone(),
-            FriendshipRepo,
+            PgFriendshipRepo,
             Arc::clone(&user_svc),
         )) as Arc<dyn FriendshipManager>;
 
-        let post_svc = Arc::new(PostSvc::new(PostRepo::new(pool.clone()))) as Arc<dyn PostManager>;
+        let post_svc =
+            Arc::new(PostSvc::new(PgPostRepo::new(pool.clone()))) as Arc<dyn PostManager>;
 
         let social_read = Arc::new(PgSocialRead::new(pool.clone())) as Arc<dyn SocialRead>;
         let post_with_author_read =

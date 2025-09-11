@@ -1,20 +1,20 @@
 use super::error::RepoError;
 use crate::{
-    domain::user::UserStore,
+    domain::user::UserRepo,
     models::user::{NewUser, User},
 };
 
 #[derive(Clone)]
-pub struct UserRepo {
+pub struct PgUserRepo {
     pool: sqlx::PgPool,
 }
 
-impl UserRepo {
+impl PgUserRepo {
     pub const fn new(pool: sqlx::PgPool) -> Self { Self { pool } }
 }
 
 #[async_trait::async_trait]
-impl UserStore for UserRepo {
+impl UserRepo for PgUserRepo {
     async fn insert_new(&self, new_user: &NewUser) -> Result<User, RepoError> {
         sqlx::query_as!(
             User,
@@ -91,7 +91,7 @@ mod tests {
     async fn inserts_and_gets_users() {
         with_test_pool(|pool| async move {
             let test_users = make_test_users();
-            let repo = UserRepo::new(pool);
+            let repo = PgUserRepo::new(pool);
 
             // Insert
             for user in &test_users {
@@ -139,7 +139,7 @@ mod tests {
     #[tokio::test]
     async fn returns_none_for_nonexistent_user() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new(pool);
+            let repo = PgUserRepo::new(pool);
 
             let from_nonsense_email = repo.get_by_email("nonsense@nothing.abc").await;
             let from_nonsense_username = repo.get_by_username("nonsensical_naan").await;
@@ -155,7 +155,7 @@ mod tests {
     #[tokio::test]
     async fn sets_auto_generated_id_and_created_at() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new(pool);
+            let repo = PgUserRepo::new(pool);
 
             for (i, user) in make_test_users().into_iter().enumerate() {
                 let created_user = repo.insert_new(&user).await.expect("failed to insert user");
@@ -173,7 +173,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_duplicate_email() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new(pool);
+            let repo = PgUserRepo::new(pool);
 
             let real_alice = NewUser {
                 name: String::from("Alice"),
@@ -205,7 +205,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_duplicate_username() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new(pool);
+            let repo = PgUserRepo::new(pool);
 
             let real_bob = NewUser {
                 name: String::from("Bob"),
@@ -237,7 +237,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_empty_and_blank_fields() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new(pool);
+            let repo = PgUserRepo::new(pool);
 
             let complete_user = NewUser {
                 name: String::from("Carla"),
@@ -270,7 +270,7 @@ mod tests {
     #[tokio::test]
     async fn rejects_usernames_with_illegal_characters() {
         with_test_pool(|pool| async move {
-            let repo = UserRepo::new(pool);
+            let repo = PgUserRepo::new(pool);
             let bad_usernames = [
                 "$am",
                 "dan123!",

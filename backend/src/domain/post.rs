@@ -72,7 +72,7 @@ pub trait PostManager: Send + Sync {
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
-pub trait PostStore: Send + Sync {
+pub trait PostRepo: Send + Sync {
     /// Attempts to insert a new post into the database.
     async fn insert_new(
         &self,

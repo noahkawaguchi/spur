@@ -1,18 +1,18 @@
 use super::error::RepoError;
-use crate::domain::post::{PostInsertionOutcome, PostStore};
+use crate::domain::post::{PostInsertionOutcome, PostRepo};
 use anyhow::anyhow;
 use sqlx::PgPool;
 
-pub struct PostRepo {
+pub struct PgPostRepo {
     pool: PgPool,
 }
 
-impl PostRepo {
+impl PgPostRepo {
     pub const fn new(pool: PgPool) -> Self { Self { pool } }
 }
 
 #[async_trait::async_trait]
-impl PostStore for PostRepo {
+impl PostRepo for PgPostRepo {
     async fn insert_new(
         &self,
         author_id: i32,

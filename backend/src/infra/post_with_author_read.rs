@@ -93,7 +93,7 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{domain::post::PostStore, test_utils::seed_data::with_seeded_users_and_root_post};
+    use crate::{domain::post::PostRepo, test_utils::seed_data::with_seeded_users_and_root_post};
     use chrono::Utc;
 
     #[tokio::test]
