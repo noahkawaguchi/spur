@@ -1,20 +1,20 @@
 use crate::{
     app_services::uow::UnitOfWork,
-    domain::user::{UserError, UserManager, UserRepo},
+    domain::user::{UserError, UserRepo, UserSvc},
     models::user::{NewUser, User},
 };
 
-pub struct UserSvc<U, R> {
+pub struct UserDomainSvc<U, R> {
     uow: U,
     repo: R,
 }
 
-impl<U, R> UserSvc<U, R> {
+impl<U, R> UserDomainSvc<U, R> {
     pub const fn new(uow: U, repo: R) -> Self { Self { uow, repo } }
 }
 
 #[async_trait::async_trait]
-impl<U, R> UserManager for UserSvc<U, R>
+impl<U, R> UserSvc for UserDomainSvc<U, R>
 where
     U: UnitOfWork,
     R: UserRepo,
@@ -124,7 +124,7 @@ mod tests {
                 ..Default::default()
             };
 
-            let user_svc = UserSvc::new(fake_pool(), mock_repo);
+            let user_svc = UserDomainSvc::new(fake_pool(), mock_repo);
             let result = user_svc.insert_new(&alice).await;
 
             assert!(matches!(result, Err(UserError::DuplicateEmail)));
@@ -150,7 +150,7 @@ mod tests {
                 ..Default::default()
             };
 
-            let user_svc = UserSvc::new(fake_pool(), mock_repo);
+            let user_svc = UserDomainSvc::new(fake_pool(), mock_repo);
             let result = user_svc.insert_new(&alice).await;
 
             assert!(matches!(result, Err(UserError::DuplicateUsername)));
@@ -176,7 +176,7 @@ mod tests {
                 ..Default::default()
             };
 
-            let user_svc = UserSvc::new(fake_pool(), mock_repo);
+            let user_svc = UserDomainSvc::new(fake_pool(), mock_repo);
 
             assert!(
                 user_svc
@@ -212,7 +212,7 @@ mod tests {
                 ..Default::default()
             };
 
-            let user_svc = UserSvc::new(fake_pool(), mock_user_repo);
+            let user_svc = UserDomainSvc::new(fake_pool(), mock_user_repo);
 
             let id_result = user_svc.get_by_id(nonexistent_id).await;
             let email_result = user_svc.get_by_email(nonexistent_email).await;
@@ -252,7 +252,7 @@ mod tests {
                 ..Default::default()
             };
 
-            let user_svc = UserSvc::new(fake_pool(), mock_user_repo);
+            let user_svc = UserDomainSvc::new(fake_pool(), mock_user_repo);
 
             let id_result = user_svc
                 .get_by_id(alice.id)

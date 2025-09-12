@@ -14,7 +14,7 @@ pub enum PostInsertionOutcome {
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
-pub trait PostManager: Send + Sync {
+pub trait PostSvc: Send + Sync {
     /// Attempts to create a new post.
     async fn create_new(&self, author_id: i32, parent_id: i32, body: &str)
     -> Result<(), PostError>;

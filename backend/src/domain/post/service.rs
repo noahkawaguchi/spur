@@ -1,15 +1,15 @@
-use crate::domain::post::{PostError, PostManager, PostRepo};
+use crate::domain::post::{PostError, PostRepo, PostSvc};
 
-pub struct PostSvc<S: PostRepo> {
+pub struct PostDomainSvc<S: PostRepo> {
     store: S,
 }
 
-impl<S: PostRepo> PostSvc<S> {
+impl<S: PostRepo> PostDomainSvc<S> {
     pub const fn new(store: S) -> Self { Self { store } }
 }
 
 #[async_trait::async_trait]
-impl<S: PostRepo> PostManager for PostSvc<S> {
+impl<S: PostRepo> PostSvc for PostDomainSvc<S> {
     async fn create_new(
         &self,
         author_id: i32,
@@ -69,7 +69,7 @@ mod tests {
             .in_sequence(&mut seq)
             .return_once(|_, _, _| Err(RepoError::Technical(anyhow!("something went wrong!"))));
 
-        let post_svc = PostSvc::new(mock_post_repo);
+        let post_svc = PostDomainSvc::new(mock_post_repo);
         assert!(matches!(
             post_svc
                 .create_new(author_ids[0], parent_ids[0], post_bodies[0])
@@ -128,7 +128,7 @@ mod tests {
             .in_sequence(&mut seq)
             .return_once(|_, _, _| Ok(PostInsertionOutcome::SelfReply));
 
-        let post_svc = PostSvc::new(mock_post_repo);
+        let post_svc = PostDomainSvc::new(mock_post_repo);
         assert!(matches!(
             post_svc
                 .create_new(author_ids[0], parent_ids[0], post_bodies[0])

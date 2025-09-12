@@ -4,8 +4,8 @@ use crate::{
         mutate_friendship_by_username_svc::MutateFriendshipByUsernameSvc,
     },
     domain::{
-        post::{PostManager, service::PostSvc},
-        user::{UserManager, service::UserSvc},
+        post::{PostSvc, service::PostDomainSvc},
+        user::{UserSvc, service::UserDomainSvc},
     },
     infra::{
         friendship_repo::PgFriendshipRepo, post_repo::PgPostRepo,
@@ -20,9 +20,9 @@ use std::sync::Arc;
 #[derive(Clone, FromRef)]
 pub struct AppState {
     pub jwt_secret: String,
-    pub user_svc: Arc<dyn UserManager>,
+    pub user_svc: Arc<dyn UserSvc>,
     pub mutate_friendship_by_username: Arc<dyn MutateFriendshipByUsername>,
-    pub post_svc: Arc<dyn PostManager>,
+    pub post_svc: Arc<dyn PostSvc>,
     pub social_read: Arc<dyn SocialRead>,
     pub post_with_author_read: Arc<dyn PostWithAuthorRead>,
 }
@@ -30,7 +30,7 @@ pub struct AppState {
 impl AppState {
     /// Wires together the repository and service layers for use as `State` in routers/handlers.
     pub fn build(pool: sqlx::PgPool, jwt_secret: String) -> Self {
-        let user_svc = Arc::new(UserSvc::new(pool.clone(), PgUserRepo)) as Arc<dyn UserManager>;
+        let user_svc = Arc::new(UserDomainSvc::new(pool.clone(), PgUserRepo)) as Arc<dyn UserSvc>;
 
         let mutate_friendship_by_username = Arc::new(MutateFriendshipByUsernameSvc::new(
             pool.clone(),
@@ -39,7 +39,7 @@ impl AppState {
         )) as Arc<dyn MutateFriendshipByUsername>;
 
         let post_svc =
-            Arc::new(PostSvc::new(PgPostRepo::new(pool.clone()))) as Arc<dyn PostManager>;
+            Arc::new(PostDomainSvc::new(PgPostRepo::new(pool.clone()))) as Arc<dyn PostSvc>;
 
         let social_read = Arc::new(PgSocialRead::new(pool.clone())) as Arc<dyn SocialRead>;
         let post_with_author_read =

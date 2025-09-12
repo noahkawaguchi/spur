@@ -1,6 +1,6 @@
 use super::{api_result, validated_json::ValidatedJson};
 use crate::{
-    domain::post::PostManager,
+    domain::post::PostSvc,
     dto::{requests::CreatePostRequest, responses::PostResponse},
     map_into::MapInto,
     read_models::{PostWithAuthorRead, SocialRead},
@@ -26,7 +26,7 @@ pub fn routes() -> Router<AppState> {
 
 /// Creates a new post.
 async fn create_new(
-    post_svc: State<Arc<dyn PostManager>>,
+    post_svc: State<Arc<dyn PostSvc>>,
     Extension(requester_id): Extension<i32>,
     payload: ValidatedJson<CreatePostRequest>,
 ) -> api_result!() {

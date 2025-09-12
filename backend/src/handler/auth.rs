@@ -1,6 +1,6 @@
 use super::{api_result, validated_json::ValidatedJson};
 use crate::{
-    domain::{auth, user::UserManager},
+    domain::{auth, user::UserSvc},
     dto::{
         requests::{LoginRequest, SignupRequest},
         responses::TokenResponse,
@@ -20,7 +20,7 @@ pub fn routes() -> Router<AppState> {
 
 async fn signup(
     jwt_secret: State<String>,
-    user_svc: State<Arc<dyn UserManager>>,
+    user_svc: State<Arc<dyn UserSvc>>,
     ValidatedJson(payload): ValidatedJson<SignupRequest>,
 ) -> api_result!(TokenResponse) {
     let password_hash = auth::service::hash_pw(&payload.password)?;
@@ -42,7 +42,7 @@ async fn signup(
 
 async fn login(
     jwt_secret: State<String>,
-    user_svc: State<Arc<dyn UserManager>>,
+    user_svc: State<Arc<dyn UserSvc>>,
     payload: ValidatedJson<LoginRequest>,
 ) -> api_result!(TokenResponse) {
     let existing_user = user_svc.get_by_email(&payload.email).await?;
