@@ -1,10 +1,10 @@
 use crate::{
     domain::{
+        RepoError,
         friendship::{FriendshipStatus, repository::FriendshipRepo, user_id_pair::UserIdPair},
         user::UserRepo,
     },
     models::user::{NewUser, User},
-    repository::error::RepoError,
 };
 use sqlx::PgExecutor;
 

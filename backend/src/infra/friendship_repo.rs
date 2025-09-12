@@ -1,6 +1,6 @@
-use super::error::RepoError;
-use crate::domain::friendship::{
-    FriendshipStatus, repository::FriendshipRepo, user_id_pair::UserIdPair,
+use crate::domain::{
+    RepoError,
+    friendship::{FriendshipStatus, repository::FriendshipRepo, user_id_pair::UserIdPair},
 };
 use sqlx::PgExecutor;
 

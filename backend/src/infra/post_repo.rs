@@ -1,5 +1,7 @@
-use super::error::RepoError;
-use crate::domain::post::{PostInsertionOutcome, PostRepo};
+use crate::domain::{
+    RepoError,
+    post::{PostInsertionOutcome, PostRepo},
+};
 use anyhow::anyhow;
 use sqlx::PgPool;
 

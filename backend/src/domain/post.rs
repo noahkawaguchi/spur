@@ -1,4 +1,4 @@
-use crate::repository::error::RepoError;
+use crate::domain::RepoError;
 use anyhow::anyhow;
 use thiserror::Error;
 

@@ -12,7 +12,6 @@ mod map_into;
 mod middleware;
 mod models;
 mod read_models;
-mod repository;
 mod router;
 mod service;
 mod state;

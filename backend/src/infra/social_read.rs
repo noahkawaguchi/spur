@@ -94,9 +94,11 @@ mod tests {
             friendship::{repository::FriendshipRepo, user_id_pair::UserIdPair},
             post::PostRepo,
         },
-        infra::post_with_author_read::PgPostWithAuthorRead,
+        infra::{
+            friendship_repo::PgFriendshipRepo, post_repo::PgPostRepo,
+            post_with_author_read::PgPostWithAuthorRead,
+        },
         read_models::PostWithAuthorRead,
-        repository::{friendship::PgFriendshipRepo, post::PgPostRepo},
         test_utils::{
             seed_data::{seed_friends, seed_root_post, seed_users},
             temp_db::with_test_pool,

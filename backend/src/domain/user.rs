@@ -1,6 +1,6 @@
 use crate::{
+    domain::RepoError,
     models::user::{NewUser, User},
-    repository::error::RepoError,
 };
 use anyhow::anyhow;
 use sqlx::PgExecutor;

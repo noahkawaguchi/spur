@@ -3,8 +3,8 @@ use crate::{
         friendship::{repository::FriendshipRepo, user_id_pair::UserIdPair},
         user::UserRepo,
     },
+    infra::{friendship_repo::PgFriendshipRepo, post_repo::PgPostRepo, user_repo::PgUserRepo},
     models::user::NewUser,
-    repository::{friendship::PgFriendshipRepo, post::PgPostRepo, user::PgUserRepo},
     test_utils::temp_db::with_test_pool,
 };
 use sqlx::PgPool;

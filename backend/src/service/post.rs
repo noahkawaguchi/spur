@@ -27,9 +27,9 @@ impl<S: PostRepo> PostManager for PostSvc<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        domain::post::{MockPostRepo, PostInsertionOutcome},
-        repository::error::RepoError,
+    use crate::domain::{
+        RepoError,
+        post::{MockPostRepo, PostInsertionOutcome},
     };
     use anyhow::anyhow;
     use mockall::{Sequence, predicate::eq};

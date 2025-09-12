@@ -52,7 +52,7 @@ where
 mod tests {
     use super::*;
     use crate::{
-        repository::error::RepoError,
+        domain::RepoError,
         test_utils::{fake_db::fake_pool, mock_repos::MockUserRepo},
     };
     use chrono::{Months, Utc};

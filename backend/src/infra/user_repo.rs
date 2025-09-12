@@ -1,6 +1,5 @@
-use super::error::RepoError;
 use crate::{
-    domain::user::UserRepo,
+    domain::{RepoError, user::UserRepo},
     models::user::{NewUser, User},
 };
 use sqlx::PgExecutor;
@@ -68,10 +67,7 @@ impl UserRepo for PgUserRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        repository::error::RepoError,
-        test_utils::{temp_db::with_test_pool, time::within_one_second},
-    };
+    use crate::test_utils::{temp_db::with_test_pool, time::within_one_second};
     use chrono::Utc;
 
     fn make_test_users() -> Vec<NewUser> {

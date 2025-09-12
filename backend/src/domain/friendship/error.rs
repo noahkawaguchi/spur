@@ -1,4 +1,4 @@
-use crate::repository::error::RepoError;
+use crate::domain::RepoError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -21,7 +21,7 @@ pub enum FriendshipError {
 
 impl From<RepoError> for FriendshipError {
     fn from(e: RepoError) -> Self {
-        // TODO: the friendship domain needs to be redesigned
+        // Other variants are created explicitly
         Self::Internal(e.into())
     }
 }

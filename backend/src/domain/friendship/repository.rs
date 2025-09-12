@@ -1,5 +1,5 @@
 use super::{FriendshipStatus, user_id_pair::UserIdPair};
-use crate::repository::error::RepoError;
+use crate::domain::RepoError;
 use sqlx::PgExecutor;
 
 #[async_trait::async_trait]
