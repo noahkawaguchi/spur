@@ -1,8 +1,9 @@
 use super::{api_result, validated_json::ValidatedJson};
 use crate::{
-    domain::post::PostManager,
+    domain::post::PostSvc,
     dto::{requests::CreatePostRequest, responses::PostResponse},
     map_into::MapInto,
+    read_models::{PostWithAuthorRead, SocialRead},
     state::AppState,
 };
 use axum::{
@@ -25,7 +26,7 @@ pub fn routes() -> Router<AppState> {
 
 /// Creates a new post.
 async fn create_new(
-    post_svc: State<Arc<dyn PostManager>>,
+    post_svc: State<Arc<dyn PostSvc>>,
     Extension(requester_id): Extension<i32>,
     payload: ValidatedJson<CreatePostRequest>,
 ) -> api_result!() {
@@ -38,47 +39,47 @@ async fn create_new(
 
 /// Retrieves a post using its ID.
 async fn get_by_id(
-    post_svc: State<Arc<dyn PostManager>>,
+    post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Path(post_id): Path<i32>,
 ) -> api_result!(PostResponse) {
     Ok((
         StatusCode::OK,
-        Json(post_svc.get_by_id(post_id).await?.into()),
+        Json(post_with_author_read.by_post_id(post_id).await?.into()),
     ))
 }
 
 /// Retrieves the children of the post with the provided ID.
 async fn get_by_parent_id(
-    post_svc: State<Arc<dyn PostManager>>,
+    post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Path(parent_id): Path<i32>,
 ) -> api_result!(Vec<PostResponse>) {
     Ok((
         StatusCode::OK,
-        Json(post_svc.get_by_parent_id(parent_id).await?.map_into()),
+        Json(post_with_author_read.by_parent(parent_id).await?.map_into()),
     ))
 }
 
 /// Retrieves posts written by the requester's friends.
 async fn all_friend_posts(
-    post_svc: State<Arc<dyn PostManager>>,
+    social_read: State<Arc<dyn SocialRead>>,
     Extension(requester_id): Extension<i32>,
 ) -> api_result!(Vec<PostResponse>) {
     Ok((
         StatusCode::OK,
-        Json(post_svc.all_friend_posts(requester_id).await?.map_into()),
+        Json(social_read.friend_posts(requester_id).await?.map_into()),
     ))
 }
 
 /// Retrieves posts written by the user with the specified username.
 async fn specific_user_posts(
-    post_svc: State<Arc<dyn PostManager>>,
+    post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Path(author_username): Path<String>,
 ) -> api_result!(Vec<PostResponse>) {
     Ok((
         StatusCode::OK,
         Json(
-            post_svc
-                .user_posts_by_username(&author_username)
+            post_with_author_read
+                .by_author_username(&author_username)
                 .await?
                 .map_into(),
         ),
@@ -87,11 +88,16 @@ async fn specific_user_posts(
 
 /// Retrieves the requester's own posts.
 async fn own_posts(
-    post_svc: State<Arc<dyn PostManager>>,
+    post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Extension(requester_id): Extension<i32>,
 ) -> api_result!(Vec<PostResponse>) {
     Ok((
         StatusCode::OK,
-        Json(post_svc.user_posts_by_id(requester_id).await?.map_into()),
+        Json(
+            post_with_author_read
+                .by_author(requester_id)
+                .await?
+                .map_into(),
+        ),
     ))
 }

@@ -1,11 +1,13 @@
 use crate::{
     domain::{
-        friendship::{repository::FriendshipStore, user_id_pair::UserIdPair},
-        user::UserStore,
+        friendship::{FriendshipRepo, user_id_pair::UserIdPair},
+        user::UserRepo,
     },
+    infra::{friendship_repo::PgFriendshipRepo, post_repo::PgPostRepo, user_repo::PgUserRepo},
     models::user::NewUser,
-    repository::{friendship::FriendshipRepo, user::UserRepo},
+    test_utils::temp_db::with_test_pool,
 };
+use sqlx::PgPool;
 
 /// Inserts four new users into the test database and returns them as they were inserted.
 /// They will automatically be given IDs 1, 2, 3, and 4 if there are no other existing users.
@@ -14,7 +16,7 @@ use crate::{
 ///
 /// Panics if any of the insertions fail. This function should only be used in testing.
 pub async fn seed_users(pool: sqlx::PgPool) -> [NewUser; 4] {
-    let user_repo = UserRepo::new(pool);
+    let user_repo = PgUserRepo;
 
     let drake = NewUser {
         name: String::from("Drake"),
@@ -45,42 +47,26 @@ pub async fn seed_users(pool: sqlx::PgPool) -> [NewUser; 4] {
     };
 
     user_repo
-        .insert_new(&drake)
+        .insert_new(&pool, &drake)
         .await
         .expect("failed to insert Drake");
 
     user_repo
-        .insert_new(&eunice)
+        .insert_new(&pool, &eunice)
         .await
         .expect("failed to insert Eunice");
 
     user_repo
-        .insert_new(&felipe)
+        .insert_new(&pool, &felipe)
         .await
         .expect("failed to insert Felipe");
 
     user_repo
-        .insert_new(&gillian)
+        .insert_new(&pool, &gillian)
         .await
         .expect("failed to insert Gillian");
 
     [drake, eunice, felipe, gillian]
-}
-
-/// Inserts the "root" of the tree of posts, the only post allowed to have a NULL parent post. This
-/// post will have an ID of 1. This is necessary for testing purposes, so that other posts can be
-/// inserted in the normal fashion where a non-NULL parent post ID is required.
-///
-/// *Assumes a user with ID 1 already exists,* who will be the author of this post.
-///
-/// # Panics
-///
-/// Panics if the insertion fails for any reason.
-pub async fn seed_root_post(pool: &sqlx::PgPool) {
-    sqlx::query!("INSERT INTO post (author_id, parent_id, body) VALUES (1, NULL, 'root post')")
-        .execute(pool)
-        .await
-        .expect("failed to insert root post");
 }
 
 /// Inserts friend requests and friendships into the test database, assuming users with IDs 1, 2,
@@ -109,7 +95,7 @@ pub async fn seed_friends(pool: sqlx::PgPool) {
     let two_and_three = UserIdPair::new(2, 3).unwrap();
     let two_and_four = UserIdPair::new(4, 2).unwrap();
 
-    let repo = FriendshipRepo;
+    let repo = PgFriendshipRepo;
 
     // Confirmed requests
     repo.new_request(&pool, &two_and_three, 2).await.unwrap();
@@ -124,4 +110,34 @@ pub async fn seed_friends(pool: sqlx::PgPool) {
     repo.new_request(&pool, &UserIdPair::new(4, 3).unwrap(), 3)
         .await
         .unwrap();
+}
+
+/// Inserts the "root" of the tree of posts, the only post allowed to have a NULL parent post. This
+/// post will have an ID of 1. This is necessary for testing purposes, so that other posts can be
+/// inserted in the normal fashion where a non-NULL parent post ID is required.
+///
+/// *Assumes a user with ID 1 already exists,* who will be the author of this post.
+///
+/// # Panics
+///
+/// Panics if the insertion fails for any reason.
+pub async fn seed_root_post(pool: &sqlx::PgPool) {
+    sqlx::query!("INSERT INTO post (author_id, parent_id, body) VALUES (1, NULL, 'root post')")
+        .execute(pool)
+        .await
+        .expect("failed to insert root post");
+}
+
+/// Runs the provided test with a [`PostRepo`] instance that has users and the root post seeded.
+pub async fn with_seeded_users_and_root_post<F, Fut>(test: F)
+where
+    F: FnOnce(PgPool, PgPostRepo, [NewUser; 4]) -> Fut,
+    Fut: std::future::Future<Output = ()>,
+{
+    with_test_pool(|pool| async move {
+        let new_users = seed_users(pool.clone()).await;
+        seed_root_post(&pool).await;
+        test(pool.clone(), PgPostRepo::new(pool), new_users).await;
+    })
+    .await;
 }

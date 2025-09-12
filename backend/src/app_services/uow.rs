@@ -1,4 +1,4 @@
-use crate::repository::error::RepoError;
+use crate::domain::RepoError;
 use sqlx::{PgConnection, PgExecutor, PgPool, PgTransaction};
 
 #[async_trait::async_trait]

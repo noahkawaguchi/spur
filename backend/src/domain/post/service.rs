@@ -1,18 +1,15 @@
-use crate::{
-    domain::post::{PostError, PostManager, PostStore},
-    models::post::PostInfo,
-};
+use crate::domain::post::{PostError, PostRepo, PostSvc};
 
-pub struct PostSvc<S: PostStore> {
+pub struct PostDomainSvc<S: PostRepo> {
     store: S,
 }
 
-impl<S: PostStore> PostSvc<S> {
+impl<S: PostRepo> PostDomainSvc<S> {
     pub const fn new(store: S) -> Self { Self { store } }
 }
 
 #[async_trait::async_trait]
-impl<S: PostStore> PostManager for PostSvc<S> {
+impl<S: PostRepo> PostSvc for PostDomainSvc<S> {
     async fn create_new(
         &self,
         author_id: i32,
@@ -25,52 +22,14 @@ impl<S: PostStore> PostManager for PostSvc<S> {
             .map_err(Into::into)
             .and_then(TryFrom::try_from)
     }
-
-    async fn get_by_id(&self, post_id: i32) -> Result<PostInfo, PostError> {
-        self.store
-            .get_by_id(post_id)
-            .await?
-            .ok_or(PostError::NotFound)
-    }
-
-    async fn get_by_parent_id(&self, parent_id: i32) -> Result<Vec<PostInfo>, PostError> {
-        self.store
-            .get_by_parent_id(parent_id)
-            .await
-            .map_err(Into::into)
-    }
-
-    async fn user_posts_by_id(&self, author_id: i32) -> Result<Vec<PostInfo>, PostError> {
-        self.store
-            .user_posts_by_id(author_id)
-            .await
-            .map_err(Into::into)
-    }
-
-    async fn user_posts_by_username(
-        &self,
-        author_username: &str,
-    ) -> Result<Vec<PostInfo>, PostError> {
-        self.store
-            .user_posts_by_username(author_username)
-            .await
-            .map_err(Into::into)
-    }
-
-    async fn all_friend_posts(&self, user_id: i32) -> Result<Vec<PostInfo>, PostError> {
-        self.store
-            .all_friend_posts(user_id)
-            .await
-            .map_err(Into::into)
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        domain::post::{MockPostStore, PostInsertionOutcome},
-        repository::error::RepoError,
+    use crate::domain::{
+        RepoError,
+        post::{MockPostRepo, PostInsertionOutcome},
     };
     use anyhow::anyhow;
     use mockall::{Sequence, predicate::eq};
@@ -81,7 +40,7 @@ mod tests {
         let parent_ids = [10, 20, 30, 40];
         let post_bodies = ["super", "cool", "post", "bodies"];
 
-        let mut mock_post_repo = MockPostStore::new();
+        let mut mock_post_repo = MockPostRepo::new();
         let mut seq = Sequence::new();
         mock_post_repo
             .expect_insert_new()
@@ -105,18 +64,12 @@ mod tests {
             });
         mock_post_repo
             .expect_insert_new()
-            .with(eq(author_ids[2]), eq(parent_ids[2]), eq(post_bodies[2]))
-            .once()
-            .in_sequence(&mut seq)
-            .return_once(|_, _, _| Err(RepoError::Technical(sqlx::Error::PoolClosed)));
-        mock_post_repo
-            .expect_insert_new()
             .with(eq(author_ids[3]), eq(parent_ids[3]), eq(post_bodies[3]))
             .once()
             .in_sequence(&mut seq)
-            .return_once(|_, _, _| Err(RepoError::Unexpected(anyhow!("something went wrong!"))));
+            .return_once(|_, _, _| Err(RepoError::Technical(anyhow!("something went wrong!"))));
 
-        let post_svc = PostSvc::new(mock_post_repo);
+        let post_svc = PostDomainSvc::new(mock_post_repo);
         assert!(matches!(
             post_svc
                 .create_new(author_ids[0], parent_ids[0], post_bodies[0])
@@ -131,10 +84,6 @@ mod tests {
             "Unexpected unique violation: some unique constraint violation here"
         ));
         assert!(matches!(
-            post_svc.create_new(author_ids[2], parent_ids[2], post_bodies[2]).await,
-            Err(PostError::Internal(e)) if e.to_string() == sqlx::Error::PoolClosed.to_string()
-        ));
-        assert!(matches!(
             post_svc.create_new(author_ids[3], parent_ids[3], post_bodies[3]).await,
             Err(PostError::Internal(e)) if e .to_string() == "something went wrong!"
         ));
@@ -146,7 +95,7 @@ mod tests {
         let parent_ids = [101, 202, 303, 404, 505];
         let post_bodies = ["very", "awesome", "correspondence", "happening", "here"];
 
-        let mut mock_post_repo = MockPostStore::new();
+        let mut mock_post_repo = MockPostRepo::new();
         let mut seq = Sequence::new();
         mock_post_repo
             .expect_insert_new()
@@ -179,7 +128,7 @@ mod tests {
             .in_sequence(&mut seq)
             .return_once(|_, _, _| Ok(PostInsertionOutcome::SelfReply));
 
-        let post_svc = PostSvc::new(mock_post_repo);
+        let post_svc = PostDomainSvc::new(mock_post_repo);
         assert!(matches!(
             post_svc
                 .create_new(author_ids[0], parent_ids[0], post_bodies[0])
@@ -211,7 +160,4 @@ mod tests {
             Err(PostError::SelfReply)
         ));
     }
-
-    // Determined that testing the other functions would be trivial since they just wrap the
-    // repository functions
 }

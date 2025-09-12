@@ -1,5 +1,5 @@
 use crate::{
-    domain::auth::{AuthError, Claims},
+    domain::auth::{AuthError, claims::Claims},
     models::user::User,
 };
 use anyhow::Context;

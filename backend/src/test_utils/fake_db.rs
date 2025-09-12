@@ -1,6 +1,6 @@
-use crate::repository::{
-    error::RepoError,
-    uow::{Tx, UnitOfWork},
+use crate::{
+    app_services::uow::{Tx, UnitOfWork},
+    domain::RepoError,
 };
 use sqlx::{PgExecutor, PgPool, postgres::PgPoolOptions};
 use std::{

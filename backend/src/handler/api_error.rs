@@ -1,8 +1,10 @@
 use crate::{
     domain::{
-        auth::AuthError, friendship::error::FriendshipError, post::PostError, user::UserError,
+        auth::AuthError, friendship::error::FriendshipError, post::error::PostError,
+        user::error::UserError,
     },
     dto::responses::ErrorResponse,
+    read_models::ReadError,
 };
 use axum::{
     Json,
@@ -24,6 +26,8 @@ pub enum ApiError {
     Friendship(#[from] FriendshipError),
     #[error(transparent)]
     Post(#[from] PostError),
+    #[error(transparent)]
+    Read(#[from] ReadError),
 }
 
 impl IntoResponse for ApiError {
@@ -41,9 +45,8 @@ impl IntoResponse for ApiError {
 
             Self::User(UserError::NotFound)
             | Self::Post(PostError::NotFound)
-            | Self::Friendship(FriendshipError::NonexistentUser) => {
-                (StatusCode::NOT_FOUND, self.to_string())
-            }
+            | Self::Friendship(FriendshipError::NonexistentUser)
+            | Self::Read(ReadError::NotFound(_)) => (StatusCode::NOT_FOUND, self.to_string()),
 
             Self::User(UserError::DuplicateEmail | UserError::DuplicateUsername)
             | Self::Friendship(
@@ -56,25 +59,12 @@ impl IntoResponse for ApiError {
             Self::Auth(AuthError::Internal(_))
             | Self::User(UserError::Internal(_))
             | Self::Friendship(FriendshipError::Internal(_))
-            | Self::Post(PostError::Internal(_)) => (StatusCode::INTERNAL_SERVER_ERROR, {
+            | Self::Post(PostError::Internal(_))
+            | Self::Read(ReadError::Technical(_)) => (StatusCode::INTERNAL_SERVER_ERROR, {
                 // TODO: use a logger
                 eprintln!("{}", self.to_string().red());
                 String::from("internal server error")
             }),
-
-            // TODO: This redundant matching on UserError should not be here after the friendship
-            // domain is redesigned
-            Self::Friendship(FriendshipError::User(err)) => match err {
-                UserError::NotFound => (StatusCode::NOT_FOUND, err.to_string()),
-                UserError::DuplicateEmail | UserError::DuplicateUsername => {
-                    (StatusCode::CONFLICT, err.to_string())
-                }
-                UserError::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, {
-                    // TODO: use a logger
-                    eprintln!("{}", err.to_string().red());
-                    String::from("Internal server error")
-                }),
-            },
         };
 
         (status, Json(ErrorResponse { error: message })).into_response()

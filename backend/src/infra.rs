@@ -1,18 +1,13 @@
-use thiserror::Error;
+use crate::{domain::RepoError, read_models::ReadError};
 
-#[derive(Debug, Error)]
-pub enum RepoError {
-    #[error("Unique constraint violation: {0}")]
-    UniqueViolation(String),
+pub mod friendship_repo;
+pub mod post_repo;
+pub mod post_with_author_read;
+pub mod social_read;
+pub mod user_repo;
 
-    #[error("Check constraint violation: {0}")]
-    CheckViolation(String),
-
-    #[error("Technical database error: {0}")]
-    Technical(sqlx::Error),
-
-    #[error("Unexpected error: {0}")]
-    Unexpected(#[from] anyhow::Error),
+impl From<sqlx::Error> for ReadError {
+    fn from(e: sqlx::Error) -> Self { anyhow::Error::from(e).into() }
 }
 
 impl From<sqlx::Error> for RepoError {
@@ -31,9 +26,9 @@ impl From<sqlx::Error> for RepoError {
                         .unwrap_or("<unnamed check constraint>")
                         .to_string(),
                 ),
-                _ => Self::Technical(e),
+                _ => Self::Technical(e.into()),
             },
-            _ => Self::Technical(e),
+            _ => Self::Technical(e.into()),
         }
     }
 }

@@ -1,7 +1,18 @@
 use crate::{
-    domain::{friendship::service::FriendshipManager, post::PostManager, user::UserManager},
-    repository::{friendship::FriendshipRepo, post::PostRepo, user::UserRepo},
-    service::{friendship::FriendshipSvc, post::PostSvc, user::UserSvc},
+    app_services::{
+        MutateFriendshipByUsername,
+        mutate_friendship_by_username_svc::MutateFriendshipByUsernameSvc,
+    },
+    domain::{
+        post::{PostSvc, service::PostDomainSvc},
+        user::{UserSvc, service::UserDomainSvc},
+    },
+    infra::{
+        friendship_repo::PgFriendshipRepo, post_repo::PgPostRepo,
+        post_with_author_read::PgPostWithAuthorRead, social_read::PgSocialRead,
+        user_repo::PgUserRepo,
+    },
+    read_models::{PostWithAuthorRead, SocialRead},
 };
 use axum::extract::FromRef;
 use std::sync::Arc;
@@ -9,24 +20,38 @@ use std::sync::Arc;
 #[derive(Clone, FromRef)]
 pub struct AppState {
     pub jwt_secret: String,
-    pub user_svc: Arc<dyn UserManager>,
-    pub friendship_svc: Arc<dyn FriendshipManager>,
-    pub post_svc: Arc<dyn PostManager>,
+    pub user_svc: Arc<dyn UserSvc>,
+    pub mutate_friendship_by_username: Arc<dyn MutateFriendshipByUsername>,
+    pub post_svc: Arc<dyn PostSvc>,
+    pub social_read: Arc<dyn SocialRead>,
+    pub post_with_author_read: Arc<dyn PostWithAuthorRead>,
 }
 
 impl AppState {
     /// Wires together the repository and service layers for use as `State` in routers/handlers.
     pub fn build(pool: sqlx::PgPool, jwt_secret: String) -> Self {
-        let user_svc = Arc::new(UserSvc::new(UserRepo::new(pool.clone()))) as Arc<dyn UserManager>;
+        let user_svc = Arc::new(UserDomainSvc::new(pool.clone(), PgUserRepo)) as Arc<dyn UserSvc>;
 
-        let friendship_svc = Arc::new(FriendshipSvc::new(
+        let mutate_friendship_by_username = Arc::new(MutateFriendshipByUsernameSvc::new(
             pool.clone(),
-            FriendshipRepo,
-            Arc::clone(&user_svc),
-        )) as Arc<dyn FriendshipManager>;
+            PgUserRepo,
+            PgFriendshipRepo,
+        )) as Arc<dyn MutateFriendshipByUsername>;
 
-        let post_svc = Arc::new(PostSvc::new(PostRepo::new(pool))) as Arc<dyn PostManager>;
+        let post_svc =
+            Arc::new(PostDomainSvc::new(PgPostRepo::new(pool.clone()))) as Arc<dyn PostSvc>;
 
-        Self { jwt_secret, user_svc, friendship_svc, post_svc }
+        let social_read = Arc::new(PgSocialRead::new(pool.clone())) as Arc<dyn SocialRead>;
+        let post_with_author_read =
+            Arc::new(PgPostWithAuthorRead::new(pool)) as Arc<dyn PostWithAuthorRead>;
+
+        Self {
+            jwt_secret,
+            user_svc,
+            mutate_friendship_by_username,
+            post_svc,
+            social_read,
+            post_with_author_read,
+        }
     }
 }

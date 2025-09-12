@@ -2,16 +2,17 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
+mod app_services;
 mod config;
 mod domain;
 mod dto;
 mod handler;
+mod infra;
 mod map_into;
 mod middleware;
 mod models;
-mod repository;
+mod read_models;
 mod router;
-mod service;
 mod state;
 
 #[cfg(test)]
