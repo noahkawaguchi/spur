@@ -64,16 +64,10 @@ mod tests {
             });
         mock_post_repo
             .expect_insert_new()
-            .with(eq(author_ids[2]), eq(parent_ids[2]), eq(post_bodies[2]))
-            .once()
-            .in_sequence(&mut seq)
-            .return_once(|_, _, _| Err(RepoError::Technical(sqlx::Error::PoolClosed)));
-        mock_post_repo
-            .expect_insert_new()
             .with(eq(author_ids[3]), eq(parent_ids[3]), eq(post_bodies[3]))
             .once()
             .in_sequence(&mut seq)
-            .return_once(|_, _, _| Err(RepoError::Unexpected(anyhow!("something went wrong!"))));
+            .return_once(|_, _, _| Err(RepoError::Technical(anyhow!("something went wrong!"))));
 
         let post_svc = PostSvc::new(mock_post_repo);
         assert!(matches!(
@@ -88,10 +82,6 @@ mod tests {
                 .await,
             Err(PostError::Internal(e)) if e.to_string() ==
             "Unexpected unique violation: some unique constraint violation here"
-        ));
-        assert!(matches!(
-            post_svc.create_new(author_ids[2], parent_ids[2], post_bodies[2]).await,
-            Err(PostError::Internal(e)) if e.to_string() == sqlx::Error::PoolClosed.to_string()
         ));
         assert!(matches!(
             post_svc.create_new(author_ids[3], parent_ids[3], post_bodies[3]).await,

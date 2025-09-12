@@ -8,11 +8,8 @@ pub enum RepoError {
     #[error("Check constraint violation: {0}")]
     CheckViolation(String),
 
-    #[error("Technical database error: {0}")]
-    Technical(sqlx::Error),
-
-    #[error("Unexpected error: {0}")]
-    Unexpected(#[from] anyhow::Error),
+    #[error("Technical error: {0}")]
+    Technical(#[from] anyhow::Error),
 }
 
 impl From<sqlx::Error> for RepoError {
@@ -31,9 +28,9 @@ impl From<sqlx::Error> for RepoError {
                         .unwrap_or("<unnamed check constraint>")
                         .to_string(),
                 ),
-                _ => Self::Technical(e),
+                _ => Self::Technical(e.into()),
             },
-            _ => Self::Technical(e),
+            _ => Self::Technical(e.into()),
         }
     }
 }
