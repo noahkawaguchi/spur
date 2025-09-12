@@ -91,7 +91,7 @@ mod tests {
     use super::*;
     use crate::{
         domain::{
-            friendship::{repository::FriendshipRepo, user_id_pair::UserIdPair},
+            friendship::{FriendshipRepo, user_id_pair::UserIdPair},
             post::PostRepo,
         },
         infra::{

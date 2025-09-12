@@ -3,14 +3,16 @@ use crate::{
         MutateFriendshipByUsername,
         mutate_friendship_by_username_svc::MutateFriendshipByUsernameSvc,
     },
-    domain::{post::PostManager, user::UserManager},
+    domain::{
+        post::{PostManager, service::PostSvc},
+        user::{UserManager, service::UserSvc},
+    },
     infra::{
         friendship_repo::PgFriendshipRepo, post_repo::PgPostRepo,
         post_with_author_read::PgPostWithAuthorRead, social_read::PgSocialRead,
         user_repo::PgUserRepo,
     },
     read_models::{PostWithAuthorRead, SocialRead},
-    service::{post::PostSvc, user::UserSvc},
 };
 use axum::extract::FromRef;
 use std::sync::Arc;

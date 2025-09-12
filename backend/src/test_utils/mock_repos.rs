@@ -1,7 +1,7 @@
 use crate::{
     domain::{
         RepoError,
-        friendship::{FriendshipStatus, repository::FriendshipRepo, user_id_pair::UserIdPair},
+        friendship::{FriendshipRepo, FriendshipStatus, user_id_pair::UserIdPair},
         user::UserRepo,
     },
     models::user::{NewUser, User},

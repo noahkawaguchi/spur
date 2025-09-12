@@ -13,7 +13,6 @@ mod middleware;
 mod models;
 mod read_models;
 mod router;
-mod service;
 mod state;
 
 #[cfg(test)]

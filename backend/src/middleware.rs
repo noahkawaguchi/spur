@@ -1,4 +1,4 @@
-use crate::{handler::api_error::ApiError, service};
+use crate::{domain::auth, handler::api_error::ApiError};
 use axum::{
     extract::{Request, State},
     middleware,
@@ -17,7 +17,7 @@ pub async fn validate_jwt(
     mut request: Request,
     next: middleware::Next,
 ) -> Result<Response, ApiError> {
-    let requester_id = service::auth::validate_jwt(bearer.token(), &jwt_secret)?;
+    let requester_id = auth::service::validate_jwt(bearer.token(), &jwt_secret)?;
     request.extensions_mut().insert(requester_id);
     Ok(next.run(request).await)
 }

@@ -1,6 +1,7 @@
 use crate::{
     domain::{
-        auth::AuthError, friendship::error::FriendshipError, post::PostError, user::UserError,
+        auth::AuthError, friendship::error::FriendshipError, post::error::PostError,
+        user::error::UserError,
     },
     dto::responses::ErrorResponse,
     read_models::ReadError,

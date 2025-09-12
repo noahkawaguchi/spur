@@ -1,6 +1,6 @@
 use crate::{
     domain::{
-        friendship::{repository::FriendshipRepo, user_id_pair::UserIdPair},
+        friendship::{FriendshipRepo, user_id_pair::UserIdPair},
         user::UserRepo,
     },
     infra::{friendship_repo::PgFriendshipRepo, post_repo::PgPostRepo, user_repo::PgUserRepo},

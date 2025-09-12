@@ -5,8 +5,7 @@ use crate::{
     },
     domain::{
         friendship::{
-            FriendshipStatus, error::FriendshipError, repository::FriendshipRepo,
-            user_id_pair::UserIdPair,
+            FriendshipRepo, FriendshipStatus, error::FriendshipError, user_id_pair::UserIdPair,
         },
         user::UserRepo,
     },
