@@ -17,16 +17,20 @@ impl SocialRead for PgSocialRead {
     async fn friend_usernames(&self, id: i32) -> Result<Vec<String>, ReadError> {
         sqlx::query_scalar!(
             "
-            SELECT username FROM users WHERE id IN (
+            SELECT u.username
+            FROM users u
+            JOIN (
                 SELECT
+                    confirmed_at,
                     CASE
                         WHEN lesser_id = $1 THEN greater_id
                         ELSE lesser_id
                     END AS friend_id
                 FROM friendship
                 WHERE confirmed_at IS NOT NULL
-                AND (lesser_id = $1 OR greater_id = $1)
-            )
+                    AND (lesser_id = $1 OR greater_id = $1)
+            ) AS f ON f.friend_id = u.id
+            ORDER BY f.confirmed_at DESC
             ",
             id,
         )
@@ -38,19 +42,24 @@ impl SocialRead for PgSocialRead {
     async fn pending_requests(&self, id: i32) -> Result<Vec<String>, ReadError> {
         sqlx::query_scalar!(
             "
-            SELECT username FROM users WHERE id IN (
-                SELECT lesser_id AS requester_id FROM friendship
+            SELECT u.username
+            FROM users u
+            JOIN (
+                SELECT lesser_id AS requester_id, requested_at
+                FROM friendship
                 WHERE confirmed_at IS NULL
-                AND greater_id = $1
-                AND lesser_requested
+                    AND greater_id = $1
+                    AND lesser_requested
 
                 UNION ALL
 
-                SELECT greater_id AS requester_id FROM friendship
+                SELECT greater_id AS requester_id, requested_at
+                FROM friendship
                 WHERE confirmed_at IS NULL
-                AND lesser_id = $1
-                AND NOT lesser_requested
-            )
+                    AND lesser_id = $1
+                    AND NOT lesser_requested
+            ) AS f ON f.requester_id = u.id
+            ORDER BY f.requested_at DESC
             ",
             id,
         )
@@ -138,7 +147,8 @@ mod tests {
                 .pending_requests(3)
                 .await
                 .expect("failed to get requests");
-            assert_eq!(requests, vec![u1.username.clone(), u2.username.clone()]);
+            // Most recently requested should be first
+            assert_eq!(requests, vec![u2.username.clone(), u1.username.clone()]);
             let friends = read
                 .friend_usernames(3)
                 .await
@@ -173,7 +183,8 @@ mod tests {
                 .friend_usernames(3)
                 .await
                 .expect("failed to get friends");
-            assert_eq!(friends, vec![u1.username, u2.username]);
+            // Most recently accepted should be first
+            assert_eq!(friends, vec![u2.username, u1.username]);
         })
         .await;
     }

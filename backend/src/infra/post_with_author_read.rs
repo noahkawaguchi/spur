@@ -76,10 +76,8 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
             "
             SELECT p.*, $1 AS author_username
             FROM post p
-            WHERE p.author_id = (
-                SELECT id FROM users
-                WHERE username = $1
-            )
+            JOIN users u ON u.id = p.author_id
+            WHERE u.username = $1
             ORDER BY p.created_at DESC
             ",
             author_username,
