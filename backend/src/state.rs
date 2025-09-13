@@ -55,3 +55,23 @@ impl AppState {
         }
     }
 }
+
+#[cfg(test)]
+impl Default for AppState {
+    fn default() -> Self {
+        use crate::{
+            app_services::MockMutateFriendshipByUsername,
+            domain::{post::MockPostSvc, user::MockUserSvc},
+            read_models::{MockPostWithAuthorRead, MockSocialRead},
+        };
+
+        Self {
+            jwt_secret: String::from("top_secret"),
+            user_svc: Arc::new(MockUserSvc::new()),
+            mutate_friendship_by_username: Arc::new(MockMutateFriendshipByUsername::new()),
+            post_svc: Arc::new(MockPostSvc::new()),
+            social_read: Arc::new(MockSocialRead::new()),
+            post_with_author_read: Arc::new(MockPostWithAuthorRead::new()),
+        }
+    }
+}

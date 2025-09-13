@@ -46,7 +46,7 @@ impl IntoResponse for ApiError {
             Self::User(UserError::NotFound)
             | Self::Post(PostError::NotFound)
             | Self::Friendship(FriendshipError::NonexistentUser)
-            | Self::Read(ReadError::NotFound(_)) => (StatusCode::NOT_FOUND, self.to_string()),
+            | Self::Read(ReadError::NotFound) => (StatusCode::NOT_FOUND, self.to_string()),
 
             Self::User(UserError::DuplicateEmail | UserError::DuplicateUsername)
             | Self::Friendship(

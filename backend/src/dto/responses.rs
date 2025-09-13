@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 /// A general-purpose error response struct.
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub error: String,
 }
 
 /// A general-purpose success response struct.
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Serialize, Deserialize)]
 pub struct SuccessResponse {
     pub message: String,

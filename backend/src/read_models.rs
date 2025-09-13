@@ -3,13 +3,14 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ReadError {
-    #[error("{0}")]
-    NotFound(String),
+    #[error("Not found")]
+    NotFound,
 
     #[error(transparent)]
     Technical(#[from] anyhow::Error),
 }
 
+#[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait SocialRead: Send + Sync {
     /// Retrieves the usernames of all confirmed friends of the user with the provided ID in
@@ -25,6 +26,7 @@ pub trait SocialRead: Send + Sync {
     async fn friend_posts(&self, user_id: i32) -> Result<Vec<PostWithAuthor>, ReadError>;
 }
 
+#[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait PostWithAuthorRead: Send + Sync {
     /// Retrieves a post and its author's username by its post ID.
