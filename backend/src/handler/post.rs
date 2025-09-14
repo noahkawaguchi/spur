@@ -18,7 +18,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", post(create_new))
         .route("/{post_id}", get(get_by_id))
-        .route("/children/{post_id}", get(get_by_parent_id))
+        .route("/{post_id}/children", get(child_posts))
         .route("/user/{author_username}", get(specific_user_posts))
         .route("/me", get(own_posts))
 }
@@ -48,7 +48,7 @@ async fn get_by_id(
 }
 
 /// Retrieves the children of the post with the provided ID.
-async fn get_by_parent_id(
+async fn child_posts(
     post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Path(parent_id): Path<i32>,
 ) -> api_result!(Vec<PostResponse>) {
