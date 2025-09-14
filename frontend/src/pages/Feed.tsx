@@ -9,7 +9,7 @@ const FeedPage = () => {
           <hr />
         </>
       }
-      endpoint='posts/friends'
+      endpoint='friends/posts'
       displayUsernames={true}
     />
   );

@@ -17,18 +17,18 @@ pub struct PostWithAuthor {
 }
 
 impl From<PostWithAuthor> for PostResponse {
-    fn from(info: PostWithAuthor) -> Self {
+    fn from(pwa: PostWithAuthor) -> Self {
         Self {
-            id: info.id,
-            author_username: info
+            id: pwa.id,
+            author_username: pwa
                 .author_username
                 .unwrap_or_else(|| String::from("[deleted]")),
-            parent_id: info.parent_id,
-            body: info.body.unwrap_or_else(|| String::from("[deleted]")),
-            created_at_ms: info.created_at.timestamp_millis(),
-            edited_at_ms: info.edited_at.map(|ms| ms.timestamp_millis()),
-            archived_at_ms: info.archived_at.map(|ms| ms.timestamp_millis()),
-            deleted_at_ms: info.deleted_at.map(|ms| ms.timestamp_millis()),
+            parent_id: pwa.parent_id,
+            body: pwa.body.unwrap_or_else(|| String::from("[deleted]")),
+            created_at_ms: pwa.created_at.timestamp_millis(),
+            edited_at_ms: pwa.edited_at.map(|ms| ms.timestamp_millis()),
+            archived_at_ms: pwa.archived_at.map(|ms| ms.timestamp_millis()),
+            deleted_at_ms: pwa.deleted_at.map(|ms| ms.timestamp_millis()),
         }
     }
 }

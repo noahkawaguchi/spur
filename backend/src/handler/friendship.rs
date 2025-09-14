@@ -1,7 +1,11 @@
 use super::{api_result, validated_json::ValidatedJson};
 use crate::{
     app_services::MutateFriendshipByUsername,
-    dto::{requests::AddFriendRequest, responses::SuccessResponse},
+    dto::{
+        requests::AddFriendRequest,
+        responses::{PostResponse, SuccessResponse},
+    },
+    map_into::MapInto,
     read_models::SocialRead,
     state::AppState,
 };
@@ -17,6 +21,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", post(add_friend).get(list_friends))
         .route("/requests", get(list_requests))
+        .route("/posts", get(friend_posts))
 }
 
 /// Creates a new friend request or accepts an existing friend request.
@@ -67,6 +72,17 @@ async fn list_requests(
     ))
 }
 
+/// Retrieves all posts written by the requester's friends.
+async fn friend_posts(
+    social_read: State<Arc<dyn SocialRead>>,
+    Extension(requester_id): Extension<i32>,
+) -> api_result!(Vec<PostResponse>) {
+    Ok((
+        StatusCode::OK,
+        Json(social_read.friend_posts(requester_id).await?.map_into()),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -75,7 +91,10 @@ mod tests {
         domain::friendship::error::FriendshipError,
         dto::responses::ErrorResponse,
         read_models::{MockSocialRead, ReadError},
-        test_utils::json::{deserialize_body, serialize_body},
+        test_utils::{
+            dummy_data::post_with_author,
+            json::{deserialize_body, serialize_body},
+        },
     };
     use anyhow::anyhow;
     use axum::{
@@ -328,7 +347,7 @@ mod tests {
                 .expect_pending_requests()
                 .with(eq(requester_id))
                 .once()
-                .return_once(move |_| Err(ReadError::Technical(anyhow!("something went wrong!"))));
+                .return_once(|_| Err(ReadError::Technical(anyhow!("something went wrong!"))));
 
             let state = AppState { social_read: Arc::new(mock_social_read), ..Default::default() };
             let app = super::routes().with_state(state);
@@ -346,6 +365,71 @@ mod tests {
 
             let resp_body = deserialize_body::<ErrorResponse>(resp).await;
             let expected = ErrorResponse { error: String::from("internal server error") };
+            assert_eq!(expected, resp_body);
+        }
+    }
+
+    mod friend_posts {
+        use super::*;
+
+        #[tokio::test]
+        async fn lists_friend_posts() {
+            let requester_id = 557;
+            let posts = post_with_author::three_dummies();
+            let posts_clone = posts.clone();
+
+            let mut mock_social_read = MockSocialRead::new();
+            mock_social_read
+                .expect_friend_posts()
+                .with(eq(requester_id))
+                .once()
+                .return_once(|_| Ok(Vec::from(posts_clone)));
+
+            let state = AppState { social_read: Arc::new(mock_social_read), ..Default::default() };
+            let app = super::routes().with_state(state);
+
+            let mut req = Request::builder()
+                .method(Method::GET)
+                .uri("/posts")
+                .body(Body::empty())
+                .unwrap();
+
+            req.extensions_mut().insert(requester_id);
+
+            let resp = app.oneshot(req).await.unwrap();
+            assert_eq!(resp.status(), StatusCode::OK);
+
+            let resp_body = deserialize_body::<Vec<PostResponse>>(resp).await;
+            assert_eq!(posts.map_into::<Vec<PostResponse>>(), resp_body);
+        }
+
+        #[tokio::test]
+        async fn translates_errors() {
+            let requester_id = 915;
+
+            let mut mock_social_read = MockSocialRead::new();
+            mock_social_read
+                .expect_friend_posts()
+                .with(eq(requester_id))
+                .once()
+                .return_once(|_| Err(ReadError::NotFound));
+
+            let state = AppState { social_read: Arc::new(mock_social_read), ..Default::default() };
+            let app = super::routes().with_state(state);
+
+            let mut req = Request::builder()
+                .method(Method::GET)
+                .uri("/posts")
+                .body(Body::empty())
+                .unwrap();
+
+            req.extensions_mut().insert(requester_id);
+
+            let resp = app.oneshot(req).await.unwrap();
+            assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+            let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+            let expected = ErrorResponse { error: String::from("Not found") };
             assert_eq!(expected, resp_body);
         }
     }

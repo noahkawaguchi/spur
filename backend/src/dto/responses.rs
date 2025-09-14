@@ -21,6 +21,7 @@ pub struct TokenResponse {
 }
 
 /// A response struct for sending information about a post.
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PostResponse {
