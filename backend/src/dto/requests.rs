@@ -6,6 +6,7 @@ use validator::Validate;
 
 static USERNAME_RE: LazyLock<Regex> = LazyLock::new(|| lazy_regex!("^[A-Za-z0-9_-]+$").clone());
 
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Serialize, Deserialize, Validate)]
 pub struct SignupRequest {
     #[validate(length(min = 1, message = "name cannot be empty"))]
