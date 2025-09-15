@@ -45,7 +45,7 @@ mod tests {
         dto::{requests::SignupRequest, responses::ErrorResponse},
         test_utils::json::{deserialize_body, serialize_body},
     };
-    use axum::http::{Method, Request};
+    use axum::http::{Method, Request, header::CONTENT_TYPE};
 
     #[tokio::test]
     async fn allows_valid_json_values() {
@@ -59,7 +59,7 @@ mod tests {
         let req = Request::builder()
             .uri("/anything")
             .method(Method::POST)
-            .header("Content-Type", "application/json")
+            .header(CONTENT_TYPE, "application/json")
             .body(serialize_body(&payload))
             .unwrap();
 
@@ -79,7 +79,7 @@ mod tests {
         let req = Request::builder()
             .uri("/anything")
             .method(Method::POST)
-            .header("Content-Type", "application/json")
+            .header(CONTENT_TYPE, "application/json")
             .body(serialize_body(&payload))
             .unwrap();
 

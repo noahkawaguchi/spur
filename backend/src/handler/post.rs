@@ -104,7 +104,7 @@ mod tests {
     use anyhow::anyhow;
     use axum::{
         body::Body,
-        http::{Method, Request},
+        http::{Method, Request, header::CONTENT_TYPE},
     };
     use mockall::predicate::eq;
     use tower::ServiceExt;
@@ -137,7 +137,7 @@ mod tests {
             let mut req = Request::builder()
                 .method(Method::POST)
                 .uri("/")
-                .header("Content-Type", "application/json")
+                .header(CONTENT_TYPE, "application/json")
                 .body(serialize_body(&payload))
                 .unwrap();
 
@@ -170,7 +170,7 @@ mod tests {
             let mut req = Request::builder()
                 .method(Method::POST)
                 .uri("/")
-                .header("Content-Type", "application/json")
+                .header(CONTENT_TYPE, "application/json")
                 .body(serialize_body(&payload))
                 .unwrap();
 
