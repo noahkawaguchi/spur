@@ -25,12 +25,9 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
             ",
             id
         )
-        .fetch_optional(&self.pool)
+        .fetch_one(&self.pool)
         .await
         .map_err(Into::into)
-        .and_then(|maybe_post| {
-            maybe_post.ok_or_else(|| ReadError::NotFound(String::from("post not found")))
-        })
     }
 
     async fn by_parent(&self, parent_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
@@ -123,10 +120,7 @@ mod tests {
             let read = PgPostWithAuthorRead::new(pool);
             repo.insert_new(2, 1, "This post exists!").await.unwrap();
             let actual = read.by_post_id(3).await; // Only posts 1 and 2 exist
-            assert!(matches!(
-                actual,
-                Err(ReadError::NotFound(s)) if s == "post not found"
-            ));
+            assert!(matches!(actual, Err(ReadError::NotFound)));
         })
         .await;
     }

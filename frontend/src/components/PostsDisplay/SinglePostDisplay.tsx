@@ -49,7 +49,7 @@ const SinglePostDisplay = ({ readingPost, backFn }: { readingPost: Post; backFn:
           <hr />
         </>
       }
-      endpoint={`posts/children/${readingPost.id.toString()}`}
+      endpoint={`posts/${readingPost.id.toString()}/children`}
       displayUsernames={true}
     />
   ) : (

@@ -3,6 +3,7 @@ use crate::domain::friendship::error::FriendshipError;
 pub mod mutate_friendship_by_username_svc;
 pub mod uow;
 
+#[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]
 pub trait MutateFriendshipByUsername: Send + Sync {
     /// Attempts to add a friendship between the two users, returning whether or not they are now

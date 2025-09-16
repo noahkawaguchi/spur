@@ -5,6 +5,7 @@ use crate::{
 use anyhow::Context;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 
+/// Converts a plaintext password into a hashed version.
 pub fn hash_pw(password: &str) -> Result<String, AuthError> {
     bcrypt::hash(password, bcrypt::DEFAULT_COST)
         .context("failed to hash password")
@@ -24,13 +25,7 @@ pub fn create_jwt_if_valid_pw(
         .then_some(())
         .ok_or(AuthError::InvalidPassword)?;
 
-    jsonwebtoken::encode(
-        &Header::default(),
-        &Claims::new(user.id)?,
-        &EncodingKey::from_secret(secret.as_ref()),
-    )
-    .context("failed to encode JWT")
-    .map_err(Into::into)
+    sign_jwt(user.id, secret)
 }
 
 /// Validates the JSON Web Token, returning the contained user ID if valid.
@@ -45,6 +40,23 @@ pub fn validate_jwt(token: &str, secret: &str) -> Result<i32, AuthError> {
     } else {
         Err(AuthError::JwtValidation)
     }
+}
+
+/// (Strictly internal) Creates a new JSON Web Token.
+fn sign_jwt(user_id: i32, secret: &str) -> Result<String, AuthError> {
+    jsonwebtoken::encode(
+        &Header::default(),
+        &Claims::new(user_id)?,
+        &EncodingKey::from_secret(secret.as_ref()),
+    )
+    .context("failed to encode JWT")
+    .map_err(Into::into)
+}
+
+/// Conveniently create a new JWT, panicking on error. Only usable in testing.
+#[cfg(test)]
+pub fn create_test_jwt(payload: i32, secret: &str) -> String {
+    sign_jwt(payload, secret).expect("failed to create test JWT")
 }
 
 #[cfg(test)]
@@ -66,7 +78,8 @@ mod tests {
         }
     }
 
-    // Determined that testing hash_pw would be trivial
+    // Determined that testing `hash_pw` would be trivial and that `sign_jwt` is sufficiently
+    // tested in `create_jwt_if_valid_password`.
 
     #[test]
     fn encodes_and_decodes_id_for_valid_pw() {

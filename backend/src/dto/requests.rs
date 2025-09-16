@@ -1,28 +1,5 @@
-use crate::dto::password_validator::validate_struct_pw;
-use lazy_regex::{Regex, lazy_regex};
 use serde::{Deserialize, Serialize};
-use std::sync::LazyLock;
 use validator::Validate;
-
-static USERNAME_RE: LazyLock<Regex> = LazyLock::new(|| lazy_regex!("^[A-Za-z0-9_-]+$").clone());
-
-#[derive(Serialize, Deserialize, Validate)]
-pub struct SignupRequest {
-    #[validate(length(min = 1, message = "name cannot be empty"))]
-    pub name: String,
-
-    #[validate(email(message = "not a valid email address"))]
-    pub email: String,
-
-    #[validate(regex(
-        path = *USERNAME_RE,
-        message = "username may only contain ASCII letters, numbers, underscores, and hyphens",
-    ))]
-    pub username: String,
-
-    #[validate(custom(function = validate_struct_pw))]
-    pub password: String,
-}
 
 #[derive(Serialize, Deserialize, Validate)]
 pub struct LoginRequest {

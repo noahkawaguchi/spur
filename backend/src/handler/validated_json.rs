@@ -8,7 +8,8 @@ use serde::de::DeserializeOwned;
 use std::ops::Deref;
 use validator::Validate;
 
-/// Custom extractor that validates the request fields using `.validate()`.
+/// Custom extractor that validates the request fields using `validator::Validate`.
+#[cfg_attr(test, derive(Debug))]
 pub struct ValidatedJson<T>(pub T);
 
 impl<T> Deref for ValidatedJson<T> {
@@ -34,5 +35,65 @@ where
             .map_err(|e| ApiError::from(e).into_response())?;
 
         Ok(Self(body))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        dto::{responses::ErrorResponse, signup_request::SignupRequest},
+        test_utils::http_bodies::{deserialize_body, serialize_body},
+    };
+    use axum::http::{Method, Request, header::CONTENT_TYPE};
+
+    #[tokio::test]
+    async fn allows_valid_json_values() {
+        let payload = SignupRequest {
+            name: String::from("Sam Snead"),
+            email: String::from("sam@snead.nz"),
+            username: String::from("Slam-Sam_54M"),
+            password: String::from("#5tr0ngP455W0RD!"),
+        };
+
+        let req = Request::builder()
+            .uri("/anything")
+            .method(Method::POST)
+            .header(CONTENT_TYPE, "application/json")
+            .body(serialize_body(&payload))
+            .unwrap();
+
+        let result = ValidatedJson::<SignupRequest>::from_request(req, &()).await;
+        assert!(matches!(result, Ok(ValidatedJson(validated)) if validated == payload));
+    }
+
+    #[tokio::test]
+    async fn disallows_invalid_json_values() {
+        let payload = SignupRequest {
+            name: String::from("Sam Snead"),
+            email: String::from("sam@snead.nz"),
+            username: String::from("ユーザーネーム"), // Not allowed!
+            password: String::from("#5tr0ngP455W0RD!"),
+        };
+
+        let req = Request::builder()
+            .uri("/anything")
+            .method(Method::POST)
+            .header(CONTENT_TYPE, "application/json")
+            .body(serialize_body(&payload))
+            .unwrap();
+
+        let resp = ValidatedJson::<SignupRequest>::from_request(req, &())
+            .await
+            .unwrap_err();
+        let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+        let expected = ErrorResponse {
+            error: String::from(
+                "username: username may only contain English letters, \
+                digits, underscores, and hyphens",
+            ),
+        };
+
+        assert_eq!(expected, resp_body);
     }
 }

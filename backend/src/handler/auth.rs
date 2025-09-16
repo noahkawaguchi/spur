@@ -1,10 +1,7 @@
 use super::{api_result, validated_json::ValidatedJson};
 use crate::{
     domain::{auth, user::UserSvc},
-    dto::{
-        requests::{LoginRequest, SignupRequest},
-        responses::TokenResponse,
-    },
+    dto::{requests::LoginRequest, responses::TokenResponse, signup_request::SignupRequest},
     models::user::NewUser,
     state::AppState,
 };

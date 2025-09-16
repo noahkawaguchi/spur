@@ -7,7 +7,12 @@ pub mod social_read;
 pub mod user_repo;
 
 impl From<sqlx::Error> for ReadError {
-    fn from(e: sqlx::Error) -> Self { anyhow::Error::from(e).into() }
+    fn from(e: sqlx::Error) -> Self {
+        match e {
+            sqlx::Error::RowNotFound => Self::NotFound,
+            _ => anyhow::Error::from(e).into(),
+        }
+    }
 }
 
 impl From<sqlx::Error> for RepoError {
