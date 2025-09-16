@@ -43,7 +43,7 @@ mod tests {
     use super::*;
     use crate::{
         dto::{requests::SignupRequest, responses::ErrorResponse},
-        test_utils::json::{deserialize_body, serialize_body},
+        test_utils::http_bodies::{deserialize_body, serialize_body},
     };
     use axum::http::{Method, Request, header::CONTENT_TYPE};
 

@@ -93,7 +93,7 @@ mod tests {
         read_models::{MockSocialRead, ReadError},
         test_utils::{
             dummy_data::post_with_author,
-            json::{deserialize_body, serialize_body},
+            http_bodies::{deserialize_body, serialize_body},
         },
     };
     use anyhow::anyhow;
