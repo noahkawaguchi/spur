@@ -42,7 +42,7 @@ where
 mod tests {
     use super::*;
     use crate::{
-        dto::{requests::SignupRequest, responses::ErrorResponse},
+        dto::{responses::ErrorResponse, signup_request::SignupRequest},
         test_utils::http_bodies::{deserialize_body, serialize_body},
     };
     use axum::http::{Method, Request, header::CONTENT_TYPE};
@@ -89,8 +89,8 @@ mod tests {
         let resp_body = deserialize_body::<ErrorResponse>(resp).await;
         let expected = ErrorResponse {
             error: String::from(
-                "username: username may only contain ASCII letters, \
-                numbers, underscores, and hyphens",
+                "username: username may only contain English letters, \
+                digits, underscores, and hyphens",
             ),
         };
 
