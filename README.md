@@ -1,7 +1,5 @@
 # Spur
 
-*Note: The previous version of this project that used a CLI client is archived on the* [`cli-version`](https://github.com/noahkawaguchi/spur/tree/cli-version) *branch.*
-
 ## Concept
 
 Spur is a full stack reply-based social platform. With no original posts, every post must instead be in reply to another post, creating a tree/DAG structure starting from the initial root post.
