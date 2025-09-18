@@ -69,70 +69,63 @@ mod tests {
     use crate::test_utils::time::within_one_second;
     use chrono::{DateTime, Days, Utc};
 
-    // fn make_bob(password: &str) -> User {
-    //     User {
-    //         id: 55,
-    //         name: String::from("Bobby Robertson"),
-    //         email: String::from("rob@bob.net"),
-    //         username: String::from("amazing_robby_7"),
-    //         password_hash: bcrypt::hash(password, bcrypt::DEFAULT_COST)
-    //             .expect("failed to hash password"),
-    //         created_at: Utc::now()
-    //             .checked_sub_days(Days::new(1))
-    //             .expect("failed to subtract a day from now"),
-    //     }
-    // }
-    //
-    // mod provider {
-    //     use super::*;
-    //
-    //     #[test]
-    //     fn encodes_and_decodes_id_for_valid_pw() {
-    //         let correct_pw = "Bob's password";
-    //         let secret = "shh_hhh_hhh";
-    //
-    //         let bob = make_bob(correct_pw);
-    //         let token = create_jwt_if_valid_pw(&bob, correct_pw, secret)
-    //             .expect("failed to create JWT for valid password");
-    //
-    //         let id = validate_jwt(&token, secret).expect("failed to validate token");
-    //         assert_eq!(id, bob.id);
-    //     }
-    //
-    //     #[test]
-    //     fn token_creation_errors_for_invalid_pw() {
-    //         let bob = make_bob("correct password");
-    //         let result = create_jwt_if_valid_pw(&bob, "incorrect password", "top secret");
-    //         assert!(matches!(result, Err(AuthError::InvalidPassword)));
-    //     }
-    //
-    //     #[test]
-    //     fn validation_errors_for_invalid_token() {
-    //         let password = "53cur1ty";
-    //         let bob = make_bob(password);
-    //         let secret = "no one's gonna know";
-    //
-    //         let _ = create_jwt_if_valid_pw(&bob, password, secret).expect("failed to create
-    // token");         assert!(matches!(
-    //             validate_jwt("fake token", secret),
-    //             Err(AuthError::TokenValidation),
-    //         ));
-    //     }
-    //
-    //     #[test]
-    //     fn validation_errors_for_invalid_secret() {
-    //         let password = "pa$$ed654wood&24b1";
-    //         let bob = make_bob(password);
-    //         let secret = "shh";
-    //
-    //         let token =
-    //             create_jwt_if_valid_pw(&bob, password, secret).expect("failed to create token");
-    //         assert!(matches!(
-    //             validate_jwt(&token, "boo!"),
-    //             Err(AuthError::TokenValidation)
-    //         ));
-    //     }
-    // }
+    const TEST_JWT_SECRET: &str = "super_secret_testing_only";
+
+    mod password_hashing {
+        use super::*;
+
+        #[test]
+        fn hashes_and_validates_valid_password() {
+            let password = "password123";
+            let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
+            let hash = auth.hash_pw(password).unwrap();
+            assert!(auth.is_valid_pw(password, &hash).unwrap());
+        }
+
+        #[test]
+        fn identifies_invalid_password() {
+            let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
+            let hash = auth.hash_pw("correct password").unwrap();
+            assert!(!auth.is_valid_pw("incorrect!", &hash).unwrap());
+        }
+
+        #[test]
+        fn identifies_invalid_hash() {
+            let password = "this password is correct";
+            let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
+            let _correct_hash = auth.hash_pw(password).unwrap();
+            let incorrect_hash = auth.hash_pw("some other password").unwrap();
+            assert!(!auth.is_valid_pw(password, &incorrect_hash).unwrap());
+        }
+    }
+
+    mod token_validation {
+        use super::*;
+
+        #[test]
+        fn creates_and_validates_valid_token() {
+            let user_id = 25_925;
+            let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
+            let token = auth.create_token(user_id).unwrap();
+            assert_eq!(user_id, auth.validate_token(&token).unwrap());
+        }
+
+        #[test]
+        fn identifies_invalid_token() {
+            let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
+            let _correct_token = auth.create_token(5432).unwrap();
+            assert!(auth.validate_token("not correct").is_err());
+        }
+
+        #[test]
+        fn creates_different_tokens_for_different_ids() {
+            let (user_id_1, user_id_2) = (42, 43);
+            let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
+            let _token_1 = auth.create_token(user_id_1).unwrap();
+            let token_2 = auth.create_token(user_id_2).unwrap();
+            assert_ne!(user_id_1, auth.validate_token(&token_2).unwrap());
+        }
+    }
 
     mod claims {
         use super::*;
