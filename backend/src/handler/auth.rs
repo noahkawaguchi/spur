@@ -1,8 +1,7 @@
 use super::{api_result, validated_json::ValidatedJson};
 use crate::{
-    domain::{auth, user::UserSvc},
+    app_services::Authenticator,
     dto::{requests::LoginRequest, responses::TokenResponse, signup_request::SignupRequest},
-    models::user::NewUser,
     state::AppState,
 };
 use anyhow::Result;
@@ -16,36 +15,21 @@ pub fn routes() -> Router<AppState> {
 }
 
 async fn signup(
-    jwt_secret: State<String>,
-    user_svc: State<Arc<dyn UserSvc>>,
+    auth: State<Arc<dyn Authenticator>>,
     ValidatedJson(payload): ValidatedJson<SignupRequest>,
 ) -> api_result!(TokenResponse) {
-    let password_hash = auth::service::hash_pw(&payload.password)?;
-
-    let new_user = NewUser {
-        name: payload.name,
-        email: payload.email,
-        username: payload.username,
-        password_hash,
-    };
-
-    let registered_user = user_svc.insert_new(&new_user).await?;
-
-    let token =
-        auth::service::create_jwt_if_valid_pw(&registered_user, &payload.password, &jwt_secret)?;
-
-    Ok((StatusCode::CREATED, Json(TokenResponse { token })))
+    Ok((
+        StatusCode::CREATED,
+        Json(TokenResponse { token: auth.signup(payload.into()).await? }),
+    ))
 }
 
 async fn login(
-    jwt_secret: State<String>,
-    user_svc: State<Arc<dyn UserSvc>>,
+    auth: State<Arc<dyn Authenticator>>,
     payload: ValidatedJson<LoginRequest>,
 ) -> api_result!(TokenResponse) {
-    let existing_user = user_svc.get_by_email(&payload.email).await?;
-
-    let token =
-        auth::service::create_jwt_if_valid_pw(&existing_user, &payload.password, &jwt_secret)?;
-
-    Ok((StatusCode::OK, Json(TokenResponse { token })))
+    Ok((
+        StatusCode::OK,
+        Json(TokenResponse { token: auth.login(&payload.email, &payload.password).await? }),
+    ))
 }

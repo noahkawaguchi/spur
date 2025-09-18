@@ -25,7 +25,8 @@ fn protected_routes(state: AppState) -> Router {
 mod tests {
     use super::*;
     use crate::{
-        domain::auth,
+        app_services::MockAuthenticator,
+        domain::auth::AuthError,
         dto::responses::ErrorResponse,
         test_utils::http_bodies::{deserialize_body, resp_into_body_text},
     };
@@ -33,16 +34,11 @@ mod tests {
         body::Body,
         http::{Method, Request, StatusCode, header::AUTHORIZATION},
     };
+    use mockall::predicate::eq;
+    use std::sync::Arc;
     use tower::ServiceExt;
 
-    const JWT_SECRET: &str = "top-secret-info";
-
-    fn make_app() -> Router {
-        let state = AppState { jwt_secret: JWT_SECRET.to_string(), ..Default::default() };
-        super::create(state)
-    }
-
-    fn make_req(uri: &str, token: Option<&str>) -> Request<Body> {
+    fn create_req(uri: &str, token: Option<&str>) -> Request<Body> {
         let mut req = Request::builder().uri(uri).method(Method::GET);
         if let Some(tok) = token {
             req = req.header(AUTHORIZATION, format!("Bearer {tok}"));
@@ -52,7 +48,11 @@ mod tests {
 
     #[tokio::test]
     async fn does_not_require_auth_for_public_routes() {
-        let resp = make_app().oneshot(make_req("/ping", None)).await.unwrap();
+        // Auth should not be accessed
+        let resp = super::create(AppState::default())
+            .oneshot(create_req("/ping", None))
+            .await
+            .unwrap();
 
         assert_eq!(StatusCode::OK, resp.status());
         let resp_body = resp_into_body_text(resp).await;
@@ -61,10 +61,19 @@ mod tests {
 
     #[tokio::test]
     async fn allows_access_to_protected_routes_if_authenticated() {
-        let token = auth::service::create_test_jwt(7425, JWT_SECRET);
-        let req = make_req("/auth/check", Some(&token));
+        let token = "bear the bearer";
 
-        let resp = make_app().oneshot(req).await.unwrap();
+        let mut mock_auth = MockAuthenticator::new();
+        mock_auth
+            .expect_verify_token()
+            .with(eq(token))
+            .once()
+            .return_once(|_| Ok(45));
+
+        let state = AppState { auth: Arc::new(mock_auth), ..Default::default() };
+        let req = create_req("/auth/check", Some(token));
+
+        let resp = super::create(state).oneshot(req).await.unwrap();
         assert_eq!(StatusCode::OK, resp.status());
 
         let resp_body = resp_into_body_text(resp).await;
@@ -73,9 +82,19 @@ mod tests {
 
     #[tokio::test]
     async fn disallows_access_to_protected_routes_if_unauthenticated() {
-        let req = make_req("/auth/check", Some("invalid"));
+        let token = "bad_token";
 
-        let resp = make_app().oneshot(req).await.unwrap();
+        let mut mock_auth = MockAuthenticator::new();
+        mock_auth
+            .expect_verify_token()
+            .with(eq(token))
+            .once()
+            .return_once(|_| Err(AuthError::TokenValidation));
+
+        let state = AppState { auth: Arc::new(mock_auth), ..Default::default() };
+        let req = create_req("/auth/check", Some(token));
+
+        let resp = super::create(state).oneshot(req).await.unwrap();
         assert_eq!(StatusCode::UNAUTHORIZED, resp.status());
 
         let resp_body = deserialize_body::<ErrorResponse>(resp).await;

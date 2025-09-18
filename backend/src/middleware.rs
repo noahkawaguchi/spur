@@ -1,4 +1,4 @@
-use crate::{domain::auth, handler::api_error::ApiError};
+use crate::{app_services::Authenticator, handler::api_error::ApiError};
 use axum::{
     extract::{Request, State},
     middleware,
@@ -8,17 +8,20 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
+use std::sync::Arc;
 
 /// Middleware that confirms JWT validity and passes the requester's user ID to the handler via a
 /// request extension.
 pub async fn validate_jwt(
-    jwt_secret: State<String>,
+    auth: State<Arc<dyn Authenticator>>,
     bearer: TypedHeader<Authorization<Bearer>>,
     mut request: Request,
     next: middleware::Next,
 ) -> Result<Response, ApiError> {
-    let requester_id = auth::service::validate_jwt(bearer.token(), &jwt_secret)?;
-    request.extensions_mut().insert(requester_id);
+    request
+        .extensions_mut()
+        .insert(auth.verify_token(bearer.token())?);
+
     Ok(next.run(request).await)
 }
 
@@ -26,7 +29,10 @@ pub async fn validate_jwt(
 mod tests {
     use super::*;
     use crate::{
+        app_services::MockAuthenticator,
+        domain::auth::AuthError,
         dto::responses::ErrorResponse,
+        state::AppState,
         test_utils::http_bodies::{deserialize_body, resp_into_body_text},
     };
     use axum::{
@@ -36,10 +42,10 @@ mod tests {
         middleware,
         routing::get,
     };
+    use mockall::predicate::eq;
     use serde::{Deserialize, Serialize};
     use tower::ServiceExt;
 
-    const JWT_SECRET: &str = "super secret shh";
     const ID_ROUTE: &str = "/my-id";
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -53,19 +59,22 @@ mod tests {
     }
 
     /// Makes a GET request to the simple ID reporting endpoint using a router with the JWT
-    /// validation middleware applied. If `token` is `Some`, sends the standard `"Authorization":
-    /// "Bearer <token>"` header with `token` as the token part, otherwise omits the header.
-    async fn make_req(token: Option<&str>) -> Response {
+    /// validation middleware applied. If `header_val` is `Some`, sends an "Authorization" header
+    /// with `header_val` as the value, otherwise omits the header.
+    async fn send_req(
+        header_val: Option<&str>,
+        mock_auth: impl Authenticator + 'static,
+    ) -> Response {
         let mut req = Request::builder().method(Method::GET).uri(ID_ROUTE);
-        if let Some(tok) = token {
-            req = req.header(AUTHORIZATION, format!("Bearer {tok}"));
+        if let Some(bearer_tok) = header_val {
+            req = req.header(AUTHORIZATION, bearer_tok);
         }
         let req_body = req.body(Body::empty()).unwrap();
 
         Router::new()
             .route(ID_ROUTE, get(what_is_my_id))
             .layer(middleware::from_fn_with_state(
-                JWT_SECRET.to_string(),
+                AppState { auth: Arc::new(mock_auth), ..Default::default() },
                 validate_jwt,
             ))
             .oneshot(req_body)
@@ -73,23 +82,19 @@ mod tests {
             .unwrap()
     }
 
-    /// Asserts that the response's status is 401 Unauthorized and the body is the expected error
-    /// message for an invalid token.
-    async fn assert_unauthorized_token(resp: Response) {
-        assert_eq!(StatusCode::UNAUTHORIZED, resp.status());
-        let resp_body = deserialize_body::<ErrorResponse>(resp).await;
-        let expected = ErrorResponse {
-            error: String::from("Expired or invalid token. Try logging in again."),
-        };
-        assert_eq!(expected, resp_body);
-    }
-
     #[tokio::test]
     async fn passes_requester_id_for_valid_token() {
         let requester_id = 654;
-        let token = auth::service::create_test_jwt(requester_id, JWT_SECRET);
+        let token = "This token is valid!!1!";
 
-        let resp = make_req(Some(&token)).await;
+        let mut mock_auth = MockAuthenticator::new();
+        mock_auth
+            .expect_verify_token()
+            .with(eq(token))
+            .once()
+            .return_once(move |_| Ok(requester_id));
+
+        let resp = send_req(Some(&format!("Bearer {token}")), mock_auth).await;
         assert_eq!(StatusCode::OK, resp.status());
 
         let resp_body = deserialize_body::<RequesterId>(resp).await;
@@ -98,7 +103,7 @@ mod tests {
 
     #[tokio::test]
     async fn disallows_missing_auth_header() {
-        let resp = make_req(None).await;
+        let resp = send_req(None, MockAuthenticator::new()).await;
         assert_eq!(StatusCode::BAD_REQUEST, resp.status());
         let body = resp_into_body_text(resp).await;
         assert_eq!("Header of type `authorization` was missing", body);
@@ -106,16 +111,38 @@ mod tests {
 
     #[tokio::test]
     async fn disallows_empty_auth_header() {
-        assert_unauthorized_token(make_req(Some("")).await).await;
+        let resp = send_req(Some(""), MockAuthenticator::new()).await;
+        assert_eq!(StatusCode::BAD_REQUEST, resp.status());
+        let body = resp_into_body_text(resp).await;
+        assert_eq!("invalid HTTP header (authorization)", body);
     }
 
     #[tokio::test]
     async fn disallows_bearer_with_no_token() {
-        assert_unauthorized_token(make_req(Some("Bearer")).await).await;
+        let resp = send_req(Some("Bearer"), MockAuthenticator::new()).await;
+        assert_eq!(StatusCode::BAD_REQUEST, resp.status());
+        let body = resp_into_body_text(resp).await;
+        assert_eq!("invalid HTTP header (authorization)", body);
     }
 
     #[tokio::test]
     async fn disallows_invalid_token() {
-        assert_unauthorized_token(make_req(Some("Bearer nonsense")).await).await;
+        let token = "nonsense";
+
+        let mut mock_auth = MockAuthenticator::new();
+        mock_auth
+            .expect_verify_token()
+            .with(eq(token))
+            .once()
+            .return_once(|_| Err(AuthError::TokenValidation));
+
+        let resp = send_req(Some(&format!("Bearer {token}")), mock_auth).await;
+        assert_eq!(StatusCode::UNAUTHORIZED, resp.status());
+
+        let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+        let expected = ErrorResponse {
+            error: String::from("Expired or invalid token. Try logging in again."),
+        };
+        assert_eq!(expected, resp_body);
     }
 }

@@ -1,5 +1,6 @@
 use crate::{domain::RepoError, read_models::ReadError};
 
+pub mod auth_provider;
 pub mod friendship_repo;
 pub mod post_repo;
 pub mod post_with_author_read;

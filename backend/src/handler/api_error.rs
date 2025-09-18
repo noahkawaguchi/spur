@@ -1,8 +1,5 @@
 use crate::{
-    domain::{
-        auth::AuthError, friendship::error::FriendshipError, post::error::PostError,
-        user::error::UserError,
-    },
+    domain::{auth::AuthError, friendship::error::FriendshipError, post::error::PostError},
     dto::responses::ErrorResponse,
     read_models::ReadError,
 };
@@ -18,14 +15,16 @@ use thiserror::Error;
 pub enum ApiError {
     #[error(transparent)]
     Request(#[from] validator::ValidationErrors),
+
     #[error(transparent)]
     Auth(#[from] AuthError),
-    #[error(transparent)]
-    User(#[from] UserError),
+
     #[error(transparent)]
     Friendship(#[from] FriendshipError),
+
     #[error(transparent)]
     Post(#[from] PostError),
+
     #[error(transparent)]
     Read(#[from] ReadError),
 }
@@ -39,16 +38,16 @@ impl IntoResponse for ApiError {
                 (StatusCode::UNPROCESSABLE_ENTITY, self.to_string())
             }
 
-            Self::Auth(AuthError::JwtValidation | AuthError::InvalidPassword) => {
+            Self::Auth(AuthError::TokenValidation | AuthError::InvalidPassword) => {
                 (StatusCode::UNAUTHORIZED, self.to_string())
             }
 
-            Self::User(UserError::NotFound)
+            Self::Auth(AuthError::NotFound)
             | Self::Post(PostError::NotFound)
             | Self::Friendship(FriendshipError::NonexistentUser)
             | Self::Read(ReadError::NotFound) => (StatusCode::NOT_FOUND, self.to_string()),
 
-            Self::User(UserError::DuplicateEmail | UserError::DuplicateUsername)
+            Self::Auth(AuthError::DuplicateEmail | AuthError::DuplicateUsername)
             | Self::Friendship(
                 FriendshipError::AlreadyFriends | FriendshipError::AlreadyRequested,
             )
@@ -57,7 +56,6 @@ impl IntoResponse for ApiError {
             Self::Post(PostError::DeletedParent) => (StatusCode::GONE, self.to_string()),
 
             Self::Auth(AuthError::Internal(_))
-            | Self::User(UserError::Internal(_))
             | Self::Friendship(FriendshipError::Internal(_))
             | Self::Post(PostError::Internal(_))
             | Self::Read(ReadError::Technical(_)) => (StatusCode::INTERNAL_SERVER_ERROR, {
