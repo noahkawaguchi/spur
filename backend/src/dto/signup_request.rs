@@ -7,7 +7,7 @@ static USERNAME_RE: LazyLock<Regex> = LazyLock::new(|| lazy_regex!("^[A-Za-z0-9_
 const LENGTH_CODE: &str = "length";
 const CHARS_CODE: &str = "character_classes";
 
-#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq, Clone))]
 #[derive(Serialize, Deserialize, Validate)]
 pub struct SignupRequest {
     #[validate(length(min = 1, message = "name cannot be empty"))]

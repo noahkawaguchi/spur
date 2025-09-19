@@ -2,7 +2,7 @@ use crate::dto::signup_request::SignupRequest;
 use chrono::{DateTime, Utc};
 
 /// User with plaintext password and without DB-generated fields. Same fields as `SignupRequest`.
-#[cfg_attr(test, derive(Debug, Clone))]
+#[cfg_attr(test, derive(Debug, Clone, PartialEq, Eq))]
 pub struct UserRegistration {
     pub name: String,
     pub email: String,
