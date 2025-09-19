@@ -40,9 +40,12 @@ mod tests {
     use crate::{
         app_services::MockAuthenticator,
         domain::auth::AuthError,
-        dto::{responses::ErrorResponse, signup_request::SignupRequest},
+        dto::responses::ErrorResponse,
         models::user::UserRegistration,
-        test_utils::http_bodies::{deserialize_body, serialize_body},
+        test_utils::{
+            dummy_data,
+            http_bodies::{deserialize_body, serialize_body},
+        },
     };
     use axum::{
         body::Body,
@@ -71,18 +74,9 @@ mod tests {
     mod signup {
         use super::*;
 
-        fn create_signup_payload() -> SignupRequest {
-            SignupRequest {
-                name: String::from("Christina Ani-Tsi RHC"),
-                email: String::from("name@backwards.moc"),
-                username: String::from("chris_and_tina"),
-                password: String::from("2shh!5hh#H"),
-            }
-        }
-
         #[tokio::test]
         async fn returns_token_for_successful_signup() {
-            let payload = create_signup_payload();
+            let payload = dummy_data::requests::signup();
             let token = "t-0-k-3-n";
 
             let mut mock_auth = MockAuthenticator::new();
@@ -102,7 +96,7 @@ mod tests {
 
         #[tokio::test]
         async fn translates_errors() {
-            let payload = create_signup_payload();
+            let payload = dummy_data::requests::signup();
 
             let mut mock_auth = MockAuthenticator::new();
             mock_auth
@@ -123,16 +117,9 @@ mod tests {
     mod login {
         use super::*;
 
-        fn create_login_payload() -> LoginRequest {
-            LoginRequest {
-                email: String::from("name@backwards.moc"),
-                password: String::from("2shh!5hh#H"),
-            }
-        }
-
         #[tokio::test]
         async fn returns_token_for_successful_login() {
-            let payload = create_login_payload();
+            let payload = dummy_data::requests::login();
             let token = "t-0-k-3-n";
 
             let mut mock_auth = MockAuthenticator::new();
@@ -152,7 +139,7 @@ mod tests {
 
         #[tokio::test]
         async fn translates_errors() {
-            let payload = create_login_payload();
+            let payload = dummy_data::requests::login();
 
             let mut mock_auth = MockAuthenticator::new();
             mock_auth
