@@ -14,7 +14,8 @@ pub struct SuccessResponse {
     pub message: String,
 }
 
-/// A response struct for sending a JWT.
+/// A response struct for sending an auth token.
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Serialize, Deserialize)]
 pub struct TokenResponse {
     pub token: String,

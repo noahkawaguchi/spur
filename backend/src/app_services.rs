@@ -1,5 +1,9 @@
-use crate::domain::friendship::error::FriendshipError;
+use crate::{
+    domain::{auth::AuthError, friendship::error::FriendshipError},
+    models::user::UserRegistration,
+};
 
+pub mod authenticator_svc;
 pub mod mutate_friendship_by_username_svc;
 pub mod uow;
 
@@ -24,4 +28,12 @@ pub trait MutateFriendshipByUsername: Send + Sync {
         sender_id: i32,
         recipient_username: &str,
     ) -> Result<bool, FriendshipError>;
+}
+
+#[cfg_attr(test, mockall::automock)]
+#[async_trait::async_trait]
+pub trait Authenticator: Send + Sync {
+    async fn signup(&self, reg: UserRegistration) -> Result<String, AuthError>;
+    async fn login(&self, email: &str, pw: &str) -> Result<String, AuthError>;
+    fn validate_token(&self, token: &str) -> Result<i32, AuthError>;
 }
