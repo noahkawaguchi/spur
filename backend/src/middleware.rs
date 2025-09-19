@@ -20,7 +20,7 @@ pub async fn validate_jwt(
 ) -> Result<Response, ApiError> {
     request
         .extensions_mut()
-        .insert(auth.verify_token(bearer.token())?);
+        .insert(auth.validate_token(bearer.token())?);
 
     Ok(next.run(request).await)
 }
@@ -89,7 +89,7 @@ mod tests {
 
         let mut mock_auth = MockAuthenticator::new();
         mock_auth
-            .expect_verify_token()
+            .expect_validate_token()
             .with(eq(token))
             .once()
             .return_once(move |_| Ok(requester_id));
@@ -131,7 +131,7 @@ mod tests {
 
         let mut mock_auth = MockAuthenticator::new();
         mock_auth
-            .expect_verify_token()
+            .expect_validate_token()
             .with(eq(token))
             .once()
             .return_once(|_| Err(AuthError::TokenValidation));

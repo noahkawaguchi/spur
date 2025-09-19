@@ -65,7 +65,7 @@ mod tests {
 
         let mut mock_auth = MockAuthenticator::new();
         mock_auth
-            .expect_verify_token()
+            .expect_validate_token()
             .with(eq(token))
             .once()
             .return_once(|_| Ok(45));
@@ -86,7 +86,7 @@ mod tests {
 
         let mut mock_auth = MockAuthenticator::new();
         mock_auth
-            .expect_verify_token()
+            .expect_validate_token()
             .with(eq(token))
             .once()
             .return_once(|_| Err(AuthError::TokenValidation));

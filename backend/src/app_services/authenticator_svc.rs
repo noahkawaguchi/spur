@@ -51,7 +51,7 @@ where
             .map_err(Into::into)
     }
 
-    fn verify_token(&self, token: &str) -> Result<i32, AuthError> {
+    fn validate_token(&self, token: &str) -> Result<i32, AuthError> {
         self.provider
             .validate_token(token)
             .map_err(|_| AuthError::TokenValidation)
@@ -201,4 +201,91 @@ mod tests {
             assert!(matches!(result, Ok(t) if t == token));
         }
     }
+
+    mod login {
+        use super::*;
+
+        #[tokio::test]
+        async fn handles_missing_account() {
+            let (email, pw) = ("man@plan.ca", "#caMan-pl4n");
+
+            let mock_repo = MockUserRepo {
+                get_by_email: Some(Box::new(move |e| {
+                    assert_eq!(email, e);
+                    Ok(None)
+                })),
+                ..Default::default()
+            };
+
+            let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, MockAuthProvider::new());
+            assert!(matches!(
+                auth.login(email, pw).await,
+                Err(AuthError::NotFound)
+            ));
+        }
+
+        #[tokio::test]
+        async fn handles_incorrect_password() {
+            let alice = alice_user();
+            let alice_clone = alice.clone();
+            let invalid_pw = "this will be mocked";
+
+            let mock_repo = MockUserRepo {
+                get_by_email: Some(Box::new(move |e| {
+                    assert_eq!(alice_clone.email, e);
+                    Ok(Some(alice_clone.clone()))
+                })),
+                ..Default::default()
+            };
+
+            let mut mock_provider = MockAuthProvider::new();
+            mock_provider
+                .expect_is_valid_pw()
+                .with(eq(invalid_pw), eq(alice.password_hash))
+                .once()
+                .return_once(|_, _| Ok(false));
+
+            let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+            assert!(matches!(
+                auth.login(&alice.email, invalid_pw).await,
+                Err(AuthError::InvalidPassword)
+            ));
+        }
+
+        #[tokio::test]
+        async fn creates_token_for_valid_credentials() {
+            let alice = alice_user();
+            let alice_clone = alice.clone();
+            let correct_pw = "this will be mocked";
+            let token = "123_token_yeah";
+
+            let mock_repo = MockUserRepo {
+                get_by_email: Some(Box::new(move |e| {
+                    assert_eq!(alice_clone.email, e);
+                    Ok(Some(alice_clone.clone()))
+                })),
+                ..Default::default()
+            };
+
+            let mut mock_provider = MockAuthProvider::new();
+            mock_provider
+                .expect_is_valid_pw()
+                .with(eq(correct_pw), eq(alice.password_hash))
+                .once()
+                .return_once(|_, _| Ok(true));
+            mock_provider
+                .expect_create_token()
+                .with(eq(alice.id))
+                .once()
+                .return_once(|_| Ok(token.to_string()));
+
+            let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+            assert!(matches!(
+                auth.login(&alice.email, correct_pw).await,
+                Ok(t) if t == token
+            ));
+        }
+    }
+
+    // Determined that testing `validate_token` would be trivial
 }

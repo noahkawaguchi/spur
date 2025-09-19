@@ -35,5 +35,5 @@ pub trait MutateFriendshipByUsername: Send + Sync {
 pub trait Authenticator: Send + Sync {
     async fn signup(&self, reg: UserRegistration) -> Result<String, AuthError>;
     async fn login(&self, email: &str, pw: &str) -> Result<String, AuthError>;
-    fn verify_token(&self, token: &str) -> Result<i32, AuthError>;
+    fn validate_token(&self, token: &str) -> Result<i32, AuthError>;
 }
