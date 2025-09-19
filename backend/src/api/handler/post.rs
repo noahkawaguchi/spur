@@ -1,7 +1,10 @@
-use super::{api_result, validated_json::ValidatedJson};
+use super::api_result;
 use crate::{
+    api::{
+        dto::{requests::CreatePostRequest, responses::PostResponse},
+        validated_json::ValidatedJson,
+    },
     domain::post::PostSvc,
-    dto::{requests::CreatePostRequest, responses::PostResponse},
     map_into::MapInto,
     read_models::PostWithAuthorRead,
     state::AppState,
@@ -93,8 +96,8 @@ async fn own_posts(
 mod tests {
     use super::*;
     use crate::{
+        api::dto::responses::ErrorResponse,
         domain::post::{MockPostSvc, error::PostError},
-        dto::responses::ErrorResponse,
         read_models::{MockPostWithAuthorRead, ReadError},
         test_utils::{
             dummy_data::post_with_author,

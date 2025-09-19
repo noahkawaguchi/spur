@@ -1,4 +1,3 @@
-use crate::dto::responses::PostResponse;
 use chrono::{DateTime, Utc};
 
 /// The post entity as it exists in the database with the addition of the author's username.
@@ -14,23 +13,6 @@ pub struct PostWithAuthor {
     pub deleted_at: Option<DateTime<Utc>>,
     /// From the users table
     pub author_username: Option<String>,
-}
-
-impl From<PostWithAuthor> for PostResponse {
-    fn from(pwa: PostWithAuthor) -> Self {
-        Self {
-            id: pwa.id,
-            author_username: pwa
-                .author_username
-                .unwrap_or_else(|| String::from("[deleted]")),
-            parent_id: pwa.parent_id,
-            body: pwa.body.unwrap_or_else(|| String::from("[deleted]")),
-            created_at_ms: pwa.created_at.timestamp_millis(),
-            edited_at_ms: pwa.edited_at.map(|ms| ms.timestamp_millis()),
-            archived_at_ms: pwa.archived_at.map(|ms| ms.timestamp_millis()),
-            deleted_at_ms: pwa.deleted_at.map(|ms| ms.timestamp_millis()),
-        }
-    }
 }
 
 #[cfg(test)]

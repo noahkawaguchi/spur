@@ -99,7 +99,7 @@ pub mod post_with_author {
 }
 
 pub mod requests {
-    use crate::dto::{requests::LoginRequest, signup_request::SignupRequest};
+    use crate::api::dto::{requests::LoginRequest, signup_request::SignupRequest};
 
     pub fn signup() -> SignupRequest {
         SignupRequest {

@@ -2,22 +2,20 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
+mod api;
 mod app_services;
 mod config;
 mod domain;
-mod dto;
-mod handler;
 mod infra;
 mod map_into;
-mod middleware;
 mod models;
 mod read_models;
-mod router;
 mod state;
 
 #[cfg(test)]
 mod test_utils;
 
+use crate::api::router;
 use anyhow::Result;
 use axum::http::{Method, header};
 use config::AppConfig;

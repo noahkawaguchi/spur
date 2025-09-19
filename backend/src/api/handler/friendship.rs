@@ -1,10 +1,13 @@
-use super::{api_result, validated_json::ValidatedJson};
+use super::api_result;
 use crate::{
-    app_services::MutateFriendshipByUsername,
-    dto::{
-        requests::AddFriendRequest,
-        responses::{PostResponse, SuccessResponse},
+    api::{
+        dto::{
+            requests::AddFriendRequest,
+            responses::{PostResponse, SuccessResponse},
+        },
+        validated_json::ValidatedJson,
     },
+    app_services::MutateFriendshipByUsername,
     map_into::MapInto,
     read_models::SocialRead,
     state::AppState,
@@ -87,9 +90,9 @@ async fn friend_posts(
 mod tests {
     use super::*;
     use crate::{
+        api::dto::responses::ErrorResponse,
         app_services::MockMutateFriendshipByUsername,
         domain::friendship::error::FriendshipError,
-        dto::responses::ErrorResponse,
         read_models::{MockSocialRead, ReadError},
         test_utils::{
             dummy_data::post_with_author,

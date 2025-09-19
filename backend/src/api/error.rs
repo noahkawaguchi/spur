@@ -1,6 +1,6 @@
 use crate::{
+    api::dto::responses::ErrorResponse,
     domain::{auth::AuthError, friendship::error::FriendshipError, post::error::PostError},
-    dto::responses::ErrorResponse,
     read_models::ReadError,
 };
 use axum::{

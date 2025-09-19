@@ -1,7 +1,10 @@
-use super::{api_result, validated_json::ValidatedJson};
+use super::api_result;
 use crate::{
+    api::{
+        dto::{requests::LoginRequest, responses::TokenResponse, signup_request::SignupRequest},
+        validated_json::ValidatedJson,
+    },
     app_services::Authenticator,
-    dto::{requests::LoginRequest, responses::TokenResponse, signup_request::SignupRequest},
     state::AppState,
 };
 use anyhow::Result;
@@ -38,9 +41,9 @@ async fn login(
 mod tests {
     use super::*;
     use crate::{
+        api::dto::responses::ErrorResponse,
         app_services::MockAuthenticator,
         domain::auth::AuthError,
-        dto::responses::ErrorResponse,
         models::user::UserRegistration,
         test_utils::{
             dummy_data,

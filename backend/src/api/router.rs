@@ -1,6 +1,8 @@
 use crate::{
-    handler::{auth, friendship, post},
-    middleware::validate_jwt,
+    api::{
+        handler::{auth, friendship, post},
+        middleware::validate_jwt,
+    },
     state::AppState,
 };
 use axum::{Router, middleware, routing::get};
@@ -25,9 +27,9 @@ fn protected_routes(state: AppState) -> Router {
 mod tests {
     use super::*;
     use crate::{
+        api::dto::responses::{ErrorResponse, TokenResponse},
         app_services::MockAuthenticator,
         domain::auth::AuthError,
-        dto::responses::{ErrorResponse, TokenResponse},
         read_models::MockSocialRead,
         test_utils::{
             dummy_data,

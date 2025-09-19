@@ -1,4 +1,3 @@
-use crate::dto::signup_request::SignupRequest;
 use chrono::{DateTime, Utc};
 
 /// User with plaintext password and without DB-generated fields. Same fields as `SignupRequest`.
@@ -8,12 +7,6 @@ pub struct UserRegistration {
     pub email: String,
     pub username: String,
     pub password: String,
-}
-
-impl From<SignupRequest> for UserRegistration {
-    fn from(r: SignupRequest) -> Self {
-        Self { name: r.name, email: r.email, username: r.username, password: r.password }
-    }
 }
 
 impl UserRegistration {

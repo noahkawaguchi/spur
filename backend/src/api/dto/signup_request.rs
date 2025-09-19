@@ -1,3 +1,4 @@
+use crate::models::user::UserRegistration;
 use lazy_regex::{Regex, lazy_regex};
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
@@ -24,6 +25,12 @@ pub struct SignupRequest {
 
     #[validate(custom(function = validate_password))]
     pub password: String,
+}
+
+impl From<SignupRequest> for UserRegistration {
+    fn from(r: SignupRequest) -> Self {
+        Self { name: r.name, email: r.email, username: r.username, password: r.password }
+    }
 }
 
 /// # Errors
