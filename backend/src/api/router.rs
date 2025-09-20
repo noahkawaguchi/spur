@@ -27,14 +27,14 @@ fn protected_routes(state: AppState) -> Router {
 mod tests {
     use super::*;
     use crate::{
-        api::dto::responses::{ErrorResponse, TokenResponse},
+        api::dto::{
+            dummy_data::dummy_login_request,
+            responses::{ErrorResponse, TokenResponse},
+        },
         app_services::MockAuthenticator,
         domain::auth::AuthError,
         read_models::MockSocialRead,
-        test_utils::{
-            dummy_data,
-            http_bodies::{deserialize_body, resp_into_body_text, serialize_body},
-        },
+        test_utils::http_bodies::{deserialize_body, resp_into_body_text, serialize_body},
     };
     use axum::{
         body::Body,
@@ -136,7 +136,7 @@ mod tests {
 
     #[tokio::test]
     async fn passes_state_to_handler_for_public_endpoint() {
-        let payload = dummy_data::requests::login();
+        let payload = dummy_login_request();
 
         let mut mock_auth = MockAuthenticator::new();
         mock_auth

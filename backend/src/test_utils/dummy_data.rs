@@ -97,23 +97,3 @@ pub mod post_with_author {
         ]
     }
 }
-
-pub mod requests {
-    use crate::api::dto::{requests::LoginRequest, signup_request::SignupRequest};
-
-    pub fn signup() -> SignupRequest {
-        SignupRequest {
-            name: String::from("Christina Ani-Tsi RHC"),
-            email: String::from("name@backwards.moc"),
-            username: String::from("chris_and_tina"),
-            password: String::from("2shh!5hh#H"),
-        }
-    }
-
-    pub fn login() -> LoginRequest {
-        LoginRequest {
-            email: String::from("name@backwards.moc"),
-            password: String::from("2shh!5hh#H"),
-        }
-    }
-}

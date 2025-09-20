@@ -41,14 +41,14 @@ async fn login(
 mod tests {
     use super::*;
     use crate::{
-        api::dto::responses::ErrorResponse,
+        api::dto::{
+            dummy_data::{dummy_login_request, dummy_signup_request},
+            responses::ErrorResponse,
+        },
         app_services::MockAuthenticator,
         domain::auth::AuthError,
         models::user::UserRegistration,
-        test_utils::{
-            dummy_data,
-            http_bodies::{deserialize_body, serialize_body},
-        },
+        test_utils::http_bodies::{deserialize_body, serialize_body},
     };
     use axum::{
         body::Body,
@@ -79,7 +79,7 @@ mod tests {
 
         #[tokio::test]
         async fn returns_token_for_successful_signup() {
-            let payload = dummy_data::requests::signup();
+            let payload = dummy_signup_request();
             let token = "t-0-k-3-n";
 
             let mut mock_auth = MockAuthenticator::new();
@@ -99,7 +99,7 @@ mod tests {
 
         #[tokio::test]
         async fn translates_errors() {
-            let payload = dummy_data::requests::signup();
+            let payload = dummy_signup_request();
 
             let mut mock_auth = MockAuthenticator::new();
             mock_auth
@@ -122,7 +122,7 @@ mod tests {
 
         #[tokio::test]
         async fn returns_token_for_successful_login() {
-            let payload = dummy_data::requests::login();
+            let payload = dummy_login_request();
             let token = "t-0-k-3-n";
 
             let mut mock_auth = MockAuthenticator::new();
@@ -142,7 +142,7 @@ mod tests {
 
         #[tokio::test]
         async fn translates_errors() {
-            let payload = dummy_data::requests::login();
+            let payload = dummy_login_request();
 
             let mut mock_auth = MockAuthenticator::new();
             mock_auth
