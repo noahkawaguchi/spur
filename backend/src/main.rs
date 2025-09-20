@@ -17,12 +17,10 @@ mod test_utils;
 
 use crate::api::router;
 use anyhow::Result;
-use axum::http::{Method, header};
 use config::AppConfig;
 use sqlx::postgres::PgPoolOptions;
 use state::AppState;
 use tokio::net::TcpListener;
-use tower_http::cors::CorsLayer;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -33,18 +31,12 @@ async fn main() -> Result<()> {
         .connect(&config.database_url)
         .await?;
 
-    let cors = CorsLayer::new()
-        .allow_origin([config.frontend_url.parse()?])
-        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
-        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION])
-        .allow_credentials(true);
-
     let state = AppState::build(pool, config.jwt_secret);
-    let app = router::create(state).layer(cors);
+    let app = router::build(state, &config.frontend_url)?;
     let listener = TcpListener::bind(&config.bind_addr).await?;
 
     #[cfg(debug_assertions)]
-    println!("Listening on http://{}...", &config.bind_addr);
+    println!("Listening on http://{} ...", &config.bind_addr);
 
     axum::serve(listener, app).await?;
 

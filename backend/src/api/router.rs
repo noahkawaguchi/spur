@@ -1,17 +1,34 @@
-use crate::{
-    api::{
-        handler::{auth, friendship, post},
-        middleware::validate_jwt,
-    },
-    state::AppState,
+use super::{
+    handler::{auth, friendship, post},
+    middleware::validate_jwt,
 };
-use axum::{Router, middleware, routing::get};
+use crate::state::AppState;
+use anyhow::Result;
+use axum::{
+    Router,
+    http::{
+        Method,
+        header::{AUTHORIZATION, CONTENT_TYPE},
+    },
+    middleware,
+    routing::get,
+};
+use tower_http::cors::CorsLayer;
 
-pub fn create(state: AppState) -> Router {
-    Router::new()
+pub fn build(state: AppState, frontend_url: &str) -> Result<Router> {
+    let cors = CorsLayer::new()
+        .allow_origin([frontend_url.parse()?])
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers([CONTENT_TYPE, AUTHORIZATION])
+        .allow_credentials(true);
+
+    let app = Router::new()
         .route("/ping", get(|| async { "pong!" })) // Simple health check route with no auth
         .nest("/auth", auth::routes().with_state(state.clone())) // The only main public routes
         .merge(protected_routes(state))
+        .layer(cors);
+
+    Ok(app)
 }
 
 fn protected_routes(state: AppState) -> Router {
@@ -63,7 +80,8 @@ mod tests {
         if method == Method::POST {
             req = req.header(CONTENT_TYPE, "application/json");
         }
-        super::create(state)
+        super::build(state, "example.com")
+            .unwrap()
             .oneshot(req.body(body).unwrap())
             .await
             .unwrap()
