@@ -15,6 +15,7 @@ use axum::{
 };
 use tower_http::cors::CorsLayer;
 
+/// Creates the API/web layer and sets it up to accept requests from the provided origin.
 pub fn build(state: AppState, frontend_url: &str) -> Result<Router> {
     let cors = CorsLayer::new()
         .allow_origin([frontend_url.parse()?])
@@ -56,8 +57,12 @@ mod tests {
     use axum::{
         body::Body,
         http::{
-            Method, Request, Response, StatusCode,
-            header::{AUTHORIZATION, CONTENT_TYPE},
+            HeaderName, Request, Response, StatusCode,
+            header::{
+                ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_HEADERS,
+                ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN,
+                ACCESS_CONTROL_REQUEST_HEADERS, ACCESS_CONTROL_REQUEST_METHOD, ORIGIN,
+            },
         },
     };
     use mockall::predicate::eq;
@@ -66,158 +71,237 @@ mod tests {
 
     const TEST_TOKEN: &str = "bear-the-bearer";
 
-    async fn send_req(
-        state: AppState,
-        method: Method,
-        uri: &str,
-        token: Option<&str>,
-        body: Body,
-    ) -> Response<Body> {
-        let mut req = Request::builder().uri(uri).method(&method);
-        if let Some(tok) = token {
-            req = req.header(AUTHORIZATION, format!("Bearer {tok}"));
+    mod auth_requirement {
+        use super::*;
+
+        async fn send_req(state: AppState, uri: &str, token: Option<&str>) -> Response<Body> {
+            let mut req = Request::builder().uri(uri).method(Method::GET);
+            if let Some(tok) = token {
+                req = req.header(AUTHORIZATION, format!("Bearer {tok}"));
+            }
+            super::build(state, "example.com")
+                .unwrap()
+                .oneshot(req.body(Body::empty()).unwrap())
+                .await
+                .unwrap()
         }
-        if method == Method::POST {
-            req = req.header(CONTENT_TYPE, "application/json");
+
+        #[tokio::test]
+        async fn does_not_require_auth_for_public_route() {
+            // Auth should not be accessed
+            let resp = send_req(AppState::default(), "/ping", None).await;
+            assert_eq!(StatusCode::OK, resp.status());
+            let resp_body = resp_into_body_text(resp).await;
+            assert_eq!("pong!", resp_body);
         }
-        super::build(state, "example.com")
-            .unwrap()
-            .oneshot(req.body(body).unwrap())
-            .await
-            .unwrap()
+
+        #[tokio::test]
+        async fn allows_access_to_protected_route_if_authenticated() {
+            let mut mock_auth = MockAuthenticator::new();
+            mock_auth
+                .expect_validate_token()
+                .with(eq(TEST_TOKEN))
+                .once()
+                .return_once(|_| Ok(45));
+
+            let state = AppState { auth: Arc::new(mock_auth), ..Default::default() };
+
+            let resp = send_req(state, "/auth/check", Some(TEST_TOKEN)).await;
+            assert_eq!(StatusCode::OK, resp.status());
+
+            let resp_body = resp_into_body_text(resp).await;
+            assert_eq!("Your token is valid", resp_body);
+        }
+
+        #[tokio::test]
+        async fn disallows_access_to_protected_route_if_unauthenticated() {
+            let mut mock_auth = MockAuthenticator::new();
+            mock_auth
+                .expect_validate_token()
+                .with(eq(TEST_TOKEN))
+                .once()
+                .return_once(|_| Err(AuthError::TokenValidation));
+
+            let state = AppState { auth: Arc::new(mock_auth), ..Default::default() };
+
+            let resp = send_req(state, "/auth/check", Some(TEST_TOKEN)).await;
+            assert_eq!(StatusCode::UNAUTHORIZED, resp.status());
+
+            let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+            let expected = ErrorResponse {
+                error: String::from("Expired or invalid token. Try logging in again."),
+            };
+            assert_eq!(expected, resp_body);
+        }
     }
 
-    #[tokio::test]
-    async fn does_not_require_auth_for_public_route() {
-        let resp = send_req(
-            AppState::default(), // Auth should not be accessed
-            Method::GET,
-            "/ping",
-            None,
-            Body::empty(),
-        )
-        .await;
+    mod state_passing {
+        use super::*;
 
-        assert_eq!(StatusCode::OK, resp.status());
-        let resp_body = resp_into_body_text(resp).await;
-        assert_eq!("pong!", resp_body);
+        async fn send_req(
+            state: AppState,
+            method: Method,
+            uri: &str,
+            token: Option<&str>,
+            body: Body,
+        ) -> Response<Body> {
+            let mut req = Request::builder().uri(uri).method(&method);
+            if let Some(tok) = token {
+                req = req.header(AUTHORIZATION, format!("Bearer {tok}"));
+            }
+            if method == Method::POST {
+                req = req.header(CONTENT_TYPE, "application/json");
+            }
+            super::build(state, "example.com")
+                .unwrap()
+                .oneshot(req.body(body).unwrap())
+                .await
+                .unwrap()
+        }
+
+        #[tokio::test]
+        async fn passes_state_to_handler_for_public_endpoint() {
+            let payload = dummy_login_request();
+
+            let mut mock_auth = MockAuthenticator::new();
+            mock_auth
+                .expect_login()
+                .with(eq(payload.email.clone()), eq(payload.password.clone()))
+                .once()
+                .return_once(|_, _| Ok(TEST_TOKEN.to_string()));
+
+            let resp = send_req(
+                AppState { auth: Arc::new(mock_auth), ..Default::default() },
+                Method::POST,
+                "/auth/login",
+                None,
+                serialize_body(&payload),
+            )
+            .await;
+
+            assert_eq!(StatusCode::OK, resp.status());
+            let resp_body = deserialize_body::<TokenResponse>(resp).await;
+            let expected = TokenResponse { token: TEST_TOKEN.to_string() };
+            assert_eq!(expected, resp_body);
+        }
+
+        #[tokio::test]
+        async fn passes_state_to_handler_for_protected_endpoint() {
+            let user_id = 615;
+            let requester_usernames = vec![
+                String::from("jun"),
+                String::from("john"),
+                String::from("jessica"),
+                String::from("josue"),
+            ];
+            let requester_usernames_clone = requester_usernames.clone();
+
+            let mut mock_auth = MockAuthenticator::new();
+            mock_auth
+                .expect_validate_token()
+                .with(eq(TEST_TOKEN))
+                .once()
+                .return_once(move |_| Ok(user_id));
+
+            let mut mock_social_read = MockSocialRead::new();
+            mock_social_read
+                .expect_pending_requests()
+                .with(eq(user_id))
+                .once()
+                .return_once(move |_| Ok(requester_usernames_clone));
+
+            let resp = send_req(
+                AppState {
+                    auth: Arc::new(mock_auth),
+                    social_read: Arc::new(mock_social_read),
+                    ..Default::default()
+                },
+                Method::GET,
+                "/friends/requests",
+                Some(TEST_TOKEN),
+                Body::empty(),
+            )
+            .await;
+
+            assert_eq!(StatusCode::OK, resp.status());
+            let resp_body = deserialize_body::<Vec<String>>(resp).await;
+            assert_eq!(requester_usernames, resp_body);
+        }
     }
 
-    #[tokio::test]
-    async fn allows_access_to_protected_route_if_authenticated() {
-        let mut mock_auth = MockAuthenticator::new();
-        mock_auth
-            .expect_validate_token()
-            .with(eq(TEST_TOKEN))
-            .once()
-            .return_once(|_| Ok(45));
+    mod cors {
+        use super::*;
 
-        let resp = send_req(
-            AppState { auth: Arc::new(mock_auth), ..Default::default() },
-            Method::GET,
-            "/auth/check",
-            Some(TEST_TOKEN),
-            Body::empty(),
-        )
-        .await;
+        async fn send_req(
+            allowed_origin: &'static str,
+            method: Method,
+            uri: &'static str,
+            req_headers: &[(HeaderName, &str)],
+        ) -> Response<Body> {
+            let mut req = Request::builder().uri(uri).method(method);
+            for &(ref k, v) in req_headers {
+                req = req.header(k, v);
+            }
+            super::build(AppState::default(), allowed_origin)
+                .unwrap()
+                .oneshot(req.body(Body::empty()).unwrap())
+                .await
+                .unwrap()
+        }
 
-        assert_eq!(StatusCode::OK, resp.status());
-        let resp_body = resp_into_body_text(resp).await;
-        assert_eq!("Your token is valid", resp_body);
-    }
+        #[tokio::test]
+        async fn does_not_send_allow_origin_header_if_origin_not_allowed() {
+            let resp = send_req(
+                "https://frontend.example",
+                Method::GET,
+                "/ping",
+                &[(ORIGIN, "https://not-allowed.example")],
+            )
+            .await;
 
-    #[tokio::test]
-    async fn disallows_access_to_protected_route_if_unauthenticated() {
-        let mut mock_auth = MockAuthenticator::new();
-        mock_auth
-            .expect_validate_token()
-            .with(eq(TEST_TOKEN))
-            .once()
-            .return_once(|_| Err(AuthError::TokenValidation));
+            assert!(resp.headers().get(ACCESS_CONTROL_ALLOW_ORIGIN).is_none());
+        }
 
-        let resp = send_req(
-            AppState { auth: Arc::new(mock_auth), ..Default::default() },
-            Method::GET,
-            "/auth/check",
-            Some(TEST_TOKEN),
-            Body::empty(),
-        )
-        .await;
+        #[tokio::test]
+        async fn sends_correct_cors_headers_for_allowed_origin() {
+            let origin = "https://frontend.example";
+            let resp = send_req(origin, Method::GET, "/ping", &[(ORIGIN, origin)]).await;
+            let h = resp.headers();
+            assert_eq!(origin, h.get(ACCESS_CONTROL_ALLOW_ORIGIN).unwrap());
+            assert_eq!("true", h.get(ACCESS_CONTROL_ALLOW_CREDENTIALS).unwrap());
+        }
 
-        assert_eq!(StatusCode::UNAUTHORIZED, resp.status());
-        let resp_body = deserialize_body::<ErrorResponse>(resp).await;
-        let expected = ErrorResponse {
-            error: String::from("Expired or invalid token. Try logging in again."),
-        };
-        assert_eq!(expected, resp_body);
-    }
+        #[tokio::test]
+        async fn sends_correct_cors_headers_for_preflight_from_allowed_origin() {
+            let origin = "https://frontend.example";
 
-    #[tokio::test]
-    async fn passes_state_to_handler_for_public_endpoint() {
-        let payload = dummy_login_request();
+            let resp = send_req(
+                origin,
+                Method::OPTIONS,
+                "/friends",
+                &[
+                    (ORIGIN, origin),
+                    (ACCESS_CONTROL_REQUEST_METHOD, "POST"),
+                    (ACCESS_CONTROL_REQUEST_HEADERS, "content-type,authorization"),
+                ],
+            )
+            .await;
 
-        let mut mock_auth = MockAuthenticator::new();
-        mock_auth
-            .expect_login()
-            .with(eq(payload.email.clone()), eq(payload.password.clone()))
-            .once()
-            .return_once(|_, _| Ok(TEST_TOKEN.to_string()));
+            let h = resp.headers();
 
-        let resp = send_req(
-            AppState { auth: Arc::new(mock_auth), ..Default::default() },
-            Method::POST,
-            "/auth/login",
-            None,
-            serialize_body(&payload),
-        )
-        .await;
-
-        assert_eq!(StatusCode::OK, resp.status());
-        let resp_body = deserialize_body::<TokenResponse>(resp).await;
-        let expected = TokenResponse { token: TEST_TOKEN.to_string() };
-        assert_eq!(expected, resp_body);
-    }
-
-    #[tokio::test]
-    async fn passes_state_to_handler_for_protected_endpoint() {
-        let user_id = 615;
-        let requester_usernames = vec![
-            String::from("jun"),
-            String::from("john"),
-            String::from("jessica"),
-            String::from("josue"),
-        ];
-        let requester_usernames_clone = requester_usernames.clone();
-
-        let mut mock_auth = MockAuthenticator::new();
-        mock_auth
-            .expect_validate_token()
-            .with(eq(TEST_TOKEN))
-            .once()
-            .return_once(move |_| Ok(user_id));
-
-        let mut mock_social_read = MockSocialRead::new();
-        mock_social_read
-            .expect_pending_requests()
-            .with(eq(user_id))
-            .once()
-            .return_once(move |_| Ok(requester_usernames_clone));
-
-        let resp = send_req(
-            AppState {
-                auth: Arc::new(mock_auth),
-                social_read: Arc::new(mock_social_read),
-                ..Default::default()
-            },
-            Method::GET,
-            "/friends/requests",
-            Some(TEST_TOKEN),
-            Body::empty(),
-        )
-        .await;
-
-        assert_eq!(StatusCode::OK, resp.status());
-        let resp_body = deserialize_body::<Vec<String>>(resp).await;
-        assert_eq!(requester_usernames, resp_body);
+            assert_eq!(
+                "https://frontend.example",
+                h.get(ACCESS_CONTROL_ALLOW_ORIGIN).unwrap()
+            );
+            assert_eq!(
+                "GET,POST,OPTIONS",
+                h.get(ACCESS_CONTROL_ALLOW_METHODS).unwrap()
+            );
+            assert_eq!(
+                "content-type,authorization",
+                h.get(ACCESS_CONTROL_ALLOW_HEADERS).unwrap()
+            );
+            assert_eq!("true", h.get(ACCESS_CONTROL_ALLOW_CREDENTIALS).unwrap());
+        }
     }
 }
