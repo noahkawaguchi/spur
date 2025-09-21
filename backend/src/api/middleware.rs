@@ -1,4 +1,4 @@
-use crate::{app_services::Authenticator, handler::api_error::ApiError};
+use crate::{api::error::ApiError, app_services::Authenticator};
 use axum::{
     extract::{Request, State},
     middleware,
@@ -29,9 +29,9 @@ pub async fn validate_jwt(
 mod tests {
     use super::*;
     use crate::{
+        api::dto::responses::ErrorResponse,
         app_services::MockAuthenticator,
         domain::auth::AuthError,
-        dto::responses::ErrorResponse,
         state::AppState,
         test_utils::http_bodies::{deserialize_body, resp_into_body_text},
     };

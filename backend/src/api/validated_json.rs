@@ -1,4 +1,4 @@
-use super::api_error::ApiError;
+use super::error::ApiError;
 use axum::{
     Json,
     extract::{FromRequest, Request},
@@ -42,7 +42,7 @@ where
 mod tests {
     use super::*;
     use crate::{
-        dto::{responses::ErrorResponse, signup_request::SignupRequest},
+        api::dto::{responses::ErrorResponse, signup_request::SignupRequest},
         test_utils::http_bodies::{deserialize_body, serialize_body},
     };
     use axum::http::{Method, Request, header::CONTENT_TYPE};
