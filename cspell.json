@@ -1,0 +1,22 @@
+{
+  "useGitignore": true,
+  "ignorePaths": ["pnpm-lock.yaml"],
+  "words": [
+    "jsonwebtoken",
+    "chrono",
+    "mockall",
+    "thiserror",
+    "withf",
+    "sqlx",
+    "dotenv",
+    "dotenvy",
+    "serde",
+    "vite",
+    "btrim",
+    "oneshot",
+    "unstub"
+  ],
+  "version": "0.2",
+  "flagWords": [],
+  "language": "en"
+}
