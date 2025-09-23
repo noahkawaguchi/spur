@@ -26,10 +26,13 @@ const FriendRequest = ({ username }: { username: string }) => {
           </button>
         </td>
       </tr>
-      {/* TODO: tbody cannot contain a nested p */}
-      {loading && <p>Loading...</p>}
-      {error && <p>Error: {error}</p>}
-      {data && <p>{data.message}</p>}
+      <tr>
+        <td style={{ border: 'none', background: 'none' }}>
+          {loading && <p>Loading...</p>}
+          {error && <p>Error: {error}</p>}
+          {data && <p>{data.message}</p>}
+        </td>
+      </tr>
     </>
   );
 };

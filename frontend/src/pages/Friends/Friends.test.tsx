@@ -4,12 +4,12 @@ import { initMockUseRequestResult } from '@/test-utils/types';
 import { render, screen } from '@testing-library/react';
 
 const mockUseRequestResultState = initMockUseRequestResult<string[]>();
-const mockToken = 'this is a mock token';
+const testToken = 'this is a test token';
 
 const mocks = vi.hoisted(() => {
   return {
     mockUseRequest: vi.fn(() => mockUseRequestResultState),
-    mockUseTokenOrRedirect: vi.fn(() => mockToken),
+    mockUseTokenOrRedirect: vi.fn(() => testToken),
   };
 });
 
