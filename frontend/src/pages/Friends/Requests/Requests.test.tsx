@@ -1,4 +1,5 @@
 import FriendRequestsPage from '@/pages/Friends/Requests';
+import { dummyUsernames } from '@/test-utils/dummy-data';
 import { inMemRouter } from '@/test-utils/router';
 import { initMockUseRequestResult } from '@/test-utils/types';
 import { render, screen } from '@testing-library/react';
@@ -26,9 +27,8 @@ describe('FriendRequestsPage', () => {
   });
 
   it('should display requester usernames if they exist', () => {
-    const requesters = ['jeff1', 'jeff2', 'jefe', 'jpeg'];
-    mockUseRequestResultState.data = requesters;
+    mockUseRequestResultState.data = dummyUsernames;
     render(inMemRouter({ children: <FriendRequestsPage /> }));
-    requesters.forEach(requester => expect(screen.getByText(requester)).toBeInTheDocument());
+    dummyUsernames.forEach(requester => expect(screen.getByText(requester)).toBeInTheDocument());
   });
 });
