@@ -24,35 +24,29 @@ describe('SinglePostDisplay', () => {
   const testParentPost = dummyPosts[1];
   const mockBackFn = vi.fn();
 
-  const renderSpd = () =>
-    render(
-      inMemRouter({
-        children: <SinglePostDisplay readingPost={testReadingPost} backFn={mockBackFn} />,
-      }),
-    );
+  const spdInRouter = () =>
+    inMemRouter({
+      children: <SinglePostDisplay readingPost={testReadingPost} backFn={mockBackFn} />,
+    });
 
   afterEach(() => vi.clearAllMocks());
 
   it('should call the back function when the back button is clicked', async () => {
-    renderSpd();
+    render(spdInRouter());
     const user = userEvent.setup();
     await user.click(screen.getByText('Back'));
     expect(mockBackFn).toHaveBeenCalledOnce();
   });
 
   it('should show the reply box when the reply button is clicked', async () => {
-    renderSpd();
+    render(spdInRouter());
     const user = userEvent.setup();
     await user.click(screen.getByText('Reply'));
     expect(screen.getByLabelText('New Reply:')).toBeInTheDocument();
   });
 
   it('should make a request and show the parent when the parent button is clicked', async () => {
-    // `data` has to be set to the parent post up front because the component conditionally displays
-    // the nested component based on internally managed state that is reset to false on rerender.
-    // It's at least possible to check that the parent doesn't immediately display.
-    mockUseRequestResultState.data = testParentPost;
-    renderSpd();
+    const { rerender } = render(spdInRouter());
     expect(screen.queryByText(testParentPost.body)).not.toBeInTheDocument();
 
     const user = userEvent.setup();
@@ -63,6 +57,8 @@ describe('SinglePostDisplay', () => {
       pathParameter: testReadingPost.parentId?.toString(),
     });
 
+    mockUseRequestResultState.data = testParentPost;
+    rerender(spdInRouter());
     expect(screen.queryByText(testParentPost.body)).toBeInTheDocument();
   });
 
@@ -71,7 +67,7 @@ describe('SinglePostDisplay', () => {
     async () => {
       const childrenText = `Children of ${testReadingPost.authorUsername}'s Post`;
 
-      renderSpd();
+      render(spdInRouter());
       expect(screen.queryByText(childrenText)).not.toBeInTheDocument();
 
       const user = userEvent.setup();
