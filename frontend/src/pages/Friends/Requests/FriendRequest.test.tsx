@@ -22,12 +22,21 @@ describe('FriendRequest', () => {
   const testUsername = 'danny-mann0';
   const testMessage = 'yay!!!';
 
+  const reqInTableInRouter = () =>
+    inMemRouter({
+      children: (
+        <table>
+          <tbody>
+            <FriendRequest username={testUsername} />
+          </tbody>
+        </table>
+      ),
+    });
+
   afterEach(() => vi.clearAllMocks());
 
   it('should take user input, send a request, and handle the response', async () => {
-    const { rerender } = render(
-      inMemRouter({ children: <FriendRequest username={testUsername} /> }),
-    );
+    const { rerender } = render(reqInTableInRouter());
 
     const user = userEvent.setup();
     expect(screen.getByText(testUsername)).toBeInTheDocument();
@@ -39,7 +48,7 @@ describe('FriendRequest', () => {
     });
 
     mockUseRequestResultState.data = { message: testMessage };
-    rerender(inMemRouter({ children: <FriendRequest username={testUsername} /> }));
+    rerender(reqInTableInRouter());
     expect(screen.getByText(testMessage)).toBeInTheDocument();
   });
 });
