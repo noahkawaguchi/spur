@@ -1,5 +1,5 @@
 use crate::{
-    app_services::uow::UnitOfWork,
+    app_services::uow::{Tx, UnitOfWork},
     domain::post::{PostError, PostRepo, PostSvc},
 };
 
@@ -24,11 +24,36 @@ where
         parent_id: i32,
         body: &str,
     ) -> Result<(), PostError> {
+        // Disallow writing posts in response to nonexistent, deleted, archived, or one's own posts
+
+        let mut tx = self.uow.begin_uow().await?;
+
+        let parent = self
+            .repo
+            .get_by_id(tx.exec(), parent_id)
+            .await?
+            .ok_or(PostError::NotFound)?;
+
+        if parent.deleted_at.is_some() {
+            return Err(PostError::DeletedParent);
+        }
+        if parent.archived_at.is_some() {
+            return Err(PostError::ArchivedParent);
+        }
+        if parent
+            .author_id
+            .is_some_and(|parent_author_id| parent_author_id == author_id)
+        {
+            return Err(PostError::SelfReply);
+        }
+
         self.repo
-            .defunct_insert(self.uow.single_exec(), author_id, parent_id, body)
-            .await
-            .map_err(Into::into)
-            .and_then(TryFrom::try_from)
+            .insert_new(tx.exec(), author_id, parent_id, body)
+            .await?;
+
+        tx.commit_uow().await?;
+
+        Ok(())
     }
 }
 

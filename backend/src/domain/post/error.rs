@@ -1,4 +1,4 @@
-use crate::domain::{RepoError, post::PostInsertionOutcome};
+use crate::domain::RepoError;
 use anyhow::anyhow;
 use thiserror::Error;
 
@@ -21,19 +21,6 @@ pub enum PostError {
 
     #[error(transparent)]
     Internal(#[from] anyhow::Error),
-}
-
-impl TryFrom<PostInsertionOutcome> for () {
-    type Error = PostError;
-    fn try_from(outcome: PostInsertionOutcome) -> Result<Self, Self::Error> {
-        match outcome {
-            PostInsertionOutcome::Inserted => Ok(()),
-            PostInsertionOutcome::ParentMissing => Err(Self::Error::NotFound),
-            PostInsertionOutcome::ParentDeleted => Err(Self::Error::DeletedParent),
-            PostInsertionOutcome::ParentArchived => Err(Self::Error::ArchivedParent),
-            PostInsertionOutcome::SelfReply => Err(Self::Error::SelfReply),
-        }
-    }
 }
 
 impl From<RepoError> for PostError {
