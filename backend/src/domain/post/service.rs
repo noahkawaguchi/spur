@@ -25,7 +25,7 @@ where
         body: &str,
     ) -> Result<(), PostError> {
         self.repo
-            .insert_new(self.uow.single_exec(), author_id, parent_id, body)
+            .defunct_insert(self.uow.single_exec(), author_id, parent_id, body)
             .await
             .map_err(Into::into)
             .and_then(TryFrom::try_from)

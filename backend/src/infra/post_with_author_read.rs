@@ -100,7 +100,7 @@ mod tests {
             let repo = PgPostRepo;
             let read = PgPostWithAuthorRead::new(pool.clone());
             let body = "This post exists!";
-            repo.insert_new(&pool, 2, 1, body).await.unwrap();
+            repo.defunct_insert(&pool, 2, 1, body).await.unwrap();
             let actual = read.by_post_id(2).await;
             let expected = PostWithAuthor {
                 id: 2,
@@ -123,7 +123,7 @@ mod tests {
         with_seeded_users_and_root_post(|pool, _| async move {
             let repo = PgPostRepo;
             let read = PgPostWithAuthorRead::new(pool.clone());
-            repo.insert_new(&pool, 2, 1, "This post exists!")
+            repo.defunct_insert(&pool, 2, 1, "This post exists!")
                 .await
                 .unwrap();
             let actual = read.by_post_id(3).await; // Only posts 1 and 2 exist
@@ -140,11 +140,11 @@ mod tests {
 
             let parent_id = 2;
             // Insert post to be the parent
-            repo.insert_new(&pool, 4, 1, "I'm going to be a parent soon") // ID 2
+            repo.defunct_insert(&pool, 4, 1, "I'm going to be a parent soon") // ID 2
                 .await
                 .unwrap();
             // Should not retrieve sibling
-            repo.insert_new(&pool, 3, 1, "I'm your sibling, not your child") // ID 3
+            repo.defunct_insert(&pool, 3, 1, "I'm your sibling, not your child") // ID 3
                 .await
                 .unwrap();
             // No children at first
@@ -153,11 +153,11 @@ mod tests {
                 Ok(v) if v.is_empty()
             ));
             // First child
-            repo.insert_new(&pool, 1, parent_id, "I'm your first child") // ID 4
+            repo.defunct_insert(&pool, 1, parent_id, "I'm your first child") // ID 4
                 .await
                 .unwrap();
             // Should not retrieve grandchildren
-            repo.insert_new(&pool, 2, 4, "I'm your grandchild, not your child") // ID 5
+            repo.defunct_insert(&pool, 2, 4, "I'm your grandchild, not your child") // ID 5
                 .await
                 .unwrap();
             let first_child = read.by_post_id(4).await.unwrap();
@@ -166,10 +166,10 @@ mod tests {
                 Ok(v) if v.len() == 1 && v[0] == first_child
             ));
             // More children
-            repo.insert_new(&pool, 2, parent_id, "Second child here") // ID 6
+            repo.defunct_insert(&pool, 2, parent_id, "Second child here") // ID 6
                 .await
                 .unwrap();
-            repo.insert_new(&pool, 3, parent_id, "Third child here") // ID 7
+            repo.defunct_insert(&pool, 3, parent_id, "Third child here") // ID 7
                 .await
                 .unwrap();
             let second_child = read.by_post_id(6).await.unwrap();
@@ -190,16 +190,20 @@ mod tests {
             let repo = PgPostRepo;
             let read = PgPostWithAuthorRead::new(pool.clone());
 
-            repo.insert_new(&pool, 3, 1, "First post by user 3")
-                .await
-                .unwrap(); // Post ID 2
-            repo.insert_new(&pool, 2, 2, "This post by user 2 should not come up") // Post ID 3
+            // Post ID 2
+            repo.defunct_insert(&pool, 3, 1, "First post by user 3")
                 .await
                 .unwrap();
-            repo.insert_new(&pool, 4, 1, "This post by user 4 should not come up ") // Post ID 4
+            // Post ID 3
+            repo.defunct_insert(&pool, 2, 2, "This post by user 2 should not come up")
                 .await
                 .unwrap();
-            repo.insert_new(&pool, 3, 4, "Second post by user 3") // Post ID 5
+            // Post ID 4
+            repo.defunct_insert(&pool, 4, 1, "This post by user 4 should not come up ")
+                .await
+                .unwrap();
+            // Post ID 5
+            repo.defunct_insert(&pool, 3, 4, "Second post by user 3")
                 .await
                 .unwrap();
 

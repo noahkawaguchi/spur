@@ -1,6 +1,9 @@
-use crate::domain::{
-    RepoError,
-    post::{PostInsertionOutcome, PostRepo},
+use crate::{
+    domain::{
+        RepoError,
+        post::{PostInsertionOutcome, PostRepo},
+    },
+    models::post::Post,
 };
 use anyhow::anyhow;
 use sqlx::PgExecutor;
@@ -9,7 +12,37 @@ pub struct PgPostRepo;
 
 #[async_trait::async_trait]
 impl PostRepo for PgPostRepo {
+    async fn get_by_id(
+        &self,
+        exec: impl PgExecutor<'_>,
+        id: i32,
+    ) -> Result<Option<Post>, RepoError> {
+        sqlx::query_as!(Post, "SELECT * FROM post WHERE id = $1", id)
+            .fetch_optional(exec)
+            .await
+            .map_err(Into::into)
+    }
+
     async fn insert_new(
+        &self,
+        exec: impl PgExecutor<'_>,
+        author_id: i32,
+        parent_id: i32,
+        body: &str,
+    ) -> Result<(), RepoError> {
+        sqlx::query!(
+            "INSERT INTO post (author_id, parent_id, body) VALUES ($1, $2, $3::text)",
+            author_id,
+            parent_id,
+            body
+        )
+        .execute(exec)
+        .await
+        .map_err(Into::into)
+        .map(|_| ())
+    }
+
+    async fn defunct_insert(
         &self,
         exec: impl PgExecutor<'_>,
         author_id: i32,

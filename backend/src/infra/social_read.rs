@@ -209,14 +209,14 @@ mod tests {
             let u4p1_body = "User four post one";
             let u4p2_body = "User four post two";
 
-            repo.insert_new(&pool, 4, 1, u4p1_body).await.unwrap(); // ID 2
-            repo.insert_new(&pool, 3, 1, u3p1_body).await.unwrap(); // ID 3
-            repo.insert_new(&pool, 2, 1, u2p1_body).await.unwrap(); // ID 4
-            repo.insert_new(&pool, 1, 2, u1p2_body).await.unwrap(); // ID 5
-            repo.insert_new(&pool, 4, 3, u4p2_body).await.unwrap(); // ID 6
-            repo.insert_new(&pool, 3, 2, u3p2_body).await.unwrap(); // ID 7
-            repo.insert_new(&pool, 2, 2, u2p2_body).await.unwrap(); // ID 8
-            repo.insert_new(&pool, 1, 3, u1p3_body).await.unwrap(); // ID 9
+            repo.defunct_insert(&pool, 4, 1, u4p1_body).await.unwrap(); // ID 2
+            repo.defunct_insert(&pool, 3, 1, u3p1_body).await.unwrap(); // ID 3
+            repo.defunct_insert(&pool, 2, 1, u2p1_body).await.unwrap(); // ID 4
+            repo.defunct_insert(&pool, 1, 2, u1p2_body).await.unwrap(); // ID 5
+            repo.defunct_insert(&pool, 4, 3, u4p2_body).await.unwrap(); // ID 6
+            repo.defunct_insert(&pool, 3, 2, u3p2_body).await.unwrap(); // ID 7
+            repo.defunct_insert(&pool, 2, 2, u2p2_body).await.unwrap(); // ID 8
+            repo.defunct_insert(&pool, 1, 3, u1p3_body).await.unwrap(); // ID 9
 
             let u2p1 = post_with_author_read.by_post_id(4).await.unwrap();
             let u2p2 = post_with_author_read.by_post_id(8).await.unwrap();

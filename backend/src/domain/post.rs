@@ -1,4 +1,7 @@
-use crate::domain::{RepoError, post::error::PostError};
+use crate::{
+    domain::{RepoError, post::error::PostError},
+    models::post::Post,
+};
 use sqlx::PgExecutor;
 
 pub mod error;
@@ -23,8 +26,22 @@ pub trait PostSvc: Send + Sync {
 
 #[async_trait::async_trait]
 pub trait PostRepo: Send + Sync {
-    /// Attempts to insert a new post into the database.
+    async fn get_by_id(
+        &self,
+        exec: impl PgExecutor<'_>,
+        id: i32,
+    ) -> Result<Option<Post>, RepoError>;
+
     async fn insert_new(
+        &self,
+        exec: impl PgExecutor<'_>,
+        author_id: i32,
+        parent_id: i32,
+        body: &str,
+    ) -> Result<(), RepoError>;
+
+    /// Attempts to insert a new post into the database.
+    async fn defunct_insert(
         &self,
         exec: impl PgExecutor<'_>,
         author_id: i32,
