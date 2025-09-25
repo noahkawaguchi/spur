@@ -1,5 +1,17 @@
 use chrono::{DateTime, Utc};
 
+/// The post entity as it exists in the database.
+pub struct Post {
+    pub id: i32,
+    pub author_id: Option<i32>,
+    pub parent_id: Option<i32>,
+    pub body: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub edited_at: Option<DateTime<Utc>>,
+    pub archived_at: Option<DateTime<Utc>>,
+    pub deleted_at: Option<DateTime<Utc>>,
+}
+
 /// The post entity as it exists in the database with the addition of the author's username.
 #[cfg_attr(test, derive(Debug, Clone))]
 pub struct PostWithAuthor {

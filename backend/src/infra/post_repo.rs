@@ -77,22 +77,12 @@ impl PostRepo for PgPostRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{
-        seed_data::with_seeded_users_and_root_post, time::within_five_seconds,
+    use crate::{
+        models::post::Post,
+        test_utils::{seed_data::with_seeded_users_and_root_post, time::within_five_seconds},
     };
-    use chrono::{DateTime, Utc};
+    use chrono::Utc;
     use sqlx::PgExecutor;
-
-    struct Post {
-        pub id: i32,
-        pub author_id: Option<i32>,
-        pub parent_id: Option<i32>,
-        pub body: Option<String>,
-        pub created_at: DateTime<Utc>,
-        pub edited_at: Option<DateTime<Utc>>,
-        pub archived_at: Option<DateTime<Utc>>,
-        pub deleted_at: Option<DateTime<Utc>>,
-    }
 
     async fn expect_post_by_id(exec: impl PgExecutor<'_>, id: i32) -> Post {
         sqlx::query_as!(Post, "SELECT * FROM post WHERE id = $1", id)
