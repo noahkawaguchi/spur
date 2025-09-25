@@ -1,28 +1,13 @@
 use crate::{
-    domain::{
-        RepoError,
-        post::{PostInsertionOutcome, PostRepo},
-    },
+    domain::{RepoError, post::PostRepo},
     models::post::Post,
 };
-use anyhow::anyhow;
 use sqlx::PgExecutor;
 
 pub struct PgPostRepo;
 
 #[async_trait::async_trait]
 impl PostRepo for PgPostRepo {
-    async fn get_by_id(
-        &self,
-        exec: impl PgExecutor<'_>,
-        id: i32,
-    ) -> Result<Option<Post>, RepoError> {
-        sqlx::query_as!(Post, "SELECT * FROM post WHERE id = $1", id)
-            .fetch_optional(exec)
-            .await
-            .map_err(Into::into)
-    }
-
     async fn insert_new(
         &self,
         exec: impl PgExecutor<'_>,
@@ -42,63 +27,15 @@ impl PostRepo for PgPostRepo {
         .map(|_| ())
     }
 
-    async fn defunct_insert(
+    async fn get_by_id(
         &self,
         exec: impl PgExecutor<'_>,
-        author_id: i32,
-        parent_id: i32,
-        body: &str,
-    ) -> Result<PostInsertionOutcome, RepoError> {
-        // Disallow writing posts in response to nonexistent, deleted, archived, or one's own posts
-        sqlx::query_scalar!(
-            "
-            WITH parent AS (
-                SELECT author_id, archived_at, deleted_at
-                FROM post
-                WHERE id = $2
-                FOR UPDATE
-            ),
-            parent_status AS (
-                SELECT
-                    CASE
-                        WHEN parent.deleted_at IS NOT NULL THEN 'deleted'
-                        WHEN parent.archived_at IS NOT NULL THEN 'archived'
-                        WHEN parent.author_id = $1 THEN 'self_reply'
-                        ELSE 'ok'
-                    END as status
-                FROM parent
-            ),
-            _ AS (
-                INSERT INTO post (author_id, parent_id, body)
-                SELECT $1, $2, $3::text
-                FROM parent_status
-                WHERE status = 'ok'
-            )
-            SELECT status FROM parent_status
-            ",
-            author_id,
-            parent_id,
-            body,
-        )
-        .fetch_optional(exec)
-        .await
-        .map_err(Into::into) // Technical errors and unique violations
-        .and_then(|status| {
-            // Business rules enforced in SQL
-            status
-                .flatten()
-                .map_or(Ok(PostInsertionOutcome::ParentMissing), |s| {
-                    match s.as_str() {
-                        "deleted" => Ok(PostInsertionOutcome::ParentDeleted),
-                        "archived" => Ok(PostInsertionOutcome::ParentArchived),
-                        "self_reply" => Ok(PostInsertionOutcome::SelfReply),
-                        "ok" => Ok(PostInsertionOutcome::Inserted),
-                        _ => Err(
-                            anyhow!("Unexpected insertion status despite hardcoded strings").into(),
-                        ),
-                    }
-                })
-        })
+        id: i32,
+    ) -> Result<Option<Post>, RepoError> {
+        sqlx::query_as!(Post, "SELECT * FROM post WHERE id = $1", id)
+            .fetch_optional(exec)
+            .await
+            .map_err(Into::into)
     }
 }
 
