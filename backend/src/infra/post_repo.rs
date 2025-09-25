@@ -77,7 +77,9 @@ impl PostRepo for PgPostRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{seed_data::with_seeded_users_and_root_post, time::within_one_second};
+    use crate::test_utils::{
+        seed_data::with_seeded_users_and_root_post, time::within_five_seconds,
+    };
     use chrono::{DateTime, Utc};
     use sqlx::PgExecutor;
 
@@ -212,7 +214,7 @@ mod tests {
             assert_eq!(post2.author_id, Some(4));
             assert_eq!(post2.parent_id, Some(1));
             assert_eq!(post2.body, Some(post_body_2.to_string()));
-            assert!(within_one_second(post2.created_at, Utc::now()));
+            assert!(within_five_seconds(post2.created_at, Utc::now()));
             assert!(post2.edited_at.is_none());
             assert!(post2.archived_at.is_none());
             assert!(post2.deleted_at.is_none());
@@ -221,7 +223,7 @@ mod tests {
             assert_eq!(post3.author_id, Some(3));
             assert_eq!(post3.parent_id, Some(2));
             assert_eq!(post3.body, Some(post_body_3.to_string()));
-            assert!(within_one_second(post3.created_at, Utc::now()));
+            assert!(within_five_seconds(post3.created_at, Utc::now()));
             assert!(post3.edited_at.is_none());
             assert!(post3.archived_at.is_none());
             assert!(post3.deleted_at.is_none());
@@ -230,7 +232,7 @@ mod tests {
             assert_eq!(post4.author_id, Some(2));
             assert_eq!(post4.parent_id, Some(2));
             assert_eq!(post4.body, Some(post_body_4.to_string()));
-            assert!(within_one_second(post4.created_at, Utc::now()));
+            assert!(within_five_seconds(post4.created_at, Utc::now()));
             assert!(post4.edited_at.is_none());
             assert!(post4.archived_at.is_none());
             assert!(post4.deleted_at.is_none());

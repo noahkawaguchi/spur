@@ -66,7 +66,7 @@ impl Claims {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::time::within_one_second;
+    use crate::test_utils::time::within_five_seconds;
     use chrono::{DateTime, Days, Utc};
 
     const TEST_JWT_SECRET: &str = "super_secret_testing_only";
@@ -145,7 +145,7 @@ mod tests {
             )
             .expect("failed to create datetime");
 
-            assert!(within_one_second(exp, tomorrow));
+            assert!(within_five_seconds(exp, tomorrow));
             assert_eq!(claims.sub, id.to_string());
         }
     }

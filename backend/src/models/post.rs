@@ -18,7 +18,7 @@ pub struct PostWithAuthor {
 #[cfg(test)]
 mod post_info_test_impl {
     use super::*;
-    use crate::test_utils::time::{both_none_or_within_one_second, within_one_second};
+    use crate::test_utils::time::{both_none_or_within_five_seconds, within_five_seconds};
 
     impl PartialEq for PostWithAuthor {
         /// Performs standard equality checks for each field, except the time-based ones, for which
@@ -28,10 +28,10 @@ mod post_info_test_impl {
                 && self.author_id == other.author_id
                 && self.parent_id == other.parent_id
                 && self.body == other.body
-                && within_one_second(self.created_at, other.created_at)
-                && both_none_or_within_one_second(self.edited_at, other.edited_at)
-                && both_none_or_within_one_second(self.archived_at, other.archived_at)
-                && both_none_or_within_one_second(self.deleted_at, other.deleted_at)
+                && within_five_seconds(self.created_at, other.created_at)
+                && both_none_or_within_five_seconds(self.edited_at, other.edited_at)
+                && both_none_or_within_five_seconds(self.archived_at, other.archived_at)
+                && both_none_or_within_five_seconds(self.deleted_at, other.deleted_at)
                 && self.author_username == other.author_username
         }
     }

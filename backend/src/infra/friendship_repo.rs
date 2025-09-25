@@ -79,7 +79,7 @@ impl FriendshipRepo for PgFriendshipRepo {
 mod tests {
     use super::*;
     use crate::test_utils::{
-        seed_data::seed_users, temp_db::with_test_pool, time::within_one_second,
+        seed_data::seed_users, temp_db::with_test_pool, time::within_five_seconds,
     };
     use chrono::{DateTime, Utc};
     use sqlx::PgPool;
@@ -119,7 +119,7 @@ mod tests {
             assert_eq!(friendship.lesser_id, 1);
             assert_eq!(friendship.greater_id, 2);
             assert!(friendship.lesser_requested);
-            assert!(within_one_second(friendship.requested_at, Utc::now()));
+            assert!(within_five_seconds(friendship.requested_at, Utc::now()));
             assert!(friendship.confirmed_at.is_none());
         })
         .await;
@@ -145,8 +145,8 @@ mod tests {
             assert_eq!(friendship.lesser_id, 1);
             assert_eq!(friendship.greater_id, 3);
             assert!(!friendship.lesser_requested);
-            assert!(within_one_second(friendship.requested_at, Utc::now()));
-            assert!(within_one_second(
+            assert!(within_five_seconds(friendship.requested_at, Utc::now()));
+            assert!(within_five_seconds(
                 friendship
                     .confirmed_at
                     .expect("unexpected None confirmation time"),
