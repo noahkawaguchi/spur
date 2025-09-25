@@ -3,7 +3,7 @@ use crate::{
         friendship::{FriendshipRepo, user_id_pair::UserIdPair},
         user::UserRepo,
     },
-    infra::{friendship_repo::PgFriendshipRepo, post_repo::PgPostRepo, user_repo::PgUserRepo},
+    infra::{friendship_repo::PgFriendshipRepo, user_repo::PgUserRepo},
     models::user::NewUser,
     test_utils::temp_db::with_test_pool,
 };
@@ -128,16 +128,16 @@ pub async fn seed_root_post(pool: &sqlx::PgPool) {
         .expect("failed to insert root post");
 }
 
-/// Runs the provided test with a [`PostRepo`] instance that has users and the root post seeded.
+/// Runs the provided test with users and the root post seeded.
 pub async fn with_seeded_users_and_root_post<F, Fut>(test: F)
 where
-    F: FnOnce(PgPool, PgPostRepo, [NewUser; 4]) -> Fut,
+    F: FnOnce(PgPool, [NewUser; 4]) -> Fut,
     Fut: std::future::Future<Output = ()>,
 {
     with_test_pool(|pool| async move {
         let new_users = seed_users(pool.clone()).await;
         seed_root_post(&pool).await;
-        test(pool.clone(), PgPostRepo::new(pool), new_users).await;
+        test(pool, new_users).await;
     })
     .await;
 }

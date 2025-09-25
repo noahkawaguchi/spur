@@ -1,23 +1,31 @@
-use crate::domain::post::{PostError, PostRepo, PostSvc};
+use crate::{
+    app_services::uow::UnitOfWork,
+    domain::post::{PostError, PostRepo, PostSvc},
+};
 
-pub struct PostDomainSvc<S: PostRepo> {
-    store: S,
+pub struct PostDomainSvc<U, R> {
+    uow: U,
+    repo: R,
 }
 
-impl<S: PostRepo> PostDomainSvc<S> {
-    pub const fn new(store: S) -> Self { Self { store } }
+impl<U, R> PostDomainSvc<U, R> {
+    pub const fn new(uow: U, repo: R) -> Self { Self { uow, repo } }
 }
 
 #[async_trait::async_trait]
-impl<S: PostRepo> PostSvc for PostDomainSvc<S> {
+impl<U, R> PostSvc for PostDomainSvc<U, R>
+where
+    U: UnitOfWork,
+    R: PostRepo,
+{
     async fn create_new(
         &self,
         author_id: i32,
         parent_id: i32,
         body: &str,
     ) -> Result<(), PostError> {
-        self.store
-            .insert_new(author_id, parent_id, body)
+        self.repo
+            .insert_new(self.uow.single_exec(), author_id, parent_id, body)
             .await
             .map_err(Into::into)
             .and_then(TryFrom::try_from)

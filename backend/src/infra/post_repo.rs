@@ -3,20 +3,15 @@ use crate::domain::{
     post::{PostInsertionOutcome, PostRepo},
 };
 use anyhow::anyhow;
-use sqlx::PgPool;
+use sqlx::PgExecutor;
 
-pub struct PgPostRepo {
-    pool: PgPool,
-}
-
-impl PgPostRepo {
-    pub const fn new(pool: PgPool) -> Self { Self { pool } }
-}
+pub struct PgPostRepo;
 
 #[async_trait::async_trait]
 impl PostRepo for PgPostRepo {
     async fn insert_new(
         &self,
+        exec: impl PgExecutor<'_>,
         author_id: i32,
         parent_id: i32,
         body: &str,
@@ -52,7 +47,7 @@ impl PostRepo for PgPostRepo {
             parent_id,
             body,
         )
-        .fetch_optional(&self.pool)
+        .fetch_optional(exec)
         .await
         .map_err(Into::into) // Technical errors and unique violations
         .and_then(|status| {
