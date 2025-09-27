@@ -58,8 +58,12 @@ pub mod user {
 pub mod post {
     use crate::{models::post::Post, test_utils::dummy_data::post_with_author};
 
-    pub fn three_dummies() -> [Post; 3] {
-        let [p1, p2, p3] = post_with_author::three_dummies();
+    pub fn number1() -> Post { post_with_author::number1().into() }
+    pub fn number2() -> Post { post_with_author::number2().into() }
+    pub fn number3() -> Post { post_with_author::number3().into() }
+
+    pub fn all3() -> [Post; 3] {
+        let [p1, p2, p3] = post_with_author::all3();
         [p1.into(), p2.into(), p3.into()]
     }
 }
@@ -68,41 +72,47 @@ pub mod post_with_author {
     use crate::models::post::PostWithAuthor;
     use chrono::{TimeZone, Utc};
 
-    pub fn three_dummies() -> [PostWithAuthor; 3] {
-        [
-            PostWithAuthor {
-                id: 24,
-                author_id: Some(255),
-                parent_id: Some(42),
-                body: Some(String::from("cool post body")),
-                created_at: Utc.timestamp_millis_opt(29_489_571).unwrap(),
-                edited_at: None,
-                archived_at: None,
-                deleted_at: None,
-                author_username: Some(String::from("jack54444mack")),
-            },
-            PostWithAuthor {
-                id: 999,
-                author_id: Some(2431),
-                parent_id: Some(94),
-                body: Some(String::from("one two three test post")),
-                created_at: Utc.timestamp_millis_opt(249_982_133).unwrap(),
-                edited_at: Some(Utc.timestamp_millis_opt(444_843_343).unwrap()),
-                archived_at: None,
-                deleted_at: None,
-                author_username: Some(String::from("helmet_man")),
-            },
-            PostWithAuthor {
-                id: 1324,
-                author_id: Some(44),
-                parent_id: Some(5432),
-                body: Some(String::from("hello from the world 🗺️")),
-                created_at: Utc.timestamp_millis_opt(294_424).unwrap(),
-                edited_at: None,
-                archived_at: Some(Utc.timestamp_millis_opt(442_422).unwrap()),
-                deleted_at: Some(Utc.timestamp_millis_opt(99_942_901).unwrap()),
-                author_username: Some(String::from("aunt_flo")),
-            },
-        ]
+    pub fn number1() -> PostWithAuthor {
+        PostWithAuthor {
+            id: 24,
+            author_id: Some(255),
+            parent_id: Some(42),
+            body: Some(String::from("cool post body")),
+            created_at: Utc.timestamp_millis_opt(29_489_571).unwrap(),
+            edited_at: None,
+            archived_at: None,
+            deleted_at: None,
+            author_username: Some(String::from("jack54444mack")),
+        }
     }
+
+    pub fn number2() -> PostWithAuthor {
+        PostWithAuthor {
+            id: 999,
+            author_id: Some(2431),
+            parent_id: Some(94),
+            body: Some(String::from("one two three test post")),
+            created_at: Utc.timestamp_millis_opt(249_982_133).unwrap(),
+            edited_at: Some(Utc.timestamp_millis_opt(444_843_343).unwrap()),
+            archived_at: None,
+            deleted_at: None,
+            author_username: Some(String::from("helmet_man")),
+        }
+    }
+
+    pub fn number3() -> PostWithAuthor {
+        PostWithAuthor {
+            id: 1324,
+            author_id: Some(44),
+            parent_id: Some(5432),
+            body: Some(String::from("hello from the world 🗺️")),
+            created_at: Utc.timestamp_millis_opt(294_424).unwrap(),
+            edited_at: None,
+            archived_at: Some(Utc.timestamp_millis_opt(442_422).unwrap()),
+            deleted_at: Some(Utc.timestamp_millis_opt(99_942_901).unwrap()),
+            author_username: Some(String::from("aunt_flo")),
+        }
+    }
+
+    pub fn all3() -> [PostWithAuthor; 3] { [number1(), number2(), number3()] }
 }

@@ -106,7 +106,11 @@ mod tests {
                     assert_eq!(parent_ids[i], passed_id);
                     // Alternating between the first and second dummy posts because the third is
                     // marked as deleted, which correctly causes a different error
-                    Ok(Some(dummy_data::post::three_dummies()[i & 1].clone()))
+                    Ok(Some(if i & 1 == 1 {
+                        dummy_data::post::number1()
+                    } else {
+                        dummy_data::post::number2()
+                    }))
                 })),
                 insert_new: Some(Box::new(
                     move |passed_author_id, passed_parent_id, passed_post_body| {

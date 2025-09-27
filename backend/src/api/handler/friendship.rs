@@ -378,7 +378,7 @@ mod tests {
         #[tokio::test]
         async fn lists_friend_posts() {
             let requester_id = 557;
-            let posts = post_with_author::three_dummies();
+            let posts = post_with_author::all3();
             let posts_clone = posts.clone();
 
             let mut mock_social_read = MockSocialRead::new();
