@@ -42,3 +42,20 @@ impl From<RepoError> for PostError {
         }
     }
 }
+
+#[cfg(test)]
+impl PartialEq for PostError {
+    /// Compares the string representation of `e` for `Internal(e)`. Otherwise, just checks that the
+    /// variant is the same.
+    fn eq(&self, other: &Self) -> bool {
+        use std::mem::discriminant;
+
+        match self {
+            Self::Internal(self_e) => {
+                matches!(other,
+                    Self::Internal(other_e) if self_e.to_string() == other_e.to_string())
+            }
+            _ => discriminant(self) == discriminant(other),
+        }
+    }
+}

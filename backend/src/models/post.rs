@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 
 /// The post entity as it exists in the database.
+#[cfg_attr(test, derive(Clone))]
 pub struct Post {
     pub id: i32,
     pub author_id: Option<i32>,
@@ -31,6 +32,21 @@ pub struct PostWithAuthor {
 mod post_info_test_impl {
     use super::*;
     use crate::test_utils::time::{both_none_or_within_five_seconds, within_five_seconds};
+
+    impl From<PostWithAuthor> for Post {
+        fn from(pwa: PostWithAuthor) -> Self {
+            Self {
+                id: pwa.id,
+                author_id: pwa.author_id,
+                parent_id: pwa.parent_id,
+                body: pwa.body,
+                created_at: pwa.created_at,
+                edited_at: pwa.edited_at,
+                archived_at: pwa.archived_at,
+                deleted_at: pwa.deleted_at,
+            }
+        }
+    }
 
     impl PartialEq for PostWithAuthor {
         /// Performs standard equality checks for each field, except the time-based ones, for which

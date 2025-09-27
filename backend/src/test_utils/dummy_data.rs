@@ -55,6 +55,15 @@ pub mod user {
     // pub fn all() -> [User; 4] { [number1(), number2(), number3(), number4()] }
 }
 
+pub mod post {
+    use crate::{models::post::Post, test_utils::dummy_data::post_with_author};
+
+    pub fn three_dummies() -> [Post; 3] {
+        let [p1, p2, p3] = post_with_author::three_dummies();
+        [p1.into(), p2.into(), p3.into()]
+    }
+}
+
 pub mod post_with_author {
     use crate::models::post::PostWithAuthor;
     use chrono::{TimeZone, Utc};
