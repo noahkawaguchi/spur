@@ -86,24 +86,44 @@ mod tests {
         .await;
     }
 
-    // #[tokio::test]
-    // async fn rejects_empty_and_whitespace_only_post_bodies() {
-    //     with_seeded_users_and_root_post(|pool, _| async move {
-    //         // In actual use, invalid post bodies like these should have already been rejected at
-    //         // the request validation level.
-    //         //
-    //         // Some of the following strings include the full-width space character '　'
-    // (different         // from the ASCII space character).
-    //         for empty_body in ["", " ", "   ", "　", "　　　", "\t", "\r\t\n"] {
-    //             let result = PgPostRepo.insert_new(&pool, 4, 1, empty_body).await;
-    //             println!("{result:#?}");
-    //             assert!(matches!(result,
-    //                 Err(RepoError::CheckViolation(v)) if v == "text_non_empty"
-    //             ));
-    //         }
-    //     })
-    //     .await;
-    // }
+    #[tokio::test]
+    async fn rejects_empty_and_whitespace_only_post_bodies() {
+        // In actual use, invalid post bodies like these should have already been rejected at the
+        // request validation level.
+        //
+        // Some of the following strings include the full-width space character '　' (different from
+        // the ASCII space character).
+        for empty_body in ["", " ", "   ", "　", "　　　", "\t", "\n\n", " \r\t \n"] {
+            with_seeded_users_and_root_post(|pool, _| async move {
+                assert!(matches!(
+                    PgPostRepo.insert_new(&pool, 4, 1, empty_body).await,
+                    Err(RepoError::CheckViolation(v)) if v == "text_non_empty"
+                ));
+            })
+            .await;
+        }
+    }
+
+    #[tokio::test]
+    async fn allows_post_bodies_with_non_whitespace_characters() {
+        for non_empty_body in [
+            "hello",
+            "   hello   ",
+            " h e l l o ",
+            "!    ",
+            "世界",
+            "　世　界　",
+            "　　　　世界",
+        ] {
+            with_seeded_users_and_root_post(|pool, _| async move {
+                assert!(matches!(
+                    PgPostRepo.insert_new(&pool, 4, 1, non_empty_body).await,
+                    Ok(())
+                ));
+            })
+            .await;
+        }
+    }
 
     #[tokio::test]
     async fn returns_none_for_missing_post() {
