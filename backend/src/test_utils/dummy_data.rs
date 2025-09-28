@@ -60,12 +60,12 @@ pub mod post {
 
     pub fn number1() -> Post { post_with_author::number1().into() }
     pub fn number2() -> Post { post_with_author::number2().into() }
-    pub fn number3() -> Post { post_with_author::number3().into() }
+    // pub fn number3() -> Post { post_with_author::number3().into() }
 
-    pub fn all3() -> [Post; 3] {
-        let [p1, p2, p3] = post_with_author::all3();
-        [p1.into(), p2.into(), p3.into()]
-    }
+    // pub fn all3() -> [Post; 3] {
+    //     let [p1, p2, p3] = post_with_author::all3();
+    //     [p1.into(), p2.into(), p3.into()]
+    // }
 }
 
 pub mod post_with_author {
