@@ -128,7 +128,8 @@ pub async fn seed_root_post(pool: &sqlx::PgPool) {
         .expect("failed to insert root post");
 }
 
-/// Runs the provided test with users and the root post seeded.
+/// Runs the provided test on an ephemeral test database seeded with users (IDs 1, 2, 3, and 4) and
+/// the root post (by user 1).
 pub async fn with_seeded_users_and_root_post<F, Fut>(test: F)
 where
     F: FnOnce(PgPool, [NewUser; 4]) -> Fut,
