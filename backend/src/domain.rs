@@ -14,3 +14,18 @@ pub enum RepoError {
     #[error("Technical error: {0}")]
     Technical(#[from] anyhow::Error),
 }
+
+#[cfg(test)]
+impl Clone for RepoError {
+    /// Clones `self` as expected, except for the `Technical` variant, for which a new
+    /// `anyhow::Error` is created from the string representation of the existing one.
+    fn clone(&self) -> Self {
+        use anyhow::anyhow;
+
+        match self {
+            Self::UniqueViolation(s) => Self::UniqueViolation(s.clone()),
+            Self::CheckViolation(s) => Self::CheckViolation(s.clone()),
+            Self::Technical(e) => Self::Technical(anyhow!(e.to_string())),
+        }
+    }
+}

@@ -39,8 +39,7 @@ impl AppState {
             PgFriendshipRepo,
         )) as Arc<dyn MutateFriendshipByUsername>;
 
-        let post_svc =
-            Arc::new(PostDomainSvc::new(PgPostRepo::new(pool.clone()))) as Arc<dyn PostSvc>;
+        let post_svc = Arc::new(PostDomainSvc::new(pool.clone(), PgPostRepo)) as Arc<dyn PostSvc>;
 
         let social_read = Arc::new(PgSocialRead::new(pool.clone())) as Arc<dyn SocialRead>;
         let post_with_author_read =

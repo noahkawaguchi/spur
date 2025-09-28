@@ -2,9 +2,13 @@ use crate::{
     domain::{
         RepoError,
         friendship::{FriendshipRepo, FriendshipStatus, user_id_pair::UserIdPair},
+        post::PostRepo,
         user::UserRepo,
     },
-    models::user::{NewUser, User},
+    models::{
+        post::Post,
+        user::{NewUser, User},
+    },
 };
 use sqlx::PgExecutor;
 
@@ -83,5 +87,33 @@ impl FriendshipRepo for MockFriendshipRepo {
         ids: &UserIdPair,
     ) -> Result<FriendshipStatus, RepoError> {
         (self.get_status.as_ref().unwrap())(ids)
+    }
+}
+
+#[allow(clippy::type_complexity)]
+#[derive(Default)]
+pub struct MockPostRepo {
+    pub insert_new: Option<Box<dyn Fn(i32, i32, &str) -> Result<(), RepoError> + Send + Sync>>,
+    pub get_by_id: Option<Box<dyn Fn(i32) -> Result<Option<Post>, RepoError> + Send + Sync>>,
+}
+
+#[async_trait::async_trait]
+impl PostRepo for MockPostRepo {
+    async fn insert_new(
+        &self,
+        _exec: impl PgExecutor<'_>,
+        author_id: i32,
+        parent_id: i32,
+        body: &str,
+    ) -> Result<(), RepoError> {
+        (self.insert_new.as_ref().unwrap())(author_id, parent_id, body)
+    }
+
+    async fn get_by_id(
+        &self,
+        _exec: impl PgExecutor<'_>,
+        id: i32,
+    ) -> Result<Option<Post>, RepoError> {
+        (self.get_by_id.as_ref().unwrap())(id)
     }
 }

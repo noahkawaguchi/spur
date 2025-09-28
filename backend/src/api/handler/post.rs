@@ -193,7 +193,7 @@ mod tests {
 
         #[tokio::test]
         async fn retrieves_the_post() {
-            let [_, post, _] = post_with_author::three_dummies();
+            let [_, post, _] = post_with_author::all3();
             let post_clone = post.clone();
 
             let mut mock_pwa_read = MockPostWithAuthorRead::new();
@@ -256,7 +256,7 @@ mod tests {
         #[tokio::test]
         async fn retrieves_child_posts() {
             let parent_id = 92;
-            let posts = post_with_author::three_dummies(); // Not actually children
+            let posts = post_with_author::all3(); // Not actually children
             let posts_vec = posts.to_vec();
 
             let mut mock_pwa_read = MockPostWithAuthorRead::new();
@@ -318,7 +318,7 @@ mod tests {
 
         #[tokio::test]
         async fn retrieves_posts_by_a_user() {
-            let posts = post_with_author::three_dummies();
+            let posts = post_with_author::all3();
             let posts_vec = posts.to_vec();
             let author_username = String::from("some_user");
 
@@ -382,7 +382,7 @@ mod tests {
         #[tokio::test]
         async fn retrieves_posts_by_the_requester() {
             let requester_id = 422;
-            let posts = post_with_author::three_dummies();
+            let posts = post_with_author::all3();
             let posts_vec = posts.to_vec();
 
             let mut mock_pwa_read = MockPostWithAuthorRead::new();

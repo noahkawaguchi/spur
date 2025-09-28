@@ -88,15 +88,19 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{domain::post::PostRepo, test_utils::seed_data::with_seeded_users_and_root_post};
+    use crate::{
+        domain::post::PostRepo, infra::post_repo::PgPostRepo,
+        test_utils::seed_data::with_seeded_users_and_root_post,
+    };
     use chrono::Utc;
 
     #[tokio::test]
     async fn gets_an_existing_post() {
-        with_seeded_users_and_root_post(|pool, repo, users| async move {
-            let read = PgPostWithAuthorRead::new(pool);
+        with_seeded_users_and_root_post(|pool, users| async move {
+            let repo = PgPostRepo;
+            let read = PgPostWithAuthorRead::new(pool.clone());
             let body = "This post exists!";
-            repo.insert_new(2, 1, body).await.unwrap();
+            repo.insert_new(&pool, 2, 1, body).await.unwrap();
             let actual = read.by_post_id(2).await;
             let expected = PostWithAuthor {
                 id: 2,
@@ -116,9 +120,12 @@ mod tests {
 
     #[tokio::test]
     async fn errors_for_nonexistent_post() {
-        with_seeded_users_and_root_post(|pool, repo, _| async move {
-            let read = PgPostWithAuthorRead::new(pool);
-            repo.insert_new(2, 1, "This post exists!").await.unwrap();
+        with_seeded_users_and_root_post(|pool, _| async move {
+            let repo = PgPostRepo;
+            let read = PgPostWithAuthorRead::new(pool.clone());
+            repo.insert_new(&pool, 2, 1, "This post exists!")
+                .await
+                .unwrap();
             let actual = read.by_post_id(3).await; // Only posts 1 and 2 exist
             assert!(matches!(actual, Err(ReadError::NotFound)));
         })
@@ -127,16 +134,17 @@ mod tests {
 
     #[tokio::test]
     async fn gets_zero_one_or_many_child_posts_of_a_parent_and_no_others() {
-        with_seeded_users_and_root_post(|pool, repo, _| async move {
-            let read = PgPostWithAuthorRead::new(pool);
+        with_seeded_users_and_root_post(|pool, _| async move {
+            let repo = PgPostRepo;
+            let read = PgPostWithAuthorRead::new(pool.clone());
 
             let parent_id = 2;
             // Insert post to be the parent
-            repo.insert_new(4, 1, "I'm going to be a parent soon") // ID 2
+            repo.insert_new(&pool, 4, 1, "I'm going to be a parent soon") // ID 2
                 .await
                 .unwrap();
             // Should not retrieve sibling
-            repo.insert_new(3, 1, "I'm your sibling, not your child") // ID 3
+            repo.insert_new(&pool, 3, 1, "I'm your sibling, not your child") // ID 3
                 .await
                 .unwrap();
             // No children at first
@@ -145,11 +153,11 @@ mod tests {
                 Ok(v) if v.is_empty()
             ));
             // First child
-            repo.insert_new(1, parent_id, "I'm your first child") // ID 4
+            repo.insert_new(&pool, 1, parent_id, "I'm your first child") // ID 4
                 .await
                 .unwrap();
             // Should not retrieve grandchildren
-            repo.insert_new(2, 4, "I'm your grandchild, not your child") // ID 5
+            repo.insert_new(&pool, 2, 4, "I'm your grandchild, not your child") // ID 5
                 .await
                 .unwrap();
             let first_child = read.by_post_id(4).await.unwrap();
@@ -158,10 +166,10 @@ mod tests {
                 Ok(v) if v.len() == 1 && v[0] == first_child
             ));
             // More children
-            repo.insert_new(2, parent_id, "Second child here") // ID 6
+            repo.insert_new(&pool, 2, parent_id, "Second child here") // ID 6
                 .await
                 .unwrap();
-            repo.insert_new(3, parent_id, "Third child here") // ID 7
+            repo.insert_new(&pool, 3, parent_id, "Third child here") // ID 7
                 .await
                 .unwrap();
             let second_child = read.by_post_id(6).await.unwrap();
@@ -178,17 +186,24 @@ mod tests {
 
     #[tokio::test]
     async fn gets_only_posts_by_a_specific_user() {
-        with_seeded_users_and_root_post(|pool, repo, users| async move {
-            let read = PgPostWithAuthorRead::new(pool);
+        with_seeded_users_and_root_post(|pool, users| async move {
+            let repo = PgPostRepo;
+            let read = PgPostWithAuthorRead::new(pool.clone());
 
-            repo.insert_new(3, 1, "First post by user 3").await.unwrap(); // Post ID 2
-            repo.insert_new(2, 2, "This post by user 2 should not come up") // Post ID 3
+            // Post ID 2
+            repo.insert_new(&pool, 3, 1, "First post by user 3")
                 .await
                 .unwrap();
-            repo.insert_new(4, 1, "This post by user 4 should not come up ") // Post ID 4
+            // Post ID 3
+            repo.insert_new(&pool, 2, 2, "This post by user 2 should not come up")
                 .await
                 .unwrap();
-            repo.insert_new(3, 4, "Second post by user 3") // Post ID 5
+            // Post ID 4
+            repo.insert_new(&pool, 4, 1, "This post by user 4 should not come up ")
+                .await
+                .unwrap();
+            // Post ID 5
+            repo.insert_new(&pool, 3, 4, "Second post by user 3")
                 .await
                 .unwrap();
 

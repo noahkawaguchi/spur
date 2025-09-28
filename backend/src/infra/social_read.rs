@@ -198,7 +198,7 @@ mod tests {
 
             let read = PgSocialRead::new(pool.clone());
             let post_with_author_read = PgPostWithAuthorRead::new(pool.clone());
-            let repo = PgPostRepo::new(pool);
+            let repo = PgPostRepo;
 
             let u1p2_body = "User one post two";
             let u1p3_body = "User one post three";
@@ -209,14 +209,14 @@ mod tests {
             let u4p1_body = "User four post one";
             let u4p2_body = "User four post two";
 
-            repo.insert_new(4, 1, u4p1_body).await.unwrap(); // ID 2
-            repo.insert_new(3, 1, u3p1_body).await.unwrap(); // ID 3
-            repo.insert_new(2, 1, u2p1_body).await.unwrap(); // ID 4
-            repo.insert_new(1, 2, u1p2_body).await.unwrap(); // ID 5
-            repo.insert_new(4, 3, u4p2_body).await.unwrap(); // ID 6
-            repo.insert_new(3, 2, u3p2_body).await.unwrap(); // ID 7
-            repo.insert_new(2, 2, u2p2_body).await.unwrap(); // ID 8
-            repo.insert_new(1, 3, u1p3_body).await.unwrap(); // ID 9
+            repo.insert_new(&pool, 4, 1, u4p1_body).await.unwrap(); // ID 2
+            repo.insert_new(&pool, 3, 1, u3p1_body).await.unwrap(); // ID 3
+            repo.insert_new(&pool, 2, 1, u2p1_body).await.unwrap(); // ID 4
+            repo.insert_new(&pool, 1, 2, u1p2_body).await.unwrap(); // ID 5
+            repo.insert_new(&pool, 4, 3, u4p2_body).await.unwrap(); // ID 6
+            repo.insert_new(&pool, 3, 2, u3p2_body).await.unwrap(); // ID 7
+            repo.insert_new(&pool, 2, 2, u2p2_body).await.unwrap(); // ID 8
+            repo.insert_new(&pool, 1, 3, u1p3_body).await.unwrap(); // ID 9
 
             let u2p1 = post_with_author_read.by_post_id(4).await.unwrap();
             let u2p2 = post_with_author_read.by_post_id(8).await.unwrap();

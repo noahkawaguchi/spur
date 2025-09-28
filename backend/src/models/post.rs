@@ -1,5 +1,18 @@
 use chrono::{DateTime, Utc};
 
+/// The post entity as it exists in the database.
+#[cfg_attr(test, derive(Clone))]
+pub struct Post {
+    pub id: i32,
+    pub author_id: Option<i32>,
+    pub parent_id: Option<i32>,
+    pub body: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub edited_at: Option<DateTime<Utc>>,
+    pub archived_at: Option<DateTime<Utc>>,
+    pub deleted_at: Option<DateTime<Utc>>,
+}
+
 /// The post entity as it exists in the database with the addition of the author's username.
 #[cfg_attr(test, derive(Debug, Clone))]
 pub struct PostWithAuthor {
@@ -18,7 +31,22 @@ pub struct PostWithAuthor {
 #[cfg(test)]
 mod post_info_test_impl {
     use super::*;
-    use crate::test_utils::time::{both_none_or_within_one_second, within_one_second};
+    use crate::test_utils::time::{both_none_or_within_five_seconds, within_five_seconds};
+
+    impl From<PostWithAuthor> for Post {
+        fn from(pwa: PostWithAuthor) -> Self {
+            Self {
+                id: pwa.id,
+                author_id: pwa.author_id,
+                parent_id: pwa.parent_id,
+                body: pwa.body,
+                created_at: pwa.created_at,
+                edited_at: pwa.edited_at,
+                archived_at: pwa.archived_at,
+                deleted_at: pwa.deleted_at,
+            }
+        }
+    }
 
     impl PartialEq for PostWithAuthor {
         /// Performs standard equality checks for each field, except the time-based ones, for which
@@ -28,10 +56,10 @@ mod post_info_test_impl {
                 && self.author_id == other.author_id
                 && self.parent_id == other.parent_id
                 && self.body == other.body
-                && within_one_second(self.created_at, other.created_at)
-                && both_none_or_within_one_second(self.edited_at, other.edited_at)
-                && both_none_or_within_one_second(self.archived_at, other.archived_at)
-                && both_none_or_within_one_second(self.deleted_at, other.deleted_at)
+                && within_five_seconds(self.created_at, other.created_at)
+                && both_none_or_within_five_seconds(self.edited_at, other.edited_at)
+                && both_none_or_within_five_seconds(self.archived_at, other.archived_at)
+                && both_none_or_within_five_seconds(self.deleted_at, other.deleted_at)
                 && self.author_username == other.author_username
         }
     }

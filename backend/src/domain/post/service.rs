@@ -1,163 +1,231 @@
-use crate::domain::post::{PostError, PostRepo, PostSvc};
+use crate::{
+    app_services::uow::{Tx, UnitOfWork},
+    domain::post::{PostError, PostRepo, PostSvc},
+};
 
-pub struct PostDomainSvc<S: PostRepo> {
-    store: S,
+pub struct PostDomainSvc<U, R> {
+    uow: U,
+    repo: R,
 }
 
-impl<S: PostRepo> PostDomainSvc<S> {
-    pub const fn new(store: S) -> Self { Self { store } }
+impl<U, R> PostDomainSvc<U, R> {
+    pub const fn new(uow: U, repo: R) -> Self { Self { uow, repo } }
 }
 
 #[async_trait::async_trait]
-impl<S: PostRepo> PostSvc for PostDomainSvc<S> {
+impl<U, R> PostSvc for PostDomainSvc<U, R>
+where
+    U: UnitOfWork,
+    R: PostRepo,
+{
     async fn create_new(
         &self,
         author_id: i32,
         parent_id: i32,
         body: &str,
     ) -> Result<(), PostError> {
-        self.store
-            .insert_new(author_id, parent_id, body)
-            .await
-            .map_err(Into::into)
-            .and_then(TryFrom::try_from)
+        // Disallow writing posts in response to nonexistent, deleted, archived, or one's own posts
+
+        let mut tx = self.uow.begin_uow().await?;
+
+        let parent = self
+            .repo
+            .get_by_id(tx.exec(), parent_id)
+            .await?
+            .ok_or(PostError::NotFound)?;
+
+        if parent.deleted_at.is_some() {
+            return Err(PostError::DeletedParent);
+        }
+        if parent.archived_at.is_some() {
+            return Err(PostError::ArchivedParent);
+        }
+        if parent
+            .author_id
+            .is_some_and(|parent_author_id| parent_author_id == author_id)
+        {
+            return Err(PostError::SelfReply);
+        }
+
+        self.repo
+            .insert_new(tx.exec(), author_id, parent_id, body)
+            .await?;
+
+        tx.commit_uow().await?;
+
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{
-        RepoError,
-        post::{MockPostRepo, PostInsertionOutcome},
+    use crate::{
+        domain::RepoError,
+        models::post::Post,
+        test_utils::{dummy_data, fake_db::FakeUow, mock_repos::MockPostRepo},
     };
     use anyhow::anyhow;
-    use mockall::{Sequence, predicate::eq};
+    use chrono::Utc;
 
-    #[tokio::test]
-    async fn translates_repo_errors() {
-        let author_ids = [1, 2, 3, 4];
-        let parent_ids = [10, 20, 30, 40];
-        let post_bodies = ["super", "cool", "post", "bodies"];
+    async fn run_unacceptable_parent_test(
+        author_id: i32,
+        parent_post: Option<Post>,
+        expected_post_error: PostError,
+    ) {
+        let parent_post_id = parent_post.as_ref().map_or(543, |post| post.id);
 
-        let mut mock_post_repo = MockPostRepo::new();
-        let mut seq = Sequence::new();
-        mock_post_repo
-            .expect_insert_new()
-            .with(eq(author_ids[0]), eq(parent_ids[0]), eq(post_bodies[0]))
-            .once()
-            .in_sequence(&mut seq)
-            .return_once(|_, _, _| {
-                Err(RepoError::UniqueViolation(String::from(
-                    "post_author_parent_unique",
-                )))
-            });
-        mock_post_repo
-            .expect_insert_new()
-            .with(eq(author_ids[1]), eq(parent_ids[1]), eq(post_bodies[1]))
-            .once()
-            .in_sequence(&mut seq)
-            .return_once(|_, _, _| {
-                Err(RepoError::UniqueViolation(String::from(
-                    "some unique constraint violation here",
-                )))
-            });
-        mock_post_repo
-            .expect_insert_new()
-            .with(eq(author_ids[3]), eq(parent_ids[3]), eq(post_bodies[3]))
-            .once()
-            .in_sequence(&mut seq)
-            .return_once(|_, _, _| Err(RepoError::Technical(anyhow!("something went wrong!"))));
+        let mock_repo = MockPostRepo {
+            get_by_id: Some(Box::new(move |passed_id| {
+                assert_eq!(parent_post_id, passed_id);
+                Ok(parent_post.clone())
+            })),
+            ..Default::default()
+        };
 
-        let post_svc = PostDomainSvc::new(mock_post_repo);
-        assert!(matches!(
-            post_svc
-                .create_new(author_ids[0], parent_ids[0], post_bodies[0])
-                .await,
-            Err(PostError::DuplicateReply)
-        ));
-        assert!(matches!(
-            post_svc
-                .create_new(author_ids[1], parent_ids[1], post_bodies[1])
-                .await,
-            Err(PostError::Internal(e)) if e.to_string() ==
-            "Unexpected unique violation: some unique constraint violation here"
-        ));
-        assert!(matches!(
-            post_svc.create_new(author_ids[3], parent_ids[3], post_bodies[3]).await,
-            Err(PostError::Internal(e)) if e .to_string() == "something went wrong!"
-        ));
+        let (fake_uow, probe) = FakeUow::with_probe();
+        let result = PostDomainSvc::new(fake_uow, mock_repo)
+            .create_new(author_id, parent_post_id, "My parent is unacceptable")
+            .await;
+
+        assert!(matches!(result, Err(e) if e == expected_post_error));
+        assert!(!probe.commit_called());
     }
 
     #[tokio::test]
-    async fn translates_post_insertion_outcomes() {
-        let author_ids = [11, 22, 33, 44, 55];
-        let parent_ids = [101, 202, 303, 404, 505];
-        let post_bodies = ["very", "awesome", "correspondence", "happening", "here"];
+    async fn disallows_replying_to_a_nonexistent_post() {
+        run_unacceptable_parent_test(20, None, PostError::NotFound).await;
+    }
 
-        let mut mock_post_repo = MockPostRepo::new();
-        let mut seq = Sequence::new();
-        mock_post_repo
-            .expect_insert_new()
-            .with(eq(author_ids[0]), eq(parent_ids[0]), eq(post_bodies[0]))
-            .once()
-            .in_sequence(&mut seq)
-            .return_once(|_, _, _| Ok(PostInsertionOutcome::Inserted));
-        mock_post_repo
-            .expect_insert_new()
-            .with(eq(author_ids[1]), eq(parent_ids[1]), eq(post_bodies[1]))
-            .once()
-            .in_sequence(&mut seq)
-            .return_once(|_, _, _| Ok(PostInsertionOutcome::ParentMissing));
-        mock_post_repo
-            .expect_insert_new()
-            .with(eq(author_ids[2]), eq(parent_ids[2]), eq(post_bodies[2]))
-            .once()
-            .in_sequence(&mut seq)
-            .return_once(|_, _, _| Ok(PostInsertionOutcome::ParentDeleted));
-        mock_post_repo
-            .expect_insert_new()
-            .with(eq(author_ids[3]), eq(parent_ids[3]), eq(post_bodies[3]))
-            .once()
-            .in_sequence(&mut seq)
-            .return_once(|_, _, _| Ok(PostInsertionOutcome::ParentArchived));
-        mock_post_repo
-            .expect_insert_new()
-            .with(eq(author_ids[4]), eq(parent_ids[4]), eq(post_bodies[4]))
-            .once()
-            .in_sequence(&mut seq)
-            .return_once(|_, _, _| Ok(PostInsertionOutcome::SelfReply));
+    #[tokio::test]
+    async fn disallows_replying_to_a_deleted_post() {
+        let mut deleted_parent = dummy_data::post::number1();
+        deleted_parent.deleted_at = Some(Utc::now());
+        run_unacceptable_parent_test(
+            deleted_parent.author_id.unwrap_or(41) + 1,
+            Some(deleted_parent),
+            PostError::DeletedParent,
+        )
+        .await;
+    }
 
-        let post_svc = PostDomainSvc::new(mock_post_repo);
-        assert!(matches!(
-            post_svc
-                .create_new(author_ids[0], parent_ids[0], post_bodies[0])
-                .await,
-            Ok(())
-        ));
-        assert!(matches!(
-            post_svc
-                .create_new(author_ids[1], parent_ids[1], post_bodies[1])
-                .await,
-            Err(PostError::NotFound)
-        ));
-        assert!(matches!(
-            post_svc
-                .create_new(author_ids[2], parent_ids[2], post_bodies[2])
-                .await,
-            Err(PostError::DeletedParent)
-        ));
-        assert!(matches!(
-            post_svc
-                .create_new(author_ids[3], parent_ids[3], post_bodies[3])
-                .await,
-            Err(PostError::ArchivedParent)
-        ));
-        assert!(matches!(
-            post_svc
-                .create_new(author_ids[4], parent_ids[4], post_bodies[4])
-                .await,
-            Err(PostError::SelfReply)
-        ));
+    #[tokio::test]
+    async fn disallows_replying_to_an_archived_post() {
+        let mut archived_parent = dummy_data::post::number1();
+        archived_parent.archived_at = Some(Utc::now());
+        run_unacceptable_parent_test(
+            archived_parent.author_id.unwrap_or(43) - 1,
+            Some(archived_parent),
+            PostError::ArchivedParent,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn disallows_replying_to_ones_own_post() {
+        let self_reply_parent = dummy_data::post::number1();
+        run_unacceptable_parent_test(
+            self_reply_parent.author_id.unwrap(),
+            Some(self_reply_parent),
+            PostError::SelfReply,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn creates_post_and_commits_if_all_conditions_are_met() {
+        let parent_post = dummy_data::post::number1();
+        let parent_post_id = parent_post.id;
+        let new_post_author_id = parent_post.author_id.unwrap() + 15;
+        let new_post_body = "This is a new post that should work";
+
+        let mock_repo = MockPostRepo {
+            get_by_id: Some(Box::new(move |passed_id| {
+                assert_eq!(parent_post_id, passed_id);
+                Ok(Some(parent_post.clone()))
+            })),
+            insert_new: Some(Box::new(
+                move |passed_author_id, passed_parent_id, passed_post_body| {
+                    assert_eq!(new_post_author_id, passed_author_id);
+                    assert_eq!(parent_post_id, passed_parent_id);
+                    assert_eq!(new_post_body, passed_post_body);
+                    Ok(())
+                },
+            )),
+        };
+
+        let (fake_uow, probe) = FakeUow::with_probe();
+        let result = PostDomainSvc::new(fake_uow, mock_repo)
+            .create_new(new_post_author_id, parent_post_id, new_post_body)
+            .await;
+
+        assert!(matches!(result, Ok(())));
+        assert!(probe.commit_called());
+    }
+
+    #[tokio::test]
+    async fn translates_repo_errors() {
+        let author_ids = [1, 2, 3, 4, 5];
+        let parent_ids = [10, 20, 30, 40, 50];
+        let post_bodies = ["super", "cool", "post", "bodies", "here"];
+
+        for (i, (repo_error, post_error)) in [
+            (
+                RepoError::UniqueViolation(String::from("post_author_parent_unique")),
+                PostError::DuplicateReply,
+            ),
+            (
+                RepoError::UniqueViolation(String::from("some unique constraint violation here")),
+                PostError::Internal(anyhow!(
+                    "Unexpected unique violation: some unique constraint violation here"
+                )),
+            ),
+            (
+                RepoError::CheckViolation(String::from("text_non_empty")),
+                PostError::Internal(anyhow!(
+                    "Empty field made it past request validation: text_non_empty",
+                )),
+            ),
+            (
+                RepoError::CheckViolation(String::from("some check violation")),
+                PostError::Internal(anyhow!("Unexpected check violation: some check violation")),
+            ),
+            (
+                RepoError::Technical(anyhow!("something went wrong!")),
+                PostError::Internal(anyhow!("something went wrong!")),
+            ),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let mock_post_repo = MockPostRepo {
+                get_by_id: Some(Box::new(move |passed_id| {
+                    assert_eq!(parent_ids[i], passed_id);
+                    // Alternating between the first and second dummy posts because the third is
+                    // marked as deleted, which correctly causes a different error
+                    Ok(Some(if i & 1 == 1 {
+                        dummy_data::post::number1()
+                    } else {
+                        dummy_data::post::number2()
+                    }))
+                })),
+                insert_new: Some(Box::new(
+                    move |passed_author_id, passed_parent_id, passed_post_body| {
+                        assert_eq!(author_ids[i], passed_author_id);
+                        assert_eq!(parent_ids[i], passed_parent_id);
+                        assert_eq!(post_bodies[i], passed_post_body);
+                        Err(repo_error.clone())
+                    },
+                )),
+            };
+
+            let (fake_uow, probe) = FakeUow::with_probe();
+            let result = PostDomainSvc::new(fake_uow, mock_post_repo)
+                .create_new(author_ids[i], parent_ids[i], post_bodies[i])
+                .await;
+
+            assert!(matches!(result, Err(e) if e == post_error));
+            assert!(!probe.commit_called());
+        }
     }
 }

@@ -1,4 +1,4 @@
-use crate::domain::{RepoError, post::PostInsertionOutcome};
+use crate::domain::RepoError;
 use anyhow::anyhow;
 use thiserror::Error;
 
@@ -23,19 +23,6 @@ pub enum PostError {
     Internal(#[from] anyhow::Error),
 }
 
-impl TryFrom<PostInsertionOutcome> for () {
-    type Error = PostError;
-    fn try_from(outcome: PostInsertionOutcome) -> Result<Self, Self::Error> {
-        match outcome {
-            PostInsertionOutcome::Inserted => Ok(()),
-            PostInsertionOutcome::ParentMissing => Err(Self::Error::NotFound),
-            PostInsertionOutcome::ParentDeleted => Err(Self::Error::DeletedParent),
-            PostInsertionOutcome::ParentArchived => Err(Self::Error::ArchivedParent),
-            PostInsertionOutcome::SelfReply => Err(Self::Error::SelfReply),
-        }
-    }
-}
-
 impl From<RepoError> for PostError {
     fn from(e: RepoError) -> Self {
         match e {
@@ -52,6 +39,23 @@ impl From<RepoError> for PostError {
                 Self::Internal(anyhow!("Unexpected check violation: {v}"))
             }
             RepoError::Technical(e) => Self::Internal(e),
+        }
+    }
+}
+
+#[cfg(test)]
+impl PartialEq for PostError {
+    /// Compares the string representation of `e` for `Internal(e)`. Otherwise, just checks that the
+    /// variant is the same.
+    fn eq(&self, other: &Self) -> bool {
+        use std::mem::discriminant;
+
+        match self {
+            Self::Internal(self_e) => {
+                matches!(other,
+                    Self::Internal(other_e) if self_e.to_string() == other_e.to_string())
+            }
+            _ => discriminant(self) == discriminant(other),
         }
     }
 }

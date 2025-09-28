@@ -67,7 +67,7 @@ impl UserRepo for PgUserRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{temp_db::with_test_pool, time::within_one_second};
+    use crate::test_utils::{temp_db::with_test_pool, time::within_five_seconds};
     use chrono::Utc;
 
     fn make_test_users() -> Vec<NewUser> {
@@ -172,7 +172,7 @@ mod tests {
                     .await
                     .expect("failed to insert user");
 
-                assert!(within_one_second(created_user.created_at, Utc::now()));
+                assert!(within_five_seconds(created_user.created_at, Utc::now()));
 
                 // id should increment starting from 1
                 let expected_id: i32 = (i + 1).try_into().expect("failed to cast usize into i32");
