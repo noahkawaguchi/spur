@@ -14,7 +14,7 @@ use crate::{
 use anyhow::Result;
 use axum::extract::FromRef;
 use sqlx::{PgPool, postgres::PgPoolOptions};
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 #[derive(Clone, FromRef)]
 pub struct AppState {
@@ -30,6 +30,7 @@ impl AppState {
     pub async fn init(db_url: &str, jwt_secret: String) -> Result<Self> {
         let pool = PgPoolOptions::new()
             .max_connections(10)
+            .acquire_timeout(Duration::from_secs(15))
             .connect(db_url)
             .await?;
 
