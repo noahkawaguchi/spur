@@ -47,13 +47,11 @@ impl AppState {
             pool.clone(),
             PgUserRepo,
             PgFriendshipRepo,
-        )) as Arc<dyn MutateFriendshipByUsername>;
+        ));
 
-        let post_svc = Arc::new(PostDomainSvc::new(pool.clone(), PgPostRepo)) as Arc<dyn PostSvc>;
-
-        let social_read = Arc::new(PgSocialRead::new(pool.clone())) as Arc<dyn SocialRead>;
-        let post_with_author_read =
-            Arc::new(PgPostWithAuthorRead::new(pool)) as Arc<dyn PostWithAuthorRead>;
+        let post_svc = Arc::new(PostDomainSvc::new(pool.clone(), PgPostRepo));
+        let social_read = Arc::new(PgSocialRead::new(pool.clone()));
+        let post_with_author_read = Arc::new(PgPostWithAuthorRead::new(pool));
 
         Self { auth, mutate_friendship_by_username, post_svc, social_read, post_with_author_read }
     }
