@@ -11,8 +11,9 @@ use crate::{
     },
     read_models::{PostWithAuthorRead, SocialRead},
 };
+use anyhow::Result;
 use axum::extract::FromRef;
-use sqlx::PgPool;
+use sqlx::{PgPool, postgres::PgPoolOptions};
 use std::sync::Arc;
 
 #[derive(Clone, FromRef)]
@@ -26,7 +27,16 @@ pub struct AppState {
 
 impl AppState {
     /// Wires together the repository and service layers for use as `State` in handlers/middleware.
-    pub fn build(pool: PgPool, jwt_secret: String) -> Self {
+    pub async fn init(db_url: &str, jwt_secret: String) -> Result<Self> {
+        let pool = PgPoolOptions::new()
+            .max_connections(10)
+            .connect(db_url)
+            .await?;
+
+        Ok(Self::build(pool, jwt_secret))
+    }
+
+    fn build(pool: PgPool, jwt_secret: String) -> Self {
         let auth = Arc::new(AuthenticatorSvc::new(
             pool.clone(),
             PgUserRepo,
