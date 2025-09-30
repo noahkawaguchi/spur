@@ -27,7 +27,9 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// Wires together the repository and service layers for use as `State` in handlers/middleware.
+    /// Wires together concrete infrastructure implementations (including the database connection),
+    /// domain services, application services, and read models to be accessed as `State` in the
+    /// API layer.
     pub async fn init(config: &AppConfig) -> Result<Self> {
         let pool = PgPoolOptions::new()
             .max_connections(config.max_pool_connections)
