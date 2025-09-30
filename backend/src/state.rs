@@ -3,6 +3,7 @@ use crate::{
         Authenticator, MutateFriendshipByUsername, authenticator_svc::AuthenticatorSvc,
         mutate_friendship_by_username_svc::MutateFriendshipByUsernameSvc,
     },
+    config::AppConfig,
     domain::post::{PostSvc, service::PostDomainSvc},
     infra::{
         auth_provider::BcryptJwtAuthProvider, friendship_repo::PgFriendshipRepo,
@@ -27,14 +28,14 @@ pub struct AppState {
 
 impl AppState {
     /// Wires together the repository and service layers for use as `State` in handlers/middleware.
-    pub async fn init(db_url: &str, jwt_secret: String) -> Result<Self> {
+    pub async fn init(config: &AppConfig) -> Result<Self> {
         let pool = PgPoolOptions::new()
-            .max_connections(10)
-            .acquire_timeout(Duration::from_secs(15))
-            .connect(db_url)
+            .max_connections(config.max_pool_connections)
+            .acquire_timeout(Duration::from_secs(config.db_conn_timeout_secs))
+            .connect(&config.database_url)
             .await?;
 
-        Ok(Self::build(pool, jwt_secret))
+        Ok(Self::build(pool, config.jwt_secret.to_string()))
     }
 
     fn build(pool: PgPool, jwt_secret: String) -> Self {
