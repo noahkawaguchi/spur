@@ -1,47 +1,73 @@
 ####################################################################################################
-# Dev DB container
-# Requires the Docker CLI and a running VM such as Docker Desktop or Colima
+# Settings/config
 ####################################################################################################
 
-# Initialize DB
-db-up:
-	docker compose -p spur up -d
+# Load a .env file if present
+set dotenv-load := true
 
-# Stop services and remove volumes (delete data)
-db-rm:
-	docker compose down -v
+####################################################################################################
+# Dev DB container/volume
+#
+# Requires the Docker CLI and a running VM such as Docker Desktop or Colima.
+####################################################################################################
 
-# Start the dev DB container
+docker-project := "spur"
+docker-volume := "postgres_data"
+docker-container := "spur_dev"
+
+# Start the dev DB container (also the default recipe)
 db-start:
-	docker start spur_dev
+	docker start {{docker-container}}
 
 # Stop the dev DB container
 db-stop:
-	docker stop spur_dev
+	docker stop {{docker-container}}
+
+# Initialize the dev DB container and volume
+db-up:
+	docker compose -p {{docker-project}} up -d
+
+# Remove the container and named Docker volume (persistent dev data)
+[confirm("Are you sure you want to remove the dev DB and all of its data?")]
+db-rm: db-stop
+	docker rm {{docker-container}}
+	docker volume rm {{docker-project}}_{{docker-volume}}
 
 ####################################################################################################
 # Migrations
 #
-# `sqlx` commands require the SQLx CLI with the feature flag for Postgres. TLS is not required to
-# use the local development database in Docker. Therefore, the minimal sqlx-cli installation
-# required for this project is: `cargo install sqlx-cli --no-default-features --features postgres`
+# Requires the Atlas CLI (https://atlasgo.io/getting-started#installation).
+# Recipes that use an ephemeral DB require the VM for Docker to be running.
+# Recipes that use the dev DB URL require the dev DB container to be running.
 ####################################################################################################
 
-# Create a new migration
+# A URL to pass to Atlas so that it can create an ephemeral DB to work in
+ephemeral-pg := "docker://postgres/17/dev"
+
+# The master schema to be edited by hand and diffed by Atlas
+schema-file := "file://schema.sql"
+
+# Recompute `atlas.sum` after manual changes
+mg-hash:
+	atlas migrate hash
+
+# Validate all migrations
+mg-validate:
+	atlas migrate validate --dev-url {{ephemeral-pg}}
+
+# Generate a new migration file by diffing the schema
 migration name:
-	sqlx migrate add {{name}}
+	atlas migrate diff {{name}} --to {{schema-file}} --dev-url {{ephemeral-pg}}
+
+# Preview new migrations to be run
+mg-preview: mg-validate
+	atlas migrate status --url $DATABASE_URL
+	atlas migrate apply --dry-run --url $DATABASE_URL
 
 # Run pending migrations
-migrate:
-	sqlx migrate run
-
-# (Interactively) remove some or all migration files
-migrate-clean:
-	rm -i migrations/*
-
-# Drop, recreate, and run migrations on the DB
-db-reset:
-	sqlx database reset
+[confirm("Are you sure you want to apply all pending migrations?")]
+migrate: mg-validate
+	atlas migrate apply --url $DATABASE_URL
 
 ####################################################################################################
 # Miscellaneous
