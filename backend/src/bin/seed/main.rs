@@ -2,6 +2,7 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
+mod friendship;
 mod user;
 
 use anyhow::Result;
@@ -14,6 +15,7 @@ async fn main() -> Result<()> {
         .await?;
 
     user::seed(&pool).await?;
+    friendship::seed(&pool).await?;
 
     Ok(())
 }
