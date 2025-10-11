@@ -1,5 +1,6 @@
-use anyhow::{Context, Result};
-use chrono::{DateTime, Days, Utc};
+use crate::time_utils::anchor_offset;
+use anyhow::Result;
+use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
 struct SeedFriendship {
@@ -27,29 +28,29 @@ pub async fn seed(pool: &PgPool) -> Result<()> {
             lesser_id: 1,
             greater_id: 2,
             lesser_requested: true,
-            requested_at: days_ago(3)?,
-            confirmed_at: Some(Utc::now()),
+            requested_at: anchor_offset(3, 0, 0)?,
+            confirmed_at: Some(anchor_offset(5, 14, 0)?),
         },
         SeedFriendship {
             lesser_id: 1,
             greater_id: 3,
             lesser_requested: false,
-            requested_at: days_ago(24)?,
-            confirmed_at: Some(days_ago(6)?),
+            requested_at: anchor_offset(6, 5, 20)?,
+            confirmed_at: Some(anchor_offset(24, 0, 5)?),
         },
         SeedFriendship {
             lesser_id: 1,
             greater_id: 4,
             lesser_requested: false,
-            requested_at: days_ago(120)?,
+            requested_at: anchor_offset(120, 12, 0)?,
             confirmed_at: None,
         },
         SeedFriendship {
             lesser_id: 2,
             greater_id: 5,
             lesser_requested: false,
-            requested_at: days_ago(501)?,
-            confirmed_at: Some(days_ago(222)?),
+            requested_at: anchor_offset(222, 2, 2)?,
+            confirmed_at: Some(anchor_offset(501, 8, 15)?),
         },
     ];
 
@@ -67,10 +68,4 @@ pub async fn seed(pool: &PgPool) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn days_ago(n: u64) -> Result<DateTime<Utc>> {
-    Utc::now()
-        .checked_sub_days(Days::new(n))
-        .context("Failed to perform DateTime arithmetic")
 }

@@ -1,6 +1,4 @@
 {
-  "useGitignore": true,
-  "ignorePaths": ["pnpm-lock.yaml"],
   "words": [
     "jsonwebtoken",
     "chrono",
@@ -14,9 +12,12 @@
     "vite",
     "btrim",
     "oneshot",
-    "unstub"
+    "unstub",
+    "reiwa"
   ],
+  "useGitignore": true,
+  "ignorePaths": ["pnpm-lock.yaml"],
+  "language": "en",
   "version": "0.2",
-  "flagWords": [],
-  "language": "en"
+  "flagWords": []
 }

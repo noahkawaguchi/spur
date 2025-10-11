@@ -3,6 +3,7 @@
 #![warn(clippy::nursery)]
 
 mod friendship;
+mod time_utils;
 mod user;
 
 use anyhow::Result;
@@ -14,7 +15,7 @@ async fn main() -> Result<()> {
         .connect(&std::env::var("DATABASE_URL")?)
         .await?;
 
-    user::seed(&pool).await?;
+    user::seed(&pool).await?; // Users must be seeded first
     friendship::seed(&pool).await?;
 
     Ok(())
