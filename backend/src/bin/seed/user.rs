@@ -12,14 +12,26 @@ struct SeedUser {
     created_at: DateTime<Utc>,
 }
 
+/// Inserts six seed users into the database. The users will be given IDs 1 through 6 (if there are
+/// no other users in the database, which there shouldn't be). User 1 is the "Spurt" character.
+///
+/// The following six environment variables must be set to the passwords to use for the dummy users:
+/// `SPURT_PW`, `ALICE_PW`, `BOB_PW`, `CHAR_PW`, `DIEGO_PW`, `EMI_PW`.
 pub async fn seed(pool: &PgPool) -> Result<()> {
     let users = [
+        SeedUser {
+            name: "Spurt",
+            email: "no_support_email_yet@example.com",
+            username: "spurt",
+            password_hash: hash_env("SPURT_PW")?,
+            created_at: anchor_offset(0, 0, 0)?,
+        },
         SeedUser {
             name: "Alice Example",
             email: "alice@example.com",
             username: "alice123",
             password_hash: hash_env("ALICE_PW")?,
-            created_at: anchor_offset(0, 0, 0)?,
+            created_at: anchor_offset(1, 1, 1)?,
         },
         SeedUser {
             name: "Bob Bobby",
