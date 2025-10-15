@@ -1,3 +1,5 @@
+import { differenceInMonths } from 'date-fns';
+
 /** Slices the first `n` characters of `str` and adds an ellipsis, defaulting to 50 characters. */
 export const firstChars = (str: string, n = 50): string =>
   str.length > n ? str.slice(0, n) + '...' : str;
@@ -22,7 +24,13 @@ export const howLongAgo = (ms: number): string => {
   if (diffHours < 24) return `${diffHours.toString()} hour${sUnless1(diffHours)}`;
 
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays.toString()} day${sUnless1(diffDays)}`;
+  if (diffDays < 31) return `${diffDays.toString()} day${sUnless1(diffDays)}`;
+
+  const diffMonths = differenceInMonths(now, new Date(ms));
+  if (diffMonths < 12) return `${diffMonths.toString()} month${sUnless1(diffMonths)}`;
+
+  const diffYears = Math.floor(diffMonths / 12);
+  return `${diffYears.toString()} year${sUnless1(diffYears)}`;
 };
 
 const sUnless1 = (x: number): string => (x === 1 ? '' : 's');
