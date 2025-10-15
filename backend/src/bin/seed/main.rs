@@ -3,6 +3,7 @@
 #![warn(clippy::nursery)]
 
 mod friendship;
+mod post;
 mod time_utils;
 mod user;
 
@@ -17,6 +18,7 @@ async fn main() -> Result<()> {
 
     user::seed(&pool).await?; // Users must be seeded first
     friendship::seed(&pool).await?;
+    post::seed(&pool).await?;
 
     Ok(())
 }
