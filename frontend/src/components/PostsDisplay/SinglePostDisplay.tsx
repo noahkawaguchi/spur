@@ -60,6 +60,7 @@ const SinglePostDisplay = ({ readingPost, backFn }: { readingPost: Post; backFn:
       <div style={{ textAlign: 'center' }}>
         <h2>Post by {readingPost.authorUsername}</h2>
         <p>created {howLongAgo(readingPost.createdAtMs)} ago</p>
+        {readingPost.editedAtMs && <p>edited {howLongAgo(readingPost.editedAtMs)} ago</p>}
         <hr />
         <p className={styles.postBodyArea} style={{ whiteSpace: 'pre-line', textAlign: 'justify' }}>
           {readingPost.body}
