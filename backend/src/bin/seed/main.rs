@@ -8,6 +8,7 @@ mod time_utils;
 mod user;
 
 use anyhow::Result;
+use colored::Colorize;
 use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
@@ -19,6 +20,11 @@ async fn main() -> Result<()> {
     user::seed(&pool).await?; // Users must be seeded first
     friendship::seed(&pool).await?;
     post::seed(&pool).await?;
+
+    println!(
+        "{}",
+        "Successfully seeded users, friendships, and posts".green()
+    );
 
     Ok(())
 }
