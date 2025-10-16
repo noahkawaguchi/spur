@@ -73,6 +73,14 @@ migrate: mg-validate
 # Miscellaneous
 ####################################################################################################
 
+# Seed the database with dummy data
+[confirm("Are you sure you want to insert the seed data into the database?")]
+seed:
+	cargo run --bin seed
+
+# Destroy and remake the database with migrations and seed data applied
+reseed: db-rm db-up migrate seed
+
 # Test coverage (requires `cargo install cargo-llvm-cov`)
 coverage:
 	cargo llvm-cov --open
