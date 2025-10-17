@@ -6,6 +6,14 @@
 set dotenv-load := true
 
 ####################################################################################################
+# Default recipe
+####################################################################################################
+
+# Start the development server with the log level set to info
+run: db-start
+	RUST_LOG=info cargo run
+
+####################################################################################################
 # Dev DB container/volume
 #
 # Requires the Docker CLI and a running VM such as Docker Desktop or Colima.
@@ -15,7 +23,7 @@ docker-project := "spur"
 docker-volume := "postgres_data"
 docker-container := "spur_dev"
 
-# Start the dev DB container (also the default recipe)
+# Start the dev DB container
 db-start:
 	docker start {{docker-container}}
 
@@ -70,7 +78,7 @@ migrate: mg-validate
 	atlas migrate apply --url $DATABASE_URL
 
 ####################################################################################################
-# Miscellaneous
+# Seed data
 ####################################################################################################
 
 # Seed the database with dummy data
@@ -81,7 +89,10 @@ seed:
 # Destroy and remake the database with migrations and seed data applied
 reseed: db-rm db-up migrate seed
 
-# Test coverage (requires `cargo install cargo-llvm-cov`)
+####################################################################################################
+# Information
+####################################################################################################
+
+# Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
 coverage:
 	cargo llvm-cov --open
-
