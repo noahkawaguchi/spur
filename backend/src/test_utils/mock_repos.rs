@@ -18,7 +18,8 @@ pub struct MockUserRepo {
     pub insert_new: Option<Box<dyn Fn(&NewUser) -> Result<User, RepoError> + Send + Sync>>,
     pub get_by_id: Option<Box<dyn Fn(i32) -> Result<Option<User>, RepoError> + Send + Sync>>,
     pub get_by_email: Option<Box<dyn Fn(&str) -> Result<Option<User>, RepoError> + Send + Sync>>,
-    pub get_by_username: Option<Box<dyn Fn(&str) -> Result<Option<User>, RepoError> + Send + Sync>>,
+    pub get_by_username_exclusive:
+        Option<Box<dyn Fn(&str) -> Result<Option<User>, RepoError> + Send + Sync>>,
 }
 
 #[async_trait::async_trait]
@@ -44,12 +45,12 @@ impl UserRepo for MockUserRepo {
     ) -> Result<Option<User>, RepoError> {
         (self.get_by_email.as_ref().unwrap())(email)
     }
-    async fn get_by_username(
+    async fn get_by_username_exclusive(
         &self,
         _exec: impl PgExecutor<'_>,
         username: &str,
     ) -> Result<Option<User>, RepoError> {
-        (self.get_by_username.as_ref().unwrap())(username)
+        (self.get_by_username_exclusive.as_ref().unwrap())(username)
     }
 }
 
@@ -94,7 +95,8 @@ impl FriendshipRepo for MockFriendshipRepo {
 #[derive(Default)]
 pub struct MockPostRepo {
     pub insert_new: Option<Box<dyn Fn(i32, i32, &str) -> Result<(), RepoError> + Send + Sync>>,
-    pub get_by_id: Option<Box<dyn Fn(i32) -> Result<Option<Post>, RepoError> + Send + Sync>>,
+    pub get_by_id_exclusive:
+        Option<Box<dyn Fn(i32) -> Result<Option<Post>, RepoError> + Send + Sync>>,
 }
 
 #[async_trait::async_trait]
@@ -109,11 +111,11 @@ impl PostRepo for MockPostRepo {
         (self.insert_new.as_ref().unwrap())(author_id, parent_id, body)
     }
 
-    async fn get_by_id(
+    async fn get_by_id_exclusive(
         &self,
         _exec: impl PgExecutor<'_>,
         id: i32,
     ) -> Result<Option<Post>, RepoError> {
-        (self.get_by_id.as_ref().unwrap())(id)
+        (self.get_by_id_exclusive.as_ref().unwrap())(id)
     }
 }

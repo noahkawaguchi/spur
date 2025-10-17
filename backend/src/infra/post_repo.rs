@@ -27,12 +27,12 @@ impl PostRepo for PgPostRepo {
         .map(|_| ())
     }
 
-    async fn get_by_id(
+    async fn get_by_id_exclusive(
         &self,
         exec: impl PgExecutor<'_>,
         id: i32,
     ) -> Result<Option<Post>, RepoError> {
-        sqlx::query_as!(Post, "SELECT * FROM post WHERE id = $1", id)
+        sqlx::query_as!(Post, "SELECT * FROM post WHERE id = $1 FOR UPDATE", id)
             .fetch_optional(exec)
             .await
             .map_err(Into::into)
@@ -61,7 +61,7 @@ mod tests {
                     Err(RepoError::UniqueViolation(v)) if v == "post_author_parent_unique"
             ));
             // The violating post should not have been created
-            assert!(matches!(repo.get_by_id(&pool, 3).await, Ok(None)));
+            assert!(matches!(repo.get_by_id_exclusive(&pool, 3).await, Ok(None)));
         })
         .await;
     }
@@ -129,7 +129,10 @@ mod tests {
     async fn returns_none_for_missing_post() {
         with_seeded_users_and_root_post(|pool, _| async move {
             // Only post ID 1 exists, not 2
-            assert!(matches!(PgPostRepo.get_by_id(&pool, 2).await, Ok(None)));
+            assert!(matches!(
+                PgPostRepo.get_by_id_exclusive(&pool, 2).await,
+                Ok(None)
+            ));
         })
         .await;
     }
@@ -153,9 +156,9 @@ mod tests {
             repo.insert_new(&pool, 3, 2, post_body_3).await.unwrap();
             repo.insert_new(&pool, 2, 2, post_body_4).await.unwrap();
 
-            let post2 = repo.get_by_id(&pool, 2).await.unwrap().unwrap();
-            let post3 = repo.get_by_id(&pool, 3).await.unwrap().unwrap();
-            let post4 = repo.get_by_id(&pool, 4).await.unwrap().unwrap();
+            let post2 = repo.get_by_id_exclusive(&pool, 2).await.unwrap().unwrap();
+            let post3 = repo.get_by_id_exclusive(&pool, 3).await.unwrap().unwrap();
+            let post4 = repo.get_by_id_exclusive(&pool, 4).await.unwrap().unwrap();
 
             assert_eq!(post2.id, 2);
             assert_eq!(post2.author_id, Some(4));

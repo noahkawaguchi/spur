@@ -40,10 +40,11 @@ where
         // Find the recipient's ID and create an ID pair
         let recipient_id = self
             .user_repo
-            .get_by_username(tx.exec(), recipient_username)
+            .get_by_username_exclusive(tx.exec(), recipient_username)
             .await?
             .ok_or(FriendshipError::NonexistentUser)?
             .id;
+
         let ids = UserIdPair::new(sender_id, recipient_id)?;
 
         // Determine the pair's current status
@@ -94,7 +95,7 @@ mod tests {
             let ids = UserIdPair::new(my_id, my_friend.id).unwrap();
 
             let mock_user_repo = MockUserRepo {
-                get_by_username: Some(Box::new(move |passed_username| {
+                get_by_username_exclusive: Some(Box::new(move |passed_username| {
                     assert_eq!(my_friend_username_clone, passed_username);
                     Ok(Some(my_friend_clone.clone()))
                 })),
@@ -130,7 +131,7 @@ mod tests {
             let ids = UserIdPair::new(my_id, desired_friend.id).unwrap();
 
             let mock_user_repo = MockUserRepo {
-                get_by_username: Some(Box::new(move |passed_username| {
+                get_by_username_exclusive: Some(Box::new(move |passed_username| {
                     assert_eq!(desired_friend_username_clone, passed_username);
                     Ok(Some(desired_friend_clone.clone()))
                 })),
@@ -166,7 +167,7 @@ mod tests {
             let ids = UserIdPair::new(my_id, added_me.id).unwrap();
 
             let mock_user_repo = MockUserRepo {
-                get_by_username: Some(Box::new(move |passed_username| {
+                get_by_username_exclusive: Some(Box::new(move |passed_username| {
                     assert_eq!(added_me_username_clone, passed_username);
                     Ok(Some(added_me_clone.clone()))
                 })),
@@ -206,7 +207,7 @@ mod tests {
             let ids = UserIdPair::new(my_id, does_not_know_me.id).unwrap();
 
             let mock_user_svc = MockUserRepo {
-                get_by_username: Some(Box::new(move |passed_username| {
+                get_by_username_exclusive: Some(Box::new(move |passed_username| {
                     assert_eq!(does_not_know_me_username_clone, passed_username);
                     Ok(Some(does_not_know_me_clone.clone()))
                 })),
