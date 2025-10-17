@@ -8,7 +8,6 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use colored::Colorize;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -32,34 +31,40 @@ pub enum ApiError {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
-            Self::Request(_)
-            | Self::Friendship(FriendshipError::SelfFriendship)
-            | Self::Post(PostError::SelfReply | PostError::ArchivedParent) => {
-                (StatusCode::UNPROCESSABLE_ENTITY, self.to_string())
-            }
-
+            // 401 Unauthorized
             Self::Auth(AuthError::TokenValidation | AuthError::InvalidPassword) => {
                 (StatusCode::UNAUTHORIZED, self.to_string())
             }
 
+            // 404 Not Found
             Self::Auth(AuthError::NotFound)
             | Self::Post(PostError::NotFound)
             | Self::Friendship(FriendshipError::NonexistentUser)
             | Self::Read(ReadError::NotFound) => (StatusCode::NOT_FOUND, self.to_string()),
 
+            // 409 Conflict
             Self::Auth(AuthError::DuplicateEmail | AuthError::DuplicateUsername)
             | Self::Friendship(
                 FriendshipError::AlreadyFriends | FriendshipError::AlreadyRequested,
             )
             | Self::Post(PostError::DuplicateReply) => (StatusCode::CONFLICT, self.to_string()),
 
+            // 410 Gone
             Self::Post(PostError::DeletedParent) => (StatusCode::GONE, self.to_string()),
 
+            // 422 Unprocessable Entity
+            Self::Request(_)
+            | Self::Friendship(FriendshipError::SelfFriendship)
+            | Self::Post(PostError::SelfReply | PostError::ArchivedParent) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, self.to_string())
+            }
+
+            // 500 Internal Server Error
             Self::Auth(AuthError::Internal(_))
             | Self::Friendship(FriendshipError::Internal(_))
             | Self::Post(PostError::Internal(_))
             | Self::Read(ReadError::Technical(_)) => (StatusCode::INTERNAL_SERVER_ERROR, {
-                log::error!("{}", self.to_string().red());
+                log::error!("{self}");
                 String::from("internal server error")
             }),
         };
