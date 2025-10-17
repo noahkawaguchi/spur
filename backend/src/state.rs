@@ -37,6 +37,8 @@ impl AppState {
             .connect(&config.database_url)
             .await?;
 
+        log::info!("Connected to database");
+
         Ok(Self::build(pool, config.jwt_secret.to_string()))
     }
 

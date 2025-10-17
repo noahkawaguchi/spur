@@ -59,8 +59,7 @@ impl IntoResponse for ApiError {
             | Self::Friendship(FriendshipError::Internal(_))
             | Self::Post(PostError::Internal(_))
             | Self::Read(ReadError::Technical(_)) => (StatusCode::INTERNAL_SERVER_ERROR, {
-                // TODO: use a logger
-                eprintln!("{}", self.to_string().red());
+                log::error!("{}", self.to_string().red());
                 String::from("internal server error")
             }),
         };

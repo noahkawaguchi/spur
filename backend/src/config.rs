@@ -51,7 +51,7 @@ impl AppConfig {
                 "environment variable {key} was present but not valid Unicode"
             )),
             Err(VarError::NotPresent) => {
-                println!("environment variable {key} not found, using {default}");
+                log::warn!("Environment variable {key} not found, using {default}");
                 Ok(default)
             }
             Ok(val) => val.parse().with_context(|| {
