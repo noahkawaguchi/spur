@@ -24,7 +24,9 @@ pub trait UserRepo: Send + Sync {
         email: &str,
     ) -> Result<Option<User>, RepoError>;
 
-    async fn get_by_username(
+    /// Fetches a user by username, blocking concurrent writes to the same user until the
+    /// surrounding transaction completes.
+    async fn get_by_username_exclusive(
         &self,
         exec: impl PgExecutor<'_>,
         username: &str,

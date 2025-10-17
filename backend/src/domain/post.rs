@@ -25,7 +25,9 @@ pub trait PostRepo: Send + Sync {
         body: &str,
     ) -> Result<(), RepoError>;
 
-    async fn get_by_id(
+    /// Fetches a post by ID, blocking concurrent writes to the same post until the surrounding
+    /// transaction completes.
+    async fn get_by_id_exclusive(
         &self,
         exec: impl PgExecutor<'_>,
         id: i32,

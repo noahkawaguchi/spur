@@ -30,7 +30,7 @@ where
 
         let parent = self
             .repo
-            .get_by_id(tx.exec(), parent_id)
+            .get_by_id_exclusive(tx.exec(), parent_id)
             .await?
             .ok_or(PostError::NotFound)?;
 
@@ -76,7 +76,7 @@ mod tests {
         let parent_post_id = parent_post.as_ref().map_or(543, |post| post.id);
 
         let mock_repo = MockPostRepo {
-            get_by_id: Some(Box::new(move |passed_id| {
+            get_by_id_exclusive: Some(Box::new(move |passed_id| {
                 assert_eq!(parent_post_id, passed_id);
                 Ok(parent_post.clone())
             })),
@@ -140,7 +140,7 @@ mod tests {
         let new_post_body = "This is a new post that should work";
 
         let mock_repo = MockPostRepo {
-            get_by_id: Some(Box::new(move |passed_id| {
+            get_by_id_exclusive: Some(Box::new(move |passed_id| {
                 assert_eq!(parent_post_id, passed_id);
                 Ok(Some(parent_post.clone()))
             })),
@@ -199,7 +199,7 @@ mod tests {
         .enumerate()
         {
             let mock_post_repo = MockPostRepo {
-                get_by_id: Some(Box::new(move |passed_id| {
+                get_by_id_exclusive: Some(Box::new(move |passed_id| {
                     assert_eq!(parent_ids[i], passed_id);
                     // Alternating between the first and second dummy posts because the third is
                     // marked as deleted, which correctly causes a different error

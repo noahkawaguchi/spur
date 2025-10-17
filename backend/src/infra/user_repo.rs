@@ -52,15 +52,19 @@ impl UserRepo for PgUserRepo {
             .map_err(Into::into)
     }
 
-    async fn get_by_username(
+    async fn get_by_username_exclusive(
         &self,
         exec: impl PgExecutor<'_>,
         username: &str,
     ) -> Result<Option<User>, RepoError> {
-        sqlx::query_as!(User, "SELECT * FROM users WHERE username = $1", username)
-            .fetch_optional(exec)
-            .await
-            .map_err(Into::into)
+        sqlx::query_as!(
+            User,
+            "SELECT * FROM users WHERE username = $1 FOR UPDATE",
+            username
+        )
+        .fetch_optional(exec)
+        .await
+        .map_err(Into::into)
     }
 }
 
@@ -134,7 +138,7 @@ mod tests {
             // Get by username
             for user in &test_users {
                 let got_by_username = repo
-                    .get_by_username(&pool, &user.username)
+                    .get_by_username_exclusive(&pool, &user.username)
                     .await
                     .expect("failed to get user by username")
                     .expect("unexpected None user");
@@ -151,7 +155,9 @@ mod tests {
             let repo = PgUserRepo;
 
             let from_nonsense_email = repo.get_by_email(&pool, "nonsense@nothing.abc").await;
-            let from_nonsense_username = repo.get_by_username(&pool, "nonsensical_naan").await;
+            let from_nonsense_username = repo
+                .get_by_username_exclusive(&pool, "nonsensical_naan")
+                .await;
             let from_nonsense_id = repo.get_by_id(&pool, 642).await;
 
             assert!(matches!(from_nonsense_email, Ok(None)));
