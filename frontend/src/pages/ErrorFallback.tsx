@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 const ErrorFallbackPage = ({ error, resetErrorBoundary }: FallbackProps) => {
   const navigate = useNavigate();
 
-  console.log(error);
+  console.error(error);
 
   const handleClick = () => {
     resetErrorBoundary();
