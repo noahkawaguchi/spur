@@ -8,11 +8,13 @@ mod time_utils;
 mod user;
 
 use anyhow::Result;
-use colored::Colorize;
 use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    spur::logger::init_with_default(log::LevelFilter::Info);
+    log::info!("Starting database seeding...");
+
     let pool = PgPoolOptions::new()
         .connect(&std::env::var("DATABASE_URL")?)
         .await?;
@@ -20,11 +22,6 @@ async fn main() -> Result<()> {
     user::seed(&pool).await?; // Users must be seeded first
     friendship::seed(&pool).await?;
     post::seed(&pool).await?;
-
-    println!(
-        "{}",
-        "Successfully seeded users, friendships, and posts".green()
-    );
 
     Ok(())
 }

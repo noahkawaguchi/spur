@@ -13,8 +13,10 @@ bcrypt = "0.17.0"
 chrono = "0.4.41"
 colored = "3.0.0"
 dotenvy = "0.15.7"
+env_logger = "0.11.8"
 jsonwebtoken = "9.3.1"
 lazy-regex = "3.4.1"
+log = "0.4.28"
 serde = { version = "1.0.219", features = ["derive"] }
 sqlx = { version = "0.8.5", features = ["chrono", "postgres", "runtime-tokio"] }
 thiserror = "2.0.12"

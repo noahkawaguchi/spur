@@ -4,12 +4,12 @@ use chrono::{DateTime, FixedOffset, NaiveDate, TimeDelta, Utc};
 /// Adds the provided days, hours, and minutes to the anchor `DateTime`, 2019-04-30 15:00:00 UTC
 /// (the beginning of the Reiwa era, somewhat arbitrarily chosen for a recent "time 0").
 pub fn anchor_offset(days: u32, hours: u32, minutes: u32) -> Result<DateTime<Utc>> {
-    let reiwa = reiwa_start_utc().context("Failed to create anchor date")?;
+    let reiwa = reiwa_start_utc().context("failed to create anchor date")?;
 
     let offset = TimeDelta::try_days(days.into())
         .and_then(|d| Some(d + TimeDelta::try_hours(hours.into())?))
         .and_then(|dh| Some(dh + TimeDelta::try_minutes(minutes.into())?))
-        .context("Failed to create offset TimeDelta")?;
+        .context("failed to create offset TimeDelta")?;
 
     Ok(reiwa + offset)
 }

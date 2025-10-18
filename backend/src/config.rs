@@ -47,16 +47,16 @@ impl AppConfig {
         T::Err: Send + Sync + 'static + std::error::Error,
     {
         match env::var(key) {
-            Err(VarError::NotUnicode(_)) => Err(anyhow!(
-                "environment variable {key} was present but not valid Unicode"
-            )),
             Err(VarError::NotPresent) => {
-                println!("environment variable {key} not found, using {default}");
+                log::warn!("Environment variable {key} not found, using {default}");
                 Ok(default)
             }
+            Err(VarError::NotUnicode(_)) => Err(anyhow!(
+                "environment variable {key} present but not valid Unicode"
+            )),
             Ok(val) => val.parse().with_context(|| {
                 format!(
-                    "environment variable {key} was present but could not be parsed as {}",
+                    "environment variable {key} present but could not be parsed as {}",
                     type_name::<T>()
                 )
             }),

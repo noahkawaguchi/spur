@@ -23,13 +23,22 @@ use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    spur::logger::init_with_default(log::LevelFilter::Info);
+    log::info!("Initializing app...");
+
     let config = AppConfig::load()?;
     let state = AppState::init(&config).await?;
     let app = router::build(state, &config.frontend_url)?;
     let listener = TcpListener::bind(&config.bind_addr).await?;
 
     #[cfg(debug_assertions)]
-    println!("Listening on http://{} ...", &config.bind_addr);
+    log::info!(
+        "Development server listening on http://{}",
+        &config.bind_addr
+    );
+
+    #[cfg(not(debug_assertions))]
+    log::info("Listening on {}", &config.bind_addr);
 
     axum::serve(listener, app).await?;
 

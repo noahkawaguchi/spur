@@ -70,7 +70,7 @@ migrate: mg-validate
 	atlas migrate apply --url $DATABASE_URL
 
 ####################################################################################################
-# Miscellaneous
+# Seed data
 ####################################################################################################
 
 # Seed the database with dummy data
@@ -81,7 +81,10 @@ seed:
 # Destroy and remake the database with migrations and seed data applied
 reseed: db-rm db-up migrate seed
 
-# Test coverage (requires `cargo install cargo-llvm-cov`)
+####################################################################################################
+# Information
+####################################################################################################
+
+# Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
 coverage:
 	cargo llvm-cov --open
-
