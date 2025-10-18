@@ -23,8 +23,7 @@ use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    env_logger::init();
-
+    spur::logger::init_with_default(log::LevelFilter::Info)?;
     log::info!("Initializing app...");
 
     let config = AppConfig::load()?;

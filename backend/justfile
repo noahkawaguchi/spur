@@ -6,14 +6,6 @@
 set dotenv-load := true
 
 ####################################################################################################
-# Default recipe
-####################################################################################################
-
-# Start the development server with the log level set to info
-run: db-start
-	RUST_LOG=info cargo run
-
-####################################################################################################
 # Dev DB container/volume
 #
 # Requires the Docker CLI and a running VM such as Docker Desktop or Colima.
@@ -23,7 +15,7 @@ docker-project := "spur"
 docker-volume := "postgres_data"
 docker-container := "spur_dev"
 
-# Start the dev DB container
+# Start the dev DB container (also the default recipe)
 db-start:
 	docker start {{docker-container}}
 
@@ -84,7 +76,7 @@ migrate: mg-validate
 # Seed the database with dummy data
 [confirm("Are you sure you want to insert the seed data into the database?")]
 seed:
-	RUST_LOG=info cargo run --bin seed
+	cargo run --bin seed
 
 # Destroy and remake the database with migrations and seed data applied
 reseed: db-rm db-up migrate seed

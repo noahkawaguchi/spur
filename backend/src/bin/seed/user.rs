@@ -79,6 +79,8 @@ pub async fn seed(pool: &PgPool) -> Result<()> {
         .await?;
     }
 
+    log::info!("Seeded users");
+
     Ok(())
 }
 

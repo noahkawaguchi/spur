@@ -12,7 +12,8 @@ use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    env_logger::init();
+    spur::logger::init_with_default(log::LevelFilter::Info)?;
+    log::info!("Starting database seeding...");
 
     let pool = PgPoolOptions::new()
         .connect(&std::env::var("DATABASE_URL")?)
@@ -21,8 +22,6 @@ async fn main() -> Result<()> {
     user::seed(&pool).await?; // Users must be seeded first
     friendship::seed(&pool).await?;
     post::seed(&pool).await?;
-
-    log::info!("Successfully seeded users, friendships, and posts");
 
     Ok(())
 }

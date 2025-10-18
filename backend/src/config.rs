@@ -1,5 +1,4 @@
 use anyhow::{Context, Result, anyhow};
-use colored::Colorize;
 use std::{
     any::type_name,
     env::{self, VarError},
@@ -22,9 +21,6 @@ impl AppConfig {
         // Expect a .env file in development only
         #[cfg(debug_assertions)]
         dotenvy::dotenv().context("failed to load .env file")?;
-
-        // RUST_LOG is not used directly in this config, but is necessary for logging
-        Self::check_rust_log();
 
         Ok(Self {
             // Definitely different in dev and prod?
@@ -64,41 +60,6 @@ impl AppConfig {
                     type_name::<T>()
                 )
             }),
-        }
-    }
-
-    /// Checks whether the environment variable `RUST_LOG` is present, valid Unicode, and a valid
-    /// value. If valid, logs the log level using the "info" log level. Otherwise, prints the
-    /// problem to stderr (since logging cannot be used to log the error if `RUST_LOG` is not
-    /// valid).
-    fn check_rust_log() {
-        match env::var("RUST_LOG") {
-            Err(VarError::NotPresent) => eprintln!(
-                "{}",
-                "Environment variable RUST_LOG not found. Logging will not work.".red()
-            ),
-            Err(VarError::NotUnicode(_)) => eprintln!(
-                "{}",
-                "Environment variable RUST_LOG present but not valid Unicode. \
-                Logging will not work."
-                    .red()
-            ),
-            Ok(val) => {
-                let level = val.to_ascii_lowercase();
-
-                match level.as_str() {
-                    "error" | "warn" | "info" | "debug" | "trace" | "off" => {
-                        log::info!("Log level set to {level}");
-                    }
-                    _ => eprintln!(
-                        "{}",
-                        "Environment variable RUST_LOG present but not a valid value. \
-                        Logging will not work. \
-                        Valid values are error, warn, info, debug, trace, and off."
-                            .red()
-                    ),
-                }
-            }
         }
     }
 }
