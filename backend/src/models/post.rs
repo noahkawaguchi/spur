@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 
 /// The post entity as it exists in the database.
 #[cfg_attr(test, derive(Clone))]
+#[allow(dead_code)] // Because it's simpler to keep this struct directly reflecting the DB entity
 pub struct Post {
     pub id: i32,
     pub author_id: Option<i32>,

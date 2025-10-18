@@ -26,6 +26,7 @@ pub struct NewUser {
 
 /// Full user struct as represented in the database.
 #[cfg_attr(test, derive(Debug, Clone, PartialEq, Eq))]
+#[allow(dead_code)] // Because it's simpler to keep this struct directly reflecting the DB entity
 pub struct User {
     pub id: i32,
     pub name: String,
