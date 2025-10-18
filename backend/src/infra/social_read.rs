@@ -119,7 +119,7 @@ mod tests {
         with_test_pool(|pool| async move {
             let read = PgSocialRead::new(pool.clone());
             let repo = PgFriendshipRepo;
-            let [u1, u2, _, _] = seed_users(pool.clone()).await;
+            let [u1, u2, _, _] = seed_users(&pool).await;
 
             let ids1 = UserIdPair::new(1, 3).unwrap();
             let ids2 = UserIdPair::new(2, 3).unwrap();
@@ -192,9 +192,9 @@ mod tests {
     #[tokio::test]
     async fn gets_only_posts_by_friends_of_a_user() {
         with_test_pool(|pool| async move {
-            seed_users(pool.clone()).await;
+            seed_users(&pool).await;
             seed_root_post(&pool).await;
-            seed_friends(pool.clone()).await;
+            seed_friends(&pool).await;
 
             let read = PgSocialRead::new(pool.clone());
             let post_with_author_read = PgPostWithAuthorRead::new(pool.clone());

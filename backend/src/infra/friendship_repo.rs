@@ -92,14 +92,14 @@ mod tests {
         confirmed_at: Option<DateTime<Utc>>,
     }
 
-    async fn must_get_friendship(pool: PgPool, first_id: i32, second_id: i32) -> Friendship {
+    async fn must_get_friendship(pool: &PgPool, first_id: i32, second_id: i32) -> Friendship {
         sqlx::query_as!(
             Friendship,
             "SELECT * FROM friendship WHERE lesser_id = $1 AND greater_id = $2",
             first_id,
             second_id,
         )
-        .fetch_one(&pool)
+        .fetch_one(pool)
         .await
         .expect("failed to get friendship")
     }
@@ -108,13 +108,13 @@ mod tests {
     async fn sets_initial_values_on_insertion() {
         with_test_pool(|pool| async move {
             let repo = PgFriendshipRepo;
-            seed_users(pool.clone()).await;
+            seed_users(&pool).await;
 
             repo.new_request(&pool, &UserIdPair::new(1, 2).unwrap(), 1)
                 .await
                 .expect("failed to insert new request");
 
-            let friendship = must_get_friendship(pool, 1, 2).await;
+            let friendship = must_get_friendship(&pool, 1, 2).await;
 
             assert_eq!(friendship.lesser_id, 1);
             assert_eq!(friendship.greater_id, 2);
@@ -129,7 +129,7 @@ mod tests {
     async fn updates_values_for_accepted_request() {
         with_test_pool(|pool| async move {
             let repo = PgFriendshipRepo;
-            seed_users(pool.clone()).await;
+            seed_users(&pool).await;
             let ids = UserIdPair::new(1, 3).unwrap();
 
             repo.new_request(&pool, &ids, 3)
@@ -140,7 +140,7 @@ mod tests {
                 .await
                 .expect("failed to accept request");
 
-            let friendship = must_get_friendship(pool, 1, 3).await;
+            let friendship = must_get_friendship(&pool, 1, 3).await;
 
             assert_eq!(friendship.lesser_id, 1);
             assert_eq!(friendship.greater_id, 3);
@@ -162,7 +162,7 @@ mod tests {
     async fn gets_all_four_possible_statuses() {
         with_test_pool(|pool| async move {
             let repo = PgFriendshipRepo;
-            seed_users(pool.clone()).await;
+            seed_users(&pool).await;
 
             let ids1 = UserIdPair::new(1, 3).unwrap();
             let ids2 = UserIdPair::new(2, 3).unwrap();
