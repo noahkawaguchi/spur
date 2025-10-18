@@ -2,6 +2,7 @@
   text-align: center;
   width: max-content;
   margin: 20px auto;
+  padding: 5px;
 }
 
 @keyframes title-twist {
@@ -10,9 +11,6 @@
   }
   25% {
     transform: rotate(-5deg);
-  }
-  50% {
-    transform: rotate(0deg);
   }
   75% {
     transform: rotate(5deg);
@@ -26,7 +24,5 @@
   color: var(--accent-color);
   font-style: italic;
   cursor: default;
-  animation-name: title-twist;
-  animation-duration: 0.4s;
-  animation-iteration-count: 1;
+  animation: title-twist 0.4s 1;
 }
