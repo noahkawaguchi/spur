@@ -12,6 +12,7 @@ pub trait UserRepo: Send + Sync {
         new_user: &NewUser,
     ) -> Result<User, RepoError>;
 
+    #[allow(dead_code)] // Because this basic functionality will likely be necessary in the future
     async fn get_by_id(
         &self,
         exec: impl PgExecutor<'_>,
