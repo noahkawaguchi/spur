@@ -12,7 +12,7 @@ use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    spur::logger::init_with_default(log::LevelFilter::Info)?;
+    spur::logger::init_with_default(log::LevelFilter::Info);
     log::info!("Starting database seeding...");
 
     let pool = PgPoolOptions::new()

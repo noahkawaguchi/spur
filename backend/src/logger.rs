@@ -1,45 +1,32 @@
-use anyhow::{Result, anyhow};
 use colored::Colorize;
-use env_logger::Env;
-use log::LevelFilter;
-use std::env::{self, VarError};
+use env_logger::{DEFAULT_FILTER_ENV, Env};
+use log::{Level, LevelFilter, log_enabled};
+use std::env::{self};
 
-/// Initializes the logger and checks whether the environment variable `RUST_LOG` is present, valid
-/// Unicode, and a valid value.
+/// Initializes the logger with the provided default if not set from the environment, checks whether
+/// logging has likely been accidentally disabled, and reports the max log level using the INFO log
+/// level.
 ///
-/// - If present but invalid, returns `Err`.
-/// - If present and valid, logs the log level using the INFO level.
-/// - If not present, logs that the default level is being used using the WARN level.
-pub fn init_with_default(default_level: LevelFilter) -> Result<()> {
-    env_logger::Builder::from_env(Env::default().default_filter_or(default_level.to_string()))
-        .init();
+/// Specifically, checks for the case where logging is disabled but `env_logger::DEFAULT_FILTER_ENV`
+/// (which should be `RUST_LOG`) is set in the environment to something other than OFF (case
+/// insensitive), printing a warning message if so. In this case, it is likely that the environment
+/// variable's value is malformed, since if it is present but invalid, logging seems to
+/// unfortunately be silently disabled.
+pub fn init_with_default(default_level: LevelFilter) {
+    env_logger::Builder::from_env(Env::default().default_filter_or(default_level.as_str())).init();
 
-    match env::var("RUST_LOG") {
-        Err(VarError::NotPresent) => {
-            log::warn!("Environment variable RUST_LOG not found, using log level {default_level}");
-            Ok(())
-        }
-        Err(VarError::NotUnicode(_)) => Err(anyhow!(
+    if !log_enabled!(Level::Error)
+        && let Ok(val) = env::var(DEFAULT_FILTER_ENV)
+        && !val.eq_ignore_ascii_case(LevelFilter::Off.as_str())
+    {
+        eprintln!(
             "{}",
-            "Environment variable RUST_LOG present but not valid Unicode. \n\
-            Valid values are `error`, `warn`, `info`, `debug`, `trace`, and `off`."
-                .red()
-        )),
-        Ok(val) => {
-            let level = val.to_ascii_uppercase();
-
-            match level.as_str() {
-                "ERROR" | "WARN" | "INFO" | "DEBUG" | "TRACE" | "OFF" => {
-                    log::info!("Log level set to {level}");
-                    Ok(())
-                }
-                _ => Err(anyhow!(
-                    "{}",
-                    "Environment variable RUST_LOG present but not a valid value. \n\
-                    Valid values are `error`, `warn`, `info`, `debug`, `trace`, and `off`."
-                        .red()
-                )),
-            }
-        }
+            format!(
+                "Warning: Logging is off but environment variable {DEFAULT_FILTER_ENV} is: {val}"
+            )
+            .red()
+        );
     }
+
+    log::info!("Max log level set to {}", log::max_level());
 }
