@@ -47,13 +47,16 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-/// Creates a Unix signal handler that listens for SIGINT and SIGTERM. This will likely be the only
-/// version of this function ever used, but see the other function of the same name for non-Unix
-/// behavior.
+/// Creates Unix signal handlers that listen for SIGINT and SIGTERM. Errors installing the handlers
+/// are returned synchronously, while errors receiving the signals are logged but not returned
+/// (since the app would be shutting down anyway). This program will likely only ever run on Unix,
+/// but see the other function of the same name for non-Unix behavior.
 #[cfg(unix)]
 fn shutdown_signal_handler() -> Result<impl Future<Output = ()>> {
     use tokio::signal::unix;
 
+    // Initialize here synchronously to fail fast and separate initialization errors from stream
+    // errors
     let mut sigint = unix::signal(unix::SignalKind::interrupt())?;
     let mut sigterm = unix::signal(unix::SignalKind::terminate())?;
 
@@ -75,7 +78,7 @@ fn shutdown_signal_handler() -> Result<impl Future<Output = ()>> {
     })
 }
 
-/// Creates a signal handler that listens for Ctrl+C regardless of OS. Included for portability, but
+/// Creates a cross-platform signal handler that listens for Ctrl+C. Included for portability, but
 /// will likely never be used. Not actually tested on Windows. See the other function of the same
 /// name for the standard Unix behavior.
 #[allow(clippy::unnecessary_wraps)] // Wrapped in `Result` to match the Unix version
