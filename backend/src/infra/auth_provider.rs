@@ -41,7 +41,7 @@ impl AuthProvider for BcryptJwtAuthProvider {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct Claims {
     sub: String,
     exp: u64,
