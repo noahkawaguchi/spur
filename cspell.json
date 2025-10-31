@@ -13,7 +13,10 @@
     "btrim",
     "oneshot",
     "unstub",
-    "reiwa"
+    "reiwa",
+    "healthcheck",
+    "isready",
+    "sslmode"
   ],
   "useGitignore": true,
   "ignorePaths": ["pnpm-lock.yaml"],
