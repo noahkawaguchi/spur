@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT u.username\n            FROM users u\n            JOIN (\n                SELECT lesser_id AS requester_id, requested_at\n                FROM friendship\n                WHERE confirmed_at IS NULL\n                    AND greater_id = $1\n                    AND lesser_requested\n\n                UNION ALL\n\n                SELECT greater_id AS requester_id, requested_at\n                FROM friendship\n                WHERE confirmed_at IS NULL\n                    AND lesser_id = $1\n                    AND NOT lesser_requested\n            ) AS f ON f.requester_id = u.id\n            ORDER BY f.requested_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "username",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d9dcbd3dcbb0d6f94eb4a9077e49714e8bff8a17491e4c7960e1fdf77004dec5"
+}
