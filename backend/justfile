@@ -6,32 +6,53 @@
 set dotenv-load := true
 
 ####################################################################################################
-# Dev DB container/volume
+# Dev containers/volume/network
 #
-# Requires the Docker CLI and a running VM such as Docker Desktop or Colima.
+# Requires the Docker CLI and a running VM (e.g. Docker Desktop, Colima) or equivalent.
 ####################################################################################################
 
 docker-project := "spur"
-docker-volume := "postgres_data"
-docker-container := "spur_dev"
+seed-profile := "init"
 
-# Start the dev DB container (also the default recipe)
-db-start:
-	docker start {{docker-container}}
+# Build/start the dev DB/app/volume/network stack and run any pending migrations (default recipe)
+dc-up:
+    docker compose -p {{docker-project}} up -d --build
 
-# Stop the dev DB container
-db-stop:
-	docker stop {{docker-container}}
+# Same as `dc-up`, except also inserts seed data
+dc-init:
+    docker compose --profile {{seed-profile}} -p {{docker-project}} up -d --build
 
-# Initialize the dev DB container and volume
-db-up:
-	docker compose -p {{docker-project}} up -d
+# Stop the project's running containers
+dc-stop:
+    docker compose -p {{docker-project}} stop
 
-# Remove the container and named Docker volume (persistent dev data)
-[confirm("Are you sure you want to remove the dev DB and all of its data?")]
-db-rm: db-stop
-	docker rm {{docker-container}}
-	docker volume rm {{docker-project}}_{{docker-volume}}
+# Remove the project's containers and volume
+[confirm("Are you sure you want to remove the containers and dev data?")]
+dc-down:
+    docker compose -p {{docker-project}} down --volumes
+
+####################################################################################################
+# Pre-compilation step for compile time checked SQL queries without a live DB connection (needed for
+# building in a Docker container)
+#
+# `sqlx` commands require the SQLx CLI with the feature flag for Postgres. TLS is not required to
+# use the local development database in Docker. Therefore, the minimal sqlx-cli installation
+# required for this project is: `cargo install sqlx-cli --no-default-features --features postgres`
+####################################################################################################
+
+prep-db-name := "spur_sqlx_prep_db"
+prep-db-port := "55432"
+prep-db-url := "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:" \
+               + prep-db-port + "/$POSTGRES_DB"
+
+# Update the `.sqlx` directory using an ephemeral Postgres container (after any query modifications)
+sqlx-prep:
+    if docker inspect {{prep-db-name}} >/dev/null 2>&1; then \
+        docker rm -f {{prep-db-name}}; sleep 3; fi
+    docker run --rm --name {{prep-db-name}} --env-file .env -p {{prep-db-port}}:5432 -d postgres:17
+    sqlx migrate run -D {{prep-db-url}}
+    cargo sqlx prepare -D {{prep-db-url}}
+    docker stop {{prep-db-name}}
 
 ####################################################################################################
 # Migrations
@@ -49,37 +70,20 @@ schema-file := "file://schema.sql"
 
 # Recompute `atlas.sum` after manual changes
 mg-hash:
-	atlas migrate hash
+    atlas migrate hash
 
 # Validate all migrations
 mg-validate:
-	atlas migrate validate --dev-url {{ephemeral-pg}}
+    atlas migrate validate --dev-url {{ephemeral-pg}}
 
 # Generate a new migration file by diffing the schema
 migration name:
-	atlas migrate diff {{name}} --to {{schema-file}} --dev-url {{ephemeral-pg}}
+    atlas migrate diff {{name}} --to {{schema-file}} --dev-url {{ephemeral-pg}}
 
-# Preview new migrations to be run
+# Preview new migrations to be run (actually running them should be done in the migrate container)
 mg-preview: mg-validate
-	atlas migrate status --url $DATABASE_URL
-	atlas migrate apply --dry-run --url $DATABASE_URL
-
-# Run pending migrations
-[confirm("Are you sure you want to apply all pending migrations?")]
-migrate: mg-validate
-	atlas migrate apply --url $DATABASE_URL
-
-####################################################################################################
-# Seed data
-####################################################################################################
-
-# Seed the database with dummy data
-[confirm("Are you sure you want to insert the seed data into the database?")]
-seed:
-	cargo run --bin seed
-
-# Destroy and remake the database with migrations and seed data applied
-reseed: db-rm db-up migrate seed
+    atlas migrate status --url $DATABASE_URL
+    atlas migrate apply --dry-run --url $DATABASE_URL
 
 ####################################################################################################
 # Information
@@ -87,4 +91,4 @@ reseed: db-rm db-up migrate seed
 
 # Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
 coverage:
-	cargo llvm-cov --open
+    cargo llvm-cov --open

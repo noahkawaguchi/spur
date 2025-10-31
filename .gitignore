@@ -1,6 +1,6 @@
 .env*
-.DS_Store
-scratch/
+!.env.example
+
 .vscode/
 
 # Backend

@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
     );
 
     #[cfg(not(debug_assertions))]
-    log::info("Listening on {}", &config.bind_addr);
+    log::info!("Listening on {}", &config.bind_addr);
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal_handler()?)
