@@ -1,0 +1,12 @@
+# Make this a whitelist to avoid surprises since this is all that is necessary and there is no clean
+# way to check what is actually being ignored.
+#
+# Even though the Dockerfile explicitly copies each file/directory that is needed (rather than using
+# `COPY . .`), this avoids including large and unnecessary files/directories in the build context.
+
+*
+!src/
+!migrations/
+!.sqlx/
+!Cargo.toml
+!Cargo.lock
