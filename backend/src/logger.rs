@@ -1,7 +1,6 @@
 use colored::Colorize;
 use env_logger::{DEFAULT_FILTER_ENV, Env};
 use log::{Level, LevelFilter, log_enabled};
-use std::env::{self};
 
 /// Initializes the logger with the provided default if not set from the environment, checks whether
 /// logging has likely been accidentally disabled, and reports the max log level using the INFO log
@@ -16,7 +15,7 @@ pub fn init_with_default(default_level: LevelFilter) {
     env_logger::Builder::from_env(Env::default().default_filter_or(default_level.as_str())).init();
 
     if !log_enabled!(Level::Error)
-        && let Ok(val) = env::var(DEFAULT_FILTER_ENV)
+        && let Ok(val) = std::env::var(DEFAULT_FILTER_ENV)
         && !val.eq_ignore_ascii_case(LevelFilter::Off.as_str())
     {
         eprintln!(

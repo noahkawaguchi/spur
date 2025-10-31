@@ -39,7 +39,7 @@ impl AppState {
 
         log::info!("Connected to database");
 
-        Ok(Self::build(pool, config.jwt_secret.to_string()))
+        Ok(Self::build(pool, config.jwt_secret.clone()))
     }
 
     fn build(pool: PgPool, jwt_secret: String) -> Self {
