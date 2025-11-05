@@ -59,7 +59,6 @@ sqlx-prep:
 #
 # Requires the Atlas CLI (https://atlasgo.io/getting-started#installation).
 # Recipes that use an ephemeral DB require the VM for Docker to be running.
-# Recipes that use the dev DB URL require the dev DB container to be running.
 ####################################################################################################
 
 # A URL to pass to Atlas so that it can create an ephemeral DB to work in
@@ -79,11 +78,6 @@ mg-validate:
 # Generate a new migration file by diffing the schema
 migration name:
     atlas migrate diff {{name}} --to {{schema-file}} --dev-url {{ephemeral-pg}}
-
-# Preview new migrations to be run (actually running them should be done in the migrate container)
-mg-preview: mg-validate
-    atlas migrate status --url $DATABASE_URL
-    atlas migrate apply --dry-run --url $DATABASE_URL
 
 ####################################################################################################
 # Information
