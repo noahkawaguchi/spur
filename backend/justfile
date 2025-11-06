@@ -11,26 +11,20 @@ set dotenv-load := true
 # Requires the Docker CLI and a running VM (e.g. Docker Desktop, Colima) or equivalent.
 ####################################################################################################
 
-docker-project := "spur"
-seed-profile := "init"
-dev-compose-files := "-f docker-compose.yml -f docker-compose.dev.yml"
+dc-project := "docker compose -p spur"
 
-# Start the dev DB/app/volume/network stack and run any pending migrations (default recipe)
+# Start the full backend dev stack with migrations and seed data if necessary (default recipe)
 dc-up: img-build
-    docker compose -p {{docker-project}} {{dev-compose-files}} up -d
-
-# Same as `dc-up`, except also inserts seed data
-dc-init: img-build
-    docker compose --profile {{seed-profile}} -p {{docker-project}} {{dev-compose-files}} up -d
+    {{dc-project}} --profile init -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # Stop the project's running containers
 dc-stop:
-    docker compose -p {{docker-project}} stop
+    {{dc-project}} stop
 
-# Remove the project's containers and volume
+# Remove the project's containers and volumes
 [confirm("Are you sure you want to remove the containers and dev data?")]
 dc-down:
-    docker compose -p {{docker-project}} down --volumes
+    {{dc-project}} down --volumes
 
 ####################################################################################################
 # Spur Docker image

@@ -9,12 +9,11 @@ static MIGRATOR: Migrator = sqlx::migrate!();
 #[tokio::main]
 async fn main() -> Result<()> {
     spur::logger::init_with_default(log::LevelFilter::Info);
-    log::info!("Starting database migrations...");
+    log::info!("Migrate binary starting...");
 
     let pool = PgPoolOptions::new()
         .connect(&std::env::var("DATABASE_URL")?)
         .await?;
-
     log::info!("Connected to database");
 
     MIGRATOR.run(&pool).await?;
