@@ -14,13 +14,13 @@ set dotenv-load := true
 docker-project := "spur"
 seed-profile := "init"
 
-# Build/start the dev DB/app/volume/network stack and run any pending migrations (default recipe)
-dc-up:
-    docker compose -p {{docker-project}} up -d --build
+# Start the dev DB/app/volume/network stack and run any pending migrations (default recipe)
+dc-up: img-build
+    docker compose -p {{docker-project}} up -d
 
 # Same as `dc-up`, except also inserts seed data
-dc-init:
-    docker compose --profile {{seed-profile}} -p {{docker-project}} up -d --build
+dc-init: img-build
+    docker compose --profile {{seed-profile}} -p {{docker-project}} up -d
 
 # Stop the project's running containers
 dc-stop:
@@ -30,6 +30,27 @@ dc-stop:
 [confirm("Are you sure you want to remove the containers and dev data?")]
 dc-down:
     docker compose -p {{docker-project}} down --volumes
+
+####################################################################################################
+# Spur Docker image
+#
+# Pushing to GHCR requires being logged into the Docker CLI.
+####################################################################################################
+
+img-url := "ghcr.io/noahkawaguchi/spur:$SPUR_IMG_TAG"
+
+# Build the Spur Docker image
+img-build:
+    docker build -t {{img-url}} .
+
+# Push the Spur Docker image to GHCR, refusing to overwrite if the image/tag already exists
+img-push:
+    @if docker pull {{img-url}} >/dev/null 2>&1; then \
+        echo "\nImage/tag already exists, refusing to overwrite: {{img-url}}\n"; \
+        exit 1; \
+    fi
+    just img-build
+    docker push {{img-url}}
 
 ####################################################################################################
 # Pre-compilation step for compile time checked SQL queries without a live DB connection (needed for
