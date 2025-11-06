@@ -16,7 +16,9 @@
     "reiwa",
     "healthcheck",
     "isready",
-    "sslmode"
+    "sslmode",
+    "noahkawaguchi",
+    "Caddyfile"
   ],
   "useGitignore": true,
   "ignorePaths": ["pnpm-lock.yaml"],
