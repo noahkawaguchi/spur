@@ -13,14 +13,15 @@ set dotenv-load := true
 
 docker-project := "spur"
 seed-profile := "init"
+dev-compose-files := "-f docker-compose.yml -f docker-compose.dev.yml"
 
 # Start the dev DB/app/volume/network stack and run any pending migrations (default recipe)
 dc-up: img-build
-    docker compose -p {{docker-project}} up -d
+    docker compose -p {{docker-project}} {{dev-compose-files}} up -d
 
 # Same as `dc-up`, except also inserts seed data
 dc-init: img-build
-    docker compose --profile {{seed-profile}} -p {{docker-project}} up -d
+    docker compose --profile {{seed-profile}} -p {{docker-project}} {{dev-compose-files}} up -d
 
 # Stop the project's running containers
 dc-stop:

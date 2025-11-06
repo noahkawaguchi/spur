@@ -2,8 +2,7 @@ services:
   db:
     image: postgres:17
     restart: unless-stopped
-    expose: ["5432"]            # Only expose to the internal network in prod
-    ports: ["${PG_PORT_MAP:-}"] # Expose on localhost in dev
+    expose: ["5432"]
     env_file: .env
     volumes: [postgres_data:/var/lib/postgresql/data]
     networks: [backend]
