@@ -11,25 +11,41 @@ set dotenv-load := true
 # Requires the Docker CLI and a running VM (e.g. Docker Desktop, Colima) or equivalent.
 ####################################################################################################
 
-docker-project := "spur"
-seed-profile := "init"
+dc-project := "docker compose -p spur"
 
-# Build/start the dev DB/app/volume/network stack and run any pending migrations (default recipe)
-dc-up:
-    docker compose -p {{docker-project}} up -d --build
-
-# Same as `dc-up`, except also inserts seed data
-dc-init:
-    docker compose --profile {{seed-profile}} -p {{docker-project}} up -d --build
+# Start the full backend dev stack with migrations and seed data if necessary (default recipe)
+dc-up: img-build
+    {{dc-project}} --profile init -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # Stop the project's running containers
 dc-stop:
-    docker compose -p {{docker-project}} stop
+    {{dc-project}} stop
 
-# Remove the project's containers and volume
+# Remove the project's containers and volumes
 [confirm("Are you sure you want to remove the containers and dev data?")]
 dc-down:
-    docker compose -p {{docker-project}} down --volumes
+    {{dc-project}} down --volumes
+
+####################################################################################################
+# Spur Docker image
+#
+# Pushing to GHCR requires being logged into the Docker CLI.
+####################################################################################################
+
+img-url := "ghcr.io/noahkawaguchi/spur:$SPUR_IMG_TAG"
+
+# Build the Spur Docker image
+img-build:
+    docker build -t {{img-url}} .
+
+# Push the Spur Docker image to GHCR, refusing to overwrite if the image/tag already exists
+img-push:
+    @if docker pull {{img-url}} >/dev/null 2>&1; then \
+        echo "\nImage/tag already exists, refusing to overwrite: {{img-url}}\n"; \
+        exit 1; \
+    fi
+    just img-build
+    docker push {{img-url}}
 
 ####################################################################################################
 # Pre-compilation step for compile time checked SQL queries without a live DB connection (needed for
@@ -59,7 +75,6 @@ sqlx-prep:
 #
 # Requires the Atlas CLI (https://atlasgo.io/getting-started#installation).
 # Recipes that use an ephemeral DB require the VM for Docker to be running.
-# Recipes that use the dev DB URL require the dev DB container to be running.
 ####################################################################################################
 
 # A URL to pass to Atlas so that it can create an ephemeral DB to work in
@@ -79,11 +94,6 @@ mg-validate:
 # Generate a new migration file by diffing the schema
 migration name:
     atlas migrate diff {{name}} --to {{schema-file}} --dev-url {{ephemeral-pg}}
-
-# Preview new migrations to be run (actually running them should be done in the migrate container)
-mg-preview: mg-validate
-    atlas migrate status --url $DATABASE_URL
-    atlas migrate apply --dry-run --url $DATABASE_URL
 
 ####################################################################################################
 # Information

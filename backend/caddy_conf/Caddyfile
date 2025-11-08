@@ -1,0 +1,11 @@
+{
+  # Contact email for ACME account created by Caddy
+  email {$CADDY_EMAIL}
+}
+
+# The domain to reverse proxy to the Spur API. Explicitly use HTTP, e.g. http://localhost, to
+# disable Caddy's automatic HTTPS, ACME account creation, etc.
+{$SPUR_DOMAIN} {
+  encode # Automatically compress responses
+  reverse_proxy spur:8080
+}
