@@ -1,10 +1,10 @@
 services:
   db:
-    image: postgres:17
+    image: postgres:18.0-alpine3.22
     restart: unless-stopped
     expose: ["5432"]
     env_file: .env
-    volumes: [postgres_data:/var/lib/postgresql/data]
+    volumes: [pg_data:/var/lib/postgresql]
     networks: [backend]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?error} -d ${POSTGRES_DB:?error}"]
@@ -48,7 +48,7 @@ services:
       migrate: { condition: service_completed_successfully }
 
   caddy:
-    image: arm64v8/caddy:2.10.2-alpine
+    image: caddy:2.10.2-alpine
     restart: unless-stopped
     ports: ["80:80", "443:443"]
     env_file: .env
@@ -62,7 +62,7 @@ services:
 
 
 volumes:
-  postgres_data: {}
+  pg_data: {}
   caddy_data: {}
   caddy_config: {}
 
