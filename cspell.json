@@ -19,7 +19,9 @@
     "sslmode",
     "noahkawaguchi",
     "Caddyfile",
-    "esac"
+    "esac",
+    "setcap",
+    "rootlesskit"
   ],
   "useGitignore": true,
   "ignorePaths": ["pnpm-lock.yaml"],
