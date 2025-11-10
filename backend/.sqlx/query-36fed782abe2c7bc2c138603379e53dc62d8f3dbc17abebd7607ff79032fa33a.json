@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT p.*, u.username AS author_username\n            FROM post p\n            LEFT JOIN users u ON p.author_id = u.id\n            JOIN (\n                SELECT\n                    CASE\n                        WHEN f.lesser_id = $1 THEN f.greater_id\n                        ELSE f.lesser_id\n                    END AS friend_id\n                FROM friendship f\n                WHERE f.confirmed_at IS NOT NULL AND (f.lesser_id = $1 OR f.greater_id = $1)\n            ) AS friends\n            ON p.author_id = friends.friend_id\n            ORDER BY p.created_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "author_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "parent_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "body",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "edited_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "archived_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "deleted_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "author_username",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "36fed782abe2c7bc2c138603379e53dc62d8f3dbc17abebd7607ff79032fa33a"
+}

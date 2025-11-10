@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO post (author_id, parent_id, body, created_at,\n                              edited_at, archived_at, deleted_at)\n            VALUES ($1, $2, $3::text, $4, $5, $6, $7)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Text",
+        "Timestamptz",
+        "Timestamptz",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1c274bba5f79503503d4c07aaf17fab6388ff6c9dafb1bd8002e2fb158cad2fa"
+}

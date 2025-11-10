@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT lesser_requested, confirmed_at IS NOT NULL AS \"confirmed!\"\n            FROM friendship\n            WHERE lesser_id = $1 AND greater_id = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "lesser_requested",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 1,
+        "name": "confirmed!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "8f729f081c9e8dd01e05508d4342d713f408eef4504653ac766432b960a46c55"
+}
