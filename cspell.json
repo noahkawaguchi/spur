@@ -18,7 +18,8 @@
     "isready",
     "sslmode",
     "noahkawaguchi",
-    "Caddyfile"
+    "Caddyfile",
+    "esac"
   ],
   "useGitignore": true,
   "ignorePaths": ["pnpm-lock.yaml"],
