@@ -1,4 +1,5 @@
 .headerTitle {
+  color: white;
   text-align: center;
   width: max-content;
   margin: 20px auto;
@@ -23,6 +24,6 @@
 .headerTitle:hover {
   color: var(--accent-color);
   font-style: italic;
-  cursor: default;
+  cursor: pointer;
   animation: title-twist 0.4s 1;
 }

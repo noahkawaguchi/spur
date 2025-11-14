@@ -53,7 +53,7 @@ describe('SignupPage', () => {
     rerender(inMemRouter({ children: <SignupPage /> }));
 
     expect(mocks.mockSetToken).toHaveBeenCalledExactlyOnceWith(token);
-    expect(mocks.mockNavigate).toHaveBeenCalledExactlyOnceWith('/');
+    expect(mocks.mockNavigate).toHaveBeenCalledExactlyOnceWith('/feed');
   });
 
   it('should reject usernames with illegal characters', async () => {

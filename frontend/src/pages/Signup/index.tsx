@@ -26,7 +26,7 @@ const SignupPage = () => {
   useEffect(() => {
     if (data) {
       setToken(data.token);
-      void navigate('/');
+      void navigate('/feed');
     }
   }, [data, navigate]);
 
@@ -37,7 +37,10 @@ const SignupPage = () => {
 
   return (
     <>
-      <h2>Signup</h2>
+      <Link to='/'>
+        <button type='button'>Home</button>
+      </Link>
+      <h2>Sign Up</h2>
       <hr />
       <form onSubmit={handleSubmit} className={styles.authForm}>
         <label>
