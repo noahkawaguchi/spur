@@ -13,17 +13,19 @@ import FriendContentPage from '@/pages/Friends/FriendContent';
 import ProfilePage from '@/pages/Profile';
 import './App.css';
 import UniversalLayout from '@/Layouts/UniversalLayout';
+import HomePage from '@/pages/Home';
 
 const App = () => {
   return (
     <BrowserRouter>
       <ErrorBoundary FallbackComponent={ErrorFallbackPage}>
         <Routes>
+          <Route path='/' element={<HomePage />} />
           <Route element={<UniversalLayout />}>
             <Route path='/login' element={<LoginPage />} />
             <Route path='/signup' element={<SignupPage />} />
             <Route element={<MainLayout />}>
-              <Route path='/' element={<FeedPage />} />
+              <Route path='/feed' element={<FeedPage />} />
               <Route path='/friends' element={<FriendsPage />} />
               <Route path='/friends/requests' element={<FriendRequestsPage />} />
               <Route path='/friends/add' element={<AddFriendPage />} />

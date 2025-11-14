@@ -4,9 +4,11 @@ import styles from './Header.module.css';
 const Header = () => {
   return (
     <header>
-      <h1 className={styles.headerTitle}>Spur</h1>
+      <Link to='/' style={{ textDecoration: 'none', cursor: 'default' }}>
+        <h1 className={styles.headerTitle}>Spur</h1>
+      </Link>
       <nav>
-        <Link to='/'>
+        <Link to='/feed'>
           <button type='button'>Feed</button>
         </Link>
         <Link to='/friends'>

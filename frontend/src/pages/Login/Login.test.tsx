@@ -49,6 +49,6 @@ describe('LoginPage', () => {
     rerender(inMemRouter({ children: <LoginPage /> }));
 
     expect(mocks.mockSetToken).toHaveBeenCalledExactlyOnceWith(token);
-    expect(mocks.mockNavigate).toHaveBeenCalledExactlyOnceWith('/');
+    expect(mocks.mockNavigate).toHaveBeenCalledExactlyOnceWith('/feed');
   });
 });
