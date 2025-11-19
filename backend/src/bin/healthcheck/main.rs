@@ -1,3 +1,8 @@
+#![forbid(unsafe_code)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+
 use std::{
     env,
     error::Error,
@@ -15,7 +20,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .1
         .parse()?;
 
-    let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
+    let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
 
     let timeout = Duration::from_millis(
         env::var("HEALTHCHECK_MILLIS")
