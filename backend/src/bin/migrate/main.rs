@@ -1,3 +1,8 @@
+#![forbid(unsafe_code)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+
 use anyhow::Result;
 use sqlx::{migrate::Migrator, postgres::PgPoolOptions};
 

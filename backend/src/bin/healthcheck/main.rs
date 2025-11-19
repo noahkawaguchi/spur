@@ -1,3 +1,8 @@
+#![forbid(unsafe_code)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+
 use std::{
     env,
     error::Error,
