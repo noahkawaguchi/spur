@@ -21,7 +21,9 @@
     "Caddyfile",
     "esac",
     "setcap",
-    "rootlesskit"
+    "rootlesskit",
+    "rustup",
+    "justfile"
   ],
   "useGitignore": true,
   "ignorePaths": ["pnpm-lock.yaml"],
