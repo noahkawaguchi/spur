@@ -1,8 +1,3 @@
-#![forbid(unsafe_code)]
-#![warn(clippy::all)]
-#![warn(clippy::pedantic)]
-#![warn(clippy::nursery)]
-
 mod api;
 mod app_services;
 mod config;
@@ -16,36 +11,39 @@ mod state;
 #[cfg(test)]
 mod test_utils;
 
-use crate::api::router;
 use anyhow::Result;
+use api::router;
 use config::AppConfig;
 use state::AppState;
 use tokio::net::TcpListener;
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    spur::logger::init_with_default(log::LevelFilter::Info);
-    log::info!("Initializing app...");
+/// Sets up the async runtime, logger, config, state, and server, and then listens for requests
+/// until receiving a shutdown signal.
+fn main() -> Result<()> {
+    spur::tokio_main(async {
+        spur::logger::init_with_default(log::LevelFilter::Info);
+        log::info!("Initializing app...");
 
-    let config = AppConfig::load()?;
-    let state = AppState::init(&config).await?;
-    let app = router::build(state, &config.frontend_url)?;
-    let listener = TcpListener::bind(&config.bind_addr).await?;
+        let config = AppConfig::load()?;
+        let state = AppState::init(&config).await?;
+        let app = router::build(state, &config.frontend_url)?;
+        let listener = TcpListener::bind(&config.bind_addr).await?;
 
-    #[cfg(debug_assertions)]
-    log::info!(
-        "Development server listening on http://{}",
-        &config.bind_addr
-    );
+        #[cfg(debug_assertions)]
+        log::info!(
+            "Development server listening on http://{}",
+            &config.bind_addr
+        );
 
-    #[cfg(not(debug_assertions))]
-    log::info!("Listening on {}", &config.bind_addr);
+        #[cfg(not(debug_assertions))]
+        log::info!("Listening on {}", &config.bind_addr);
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal_handler()?)
-        .await?;
+        axum::serve(listener, app)
+            .with_graceful_shutdown(shutdown_signal_handler()?)
+            .await?;
 
-    Ok(())
+        Ok(())
+    })
 }
 
 /// Creates Unix signal handlers that listen for SIGINT and SIGTERM. Errors installing the handlers

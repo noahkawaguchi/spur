@@ -87,7 +87,7 @@ The frontend is tested with Vitest and React Testing Library.
 - The containers in the stack are exposed to each other only through an internal Docker network, not localhost. All communications outside this network must first go through the Caddy container, which provides HTTPS.
 - The backend's CORS policy specifically allows only the frontend URL.
 - HTTP requests that access user data must have the standard Authorization Bearer header with a valid JSON Web Token.
-- The main backend server binary and the three helper binaries are all written entirely in safe Rust, enforced using `#![forbid(unsafe_code)]`.
+- The main backend server binary and the three helper binaries contain no `unsafe`, `unwrap`, or `expect`. This is enforced using lints set to the `forbid` level. (`unwrap` and `expect` are allowed in tests.)
 - Type safety is enforced in the frontend via ESLint rules forbidding `any` and type assertions (`as`).
 
 ## Development and Deployment
@@ -96,5 +96,5 @@ The frontend is tested with Vitest and React Testing Library.
 - `just` is a command runner used primarily in the backend. It can be installed via one of the methods described [here](https://just.systems/man/en/). Additional development tools required by some recipes are documented in the `justfile`s.
 - The frontend uses Node, which can be installed via one of the methods described [here](https://nodejs.org/en/download). `pnpm` can then be installed with `npm i -g pnpm`.
 - Both the backend and the frontend have `.env.example` files that describe the necessary environment variable configurations.
-- Common commands used in development are automated via `package.json` in the frontend and the `justfile` in the backend.
+- Common commands used in development are documented and automated via the `justfile` in the backend and `package.json` in the frontend.
 - The frontend is deployed via `pnpm run deploy`, and the backend is deployed as described in [backend/deploy/steps.md](backend/deploy/steps.md).

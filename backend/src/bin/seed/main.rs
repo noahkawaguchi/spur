@@ -1,8 +1,3 @@
-#![forbid(unsafe_code)]
-#![warn(clippy::all)]
-#![warn(clippy::pedantic)]
-#![warn(clippy::nursery)]
-
 mod friendship;
 mod post;
 mod time_utils;
@@ -13,26 +8,27 @@ use sqlx::{PgPool, postgres::PgPoolOptions};
 
 /// Connects to the database specified in the environment variable `DATABASE_URL` and inserts seed
 /// data if the tables are empty. Assumes that migrations have already been applied.
-#[tokio::main]
-async fn main() -> Result<()> {
-    spur::logger::init_with_default(log::LevelFilter::Info);
-    log::info!("Seed binary starting...");
+fn main() -> Result<()> {
+    spur::tokio_main(async {
+        spur::logger::init_with_default(log::LevelFilter::Info);
+        log::info!("Seed binary starting...");
 
-    let pool = PgPoolOptions::new()
-        .connect(&std::env::var("DATABASE_URL")?)
-        .await?;
-    log::info!("Connected to database");
+        let pool = PgPoolOptions::new()
+            .connect(&std::env::var("DATABASE_URL")?)
+            .await?;
+        log::info!("Connected to database");
 
-    // Only attempt to insert seed data if the tables are empty
-    if rows_exist(&pool).await? {
-        log::warn!("Existing row(s) found in the database, skipping seeding");
-    } else {
-        user::seed(&pool).await?; // Users must be seeded first
-        friendship::seed(&pool).await?;
-        post::seed(&pool).await?;
-    }
+        // Only attempt to insert seed data if the tables are empty
+        if rows_exist(&pool).await? {
+            log::warn!("Existing row(s) found in the database, skipping seeding");
+        } else {
+            user::seed(&pool).await?; // Users must be seeded first
+            friendship::seed(&pool).await?;
+            post::seed(&pool).await?;
+        }
 
-    Ok(())
+        Ok(())
+    })
 }
 
 /// Determines whether any rows exist in the users, friendship, or post tables.
