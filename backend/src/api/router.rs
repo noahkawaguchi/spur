@@ -52,7 +52,10 @@ mod tests {
         app_services::MockAuthenticator,
         domain::auth::AuthError,
         read_models::MockSocialRead,
-        test_utils::http_bodies::{deserialize_body, resp_into_body_text, serialize_body},
+        test_utils::{
+            http_bodies::{deserialize_body, resp_into_body_text, serialize_body},
+            tokio_test,
+        },
     };
     use axum::{
         body::Body,
@@ -86,52 +89,58 @@ mod tests {
                 .unwrap()
         }
 
-        #[tokio::test]
-        async fn does_not_require_auth_for_public_route() {
-            // Auth should not be accessed
-            let resp = send_req(AppState::default(), "/ping", None).await;
-            assert_eq!(StatusCode::OK, resp.status());
-            let resp_body = resp_into_body_text(resp).await;
-            assert_eq!("pong!", resp_body);
+        #[test]
+        fn does_not_require_auth_for_public_route() {
+            tokio_test(async {
+                // Auth should not be accessed
+                let resp = send_req(AppState::default(), "/ping", None).await;
+                assert_eq!(StatusCode::OK, resp.status());
+                let resp_body = resp_into_body_text(resp).await;
+                assert_eq!("pong!", resp_body);
+            });
         }
 
-        #[tokio::test]
-        async fn allows_access_to_protected_route_if_authenticated() {
-            let mut mock_auth = MockAuthenticator::new();
-            mock_auth
-                .expect_validate_token()
-                .with(eq(TEST_TOKEN))
-                .once()
-                .return_once(|_| Ok(45));
+        #[test]
+        fn allows_access_to_protected_route_if_authenticated() {
+            tokio_test(async {
+                let mut mock_auth = MockAuthenticator::new();
+                mock_auth
+                    .expect_validate_token()
+                    .with(eq(TEST_TOKEN))
+                    .once()
+                    .return_once(|_| Ok(45));
 
-            let state = AppState { auth: Arc::new(mock_auth), ..Default::default() };
+                let state = AppState { auth: Arc::new(mock_auth), ..Default::default() };
 
-            let resp = send_req(state, "/auth/check", Some(TEST_TOKEN)).await;
-            assert_eq!(StatusCode::OK, resp.status());
+                let resp = send_req(state, "/auth/check", Some(TEST_TOKEN)).await;
+                assert_eq!(StatusCode::OK, resp.status());
 
-            let resp_body = resp_into_body_text(resp).await;
-            assert_eq!("Your token is valid", resp_body);
+                let resp_body = resp_into_body_text(resp).await;
+                assert_eq!("Your token is valid", resp_body);
+            });
         }
 
-        #[tokio::test]
-        async fn disallows_access_to_protected_route_if_unauthenticated() {
-            let mut mock_auth = MockAuthenticator::new();
-            mock_auth
-                .expect_validate_token()
-                .with(eq(TEST_TOKEN))
-                .once()
-                .return_once(|_| Err(AuthError::TokenValidation));
+        #[test]
+        fn disallows_access_to_protected_route_if_unauthenticated() {
+            tokio_test(async {
+                let mut mock_auth = MockAuthenticator::new();
+                mock_auth
+                    .expect_validate_token()
+                    .with(eq(TEST_TOKEN))
+                    .once()
+                    .return_once(|_| Err(AuthError::TokenValidation));
 
-            let state = AppState { auth: Arc::new(mock_auth), ..Default::default() };
+                let state = AppState { auth: Arc::new(mock_auth), ..Default::default() };
 
-            let resp = send_req(state, "/auth/check", Some(TEST_TOKEN)).await;
-            assert_eq!(StatusCode::UNAUTHORIZED, resp.status());
+                let resp = send_req(state, "/auth/check", Some(TEST_TOKEN)).await;
+                assert_eq!(StatusCode::UNAUTHORIZED, resp.status());
 
-            let resp_body = deserialize_body::<ErrorResponse>(resp).await;
-            let expected = ErrorResponse {
-                error: String::from("Expired or invalid token. Try logging in again."),
-            };
-            assert_eq!(expected, resp_body);
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let expected = ErrorResponse {
+                    error: String::from("Expired or invalid token. Try logging in again."),
+                };
+                assert_eq!(expected, resp_body);
+            });
         }
     }
 
@@ -159,73 +168,77 @@ mod tests {
                 .unwrap()
         }
 
-        #[tokio::test]
-        async fn passes_state_to_handler_for_public_endpoint() {
-            let payload = dummy_login_request();
+        #[test]
+        fn passes_state_to_handler_for_public_endpoint() {
+            tokio_test(async {
+                let payload = dummy_login_request();
 
-            let mut mock_auth = MockAuthenticator::new();
-            mock_auth
-                .expect_login()
-                .with(eq(payload.email.clone()), eq(payload.password.clone()))
-                .once()
-                .return_once(|_, _| Ok(TEST_TOKEN.to_string()));
+                let mut mock_auth = MockAuthenticator::new();
+                mock_auth
+                    .expect_login()
+                    .with(eq(payload.email.clone()), eq(payload.password.clone()))
+                    .once()
+                    .return_once(|_, _| Ok(TEST_TOKEN.to_string()));
 
-            let resp = send_req(
-                AppState { auth: Arc::new(mock_auth), ..Default::default() },
-                Method::POST,
-                "/auth/login",
-                None,
-                serialize_body(&payload),
-            )
-            .await;
+                let resp = send_req(
+                    AppState { auth: Arc::new(mock_auth), ..Default::default() },
+                    Method::POST,
+                    "/auth/login",
+                    None,
+                    serialize_body(&payload),
+                )
+                .await;
 
-            assert_eq!(StatusCode::OK, resp.status());
-            let resp_body = deserialize_body::<TokenResponse>(resp).await;
-            let expected = TokenResponse { token: TEST_TOKEN.to_string() };
-            assert_eq!(expected, resp_body);
+                assert_eq!(StatusCode::OK, resp.status());
+                let resp_body = deserialize_body::<TokenResponse>(resp).await;
+                let expected = TokenResponse { token: TEST_TOKEN.to_string() };
+                assert_eq!(expected, resp_body);
+            });
         }
 
-        #[tokio::test]
-        async fn passes_state_to_handler_for_protected_endpoint() {
-            let user_id = 615;
-            let requester_usernames = vec![
-                String::from("jun"),
-                String::from("john"),
-                String::from("jessica"),
-                String::from("josue"),
-            ];
-            let requester_usernames_clone = requester_usernames.clone();
+        #[test]
+        fn passes_state_to_handler_for_protected_endpoint() {
+            tokio_test(async {
+                let user_id = 615;
+                let requester_usernames = vec![
+                    String::from("jun"),
+                    String::from("john"),
+                    String::from("jessica"),
+                    String::from("josue"),
+                ];
+                let requester_usernames_clone = requester_usernames.clone();
 
-            let mut mock_auth = MockAuthenticator::new();
-            mock_auth
-                .expect_validate_token()
-                .with(eq(TEST_TOKEN))
-                .once()
-                .return_once(move |_| Ok(user_id));
+                let mut mock_auth = MockAuthenticator::new();
+                mock_auth
+                    .expect_validate_token()
+                    .with(eq(TEST_TOKEN))
+                    .once()
+                    .return_once(move |_| Ok(user_id));
 
-            let mut mock_social_read = MockSocialRead::new();
-            mock_social_read
-                .expect_pending_requests()
-                .with(eq(user_id))
-                .once()
-                .return_once(move |_| Ok(requester_usernames_clone));
+                let mut mock_social_read = MockSocialRead::new();
+                mock_social_read
+                    .expect_pending_requests()
+                    .with(eq(user_id))
+                    .once()
+                    .return_once(move |_| Ok(requester_usernames_clone));
 
-            let resp = send_req(
-                AppState {
-                    auth: Arc::new(mock_auth),
-                    social_read: Arc::new(mock_social_read),
-                    ..Default::default()
-                },
-                Method::GET,
-                "/friends/requests",
-                Some(TEST_TOKEN),
-                Body::empty(),
-            )
-            .await;
+                let resp = send_req(
+                    AppState {
+                        auth: Arc::new(mock_auth),
+                        social_read: Arc::new(mock_social_read),
+                        ..Default::default()
+                    },
+                    Method::GET,
+                    "/friends/requests",
+                    Some(TEST_TOKEN),
+                    Body::empty(),
+                )
+                .await;
 
-            assert_eq!(StatusCode::OK, resp.status());
-            let resp_body = deserialize_body::<Vec<String>>(resp).await;
-            assert_eq!(requester_usernames, resp_body);
+                assert_eq!(StatusCode::OK, resp.status());
+                let resp_body = deserialize_body::<Vec<String>>(resp).await;
+                assert_eq!(requester_usernames, resp_body);
+            });
         }
     }
 
@@ -249,59 +262,65 @@ mod tests {
                 .unwrap()
         }
 
-        #[tokio::test]
-        async fn does_not_send_allow_origin_header_if_origin_not_allowed() {
-            let resp = send_req(
-                "https://frontend.example",
-                Method::GET,
-                "/ping",
-                &[(ORIGIN, "https://not-allowed.example")],
-            )
-            .await;
+        #[test]
+        fn does_not_send_allow_origin_header_if_origin_not_allowed() {
+            tokio_test(async {
+                let resp = send_req(
+                    "https://frontend.example",
+                    Method::GET,
+                    "/ping",
+                    &[(ORIGIN, "https://not-allowed.example")],
+                )
+                .await;
 
-            assert!(resp.headers().get(ACCESS_CONTROL_ALLOW_ORIGIN).is_none());
+                assert!(resp.headers().get(ACCESS_CONTROL_ALLOW_ORIGIN).is_none());
+            });
         }
 
-        #[tokio::test]
-        async fn sends_correct_cors_headers_for_allowed_origin() {
-            let origin = "https://frontend.example";
-            let resp = send_req(origin, Method::GET, "/ping", &[(ORIGIN, origin)]).await;
-            let h = resp.headers();
-            assert_eq!(origin, h.get(ACCESS_CONTROL_ALLOW_ORIGIN).unwrap());
-            assert_eq!("true", h.get(ACCESS_CONTROL_ALLOW_CREDENTIALS).unwrap());
+        #[test]
+        fn sends_correct_cors_headers_for_allowed_origin() {
+            tokio_test(async {
+                let origin = "https://frontend.example";
+                let resp = send_req(origin, Method::GET, "/ping", &[(ORIGIN, origin)]).await;
+                let h = resp.headers();
+                assert_eq!(origin, h.get(ACCESS_CONTROL_ALLOW_ORIGIN).unwrap());
+                assert_eq!("true", h.get(ACCESS_CONTROL_ALLOW_CREDENTIALS).unwrap());
+            });
         }
 
-        #[tokio::test]
-        async fn sends_correct_cors_headers_for_preflight_from_allowed_origin() {
-            let origin = "https://frontend.example";
+        #[test]
+        fn sends_correct_cors_headers_for_preflight_from_allowed_origin() {
+            tokio_test(async {
+                let origin = "https://frontend.example";
 
-            let resp = send_req(
-                origin,
-                Method::OPTIONS,
-                "/friends",
-                &[
-                    (ORIGIN, origin),
-                    (ACCESS_CONTROL_REQUEST_METHOD, "POST"),
-                    (ACCESS_CONTROL_REQUEST_HEADERS, "content-type,authorization"),
-                ],
-            )
-            .await;
+                let resp = send_req(
+                    origin,
+                    Method::OPTIONS,
+                    "/friends",
+                    &[
+                        (ORIGIN, origin),
+                        (ACCESS_CONTROL_REQUEST_METHOD, "POST"),
+                        (ACCESS_CONTROL_REQUEST_HEADERS, "content-type,authorization"),
+                    ],
+                )
+                .await;
 
-            let h = resp.headers();
+                let h = resp.headers();
 
-            assert_eq!(
-                "https://frontend.example",
-                h.get(ACCESS_CONTROL_ALLOW_ORIGIN).unwrap()
-            );
-            assert_eq!(
-                "GET,POST,OPTIONS",
-                h.get(ACCESS_CONTROL_ALLOW_METHODS).unwrap()
-            );
-            assert_eq!(
-                "content-type,authorization",
-                h.get(ACCESS_CONTROL_ALLOW_HEADERS).unwrap()
-            );
-            assert_eq!("true", h.get(ACCESS_CONTROL_ALLOW_CREDENTIALS).unwrap());
+                assert_eq!(
+                    "https://frontend.example",
+                    h.get(ACCESS_CONTROL_ALLOW_ORIGIN).unwrap()
+                );
+                assert_eq!(
+                    "GET,POST,OPTIONS",
+                    h.get(ACCESS_CONTROL_ALLOW_METHODS).unwrap()
+                );
+                assert_eq!(
+                    "content-type,authorization",
+                    h.get(ACCESS_CONTROL_ALLOW_HEADERS).unwrap()
+                );
+                assert_eq!("true", h.get(ACCESS_CONTROL_ALLOW_CREDENTIALS).unwrap());
+            });
         }
     }
 }

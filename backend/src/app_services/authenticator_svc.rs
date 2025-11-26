@@ -64,7 +64,7 @@ mod tests {
     use crate::{
         domain::{RepoError, auth::MockAuthProvider},
         models::user::User,
-        test_utils::{fake_db::fake_pool, mock_repos::MockUserRepo},
+        test_utils::{fake_db::fake_pool, mock_repos::MockUserRepo, tokio_test},
     };
     use chrono::Utc;
     use mockall::predicate::eq;
@@ -92,198 +92,210 @@ mod tests {
     mod signup {
         use super::*;
 
-        #[tokio::test]
-        async fn errors_for_existing_email() {
-            let alice = alice_registration();
-            let alice_clone = alice.clone();
-            let pw_hash = "ab43$@baf$$CO";
+        #[test]
+        fn errors_for_existing_email() {
+            tokio_test(async {
+                let alice = alice_registration();
+                let alice_clone = alice.clone();
+                let pw_hash = "ab43$@baf$$CO";
 
-            let mut mock_provider = MockAuthProvider::new();
-            mock_provider
-                .expect_hash_pw()
-                .with(eq(alice_clone.password))
-                .once()
-                .return_once(|_| Ok(pw_hash.to_string()));
-            mock_provider.expect_create_token().never();
+                let mut mock_provider = MockAuthProvider::new();
+                mock_provider
+                    .expect_hash_pw()
+                    .with(eq(alice_clone.password))
+                    .once()
+                    .return_once(|_| Ok(pw_hash.to_string()));
+                mock_provider.expect_create_token().never();
 
-            let mock_repo = MockUserRepo {
-                insert_new: Some(Box::new(move |u| {
-                    assert!(
-                        alice_clone.name == u.name
-                            && alice_clone.email == u.email
-                            && alice_clone.username == u.username
-                            && pw_hash == u.password_hash
-                    );
-                    Err(RepoError::UniqueViolation(String::from(
-                        "users_email_unique",
-                    )))
-                })),
-                ..Default::default()
-            };
+                let mock_repo = MockUserRepo {
+                    insert_new: Some(Box::new(move |u| {
+                        assert!(
+                            alice_clone.name == u.name
+                                && alice_clone.email == u.email
+                                && alice_clone.username == u.username
+                                && pw_hash == u.password_hash
+                        );
+                        Err(RepoError::UniqueViolation(String::from(
+                            "users_email_unique",
+                        )))
+                    })),
+                    ..Default::default()
+                };
 
-            let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
-            let result = auth.signup(alice).await;
+                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+                let result = auth.signup(alice).await;
 
-            assert!(matches!(result, Err(AuthError::DuplicateEmail)));
+                assert!(matches!(result, Err(AuthError::DuplicateEmail)));
+            });
         }
 
-        #[tokio::test]
-        async fn errors_for_existing_username() {
-            let alice = alice_registration();
-            let alice_clone = alice.clone();
-            let pw_hash = "ab43$@baf$$CO";
+        #[test]
+        fn errors_for_existing_username() {
+            tokio_test(async {
+                let alice = alice_registration();
+                let alice_clone = alice.clone();
+                let pw_hash = "ab43$@baf$$CO";
 
-            let mut mock_provider = MockAuthProvider::new();
-            mock_provider
-                .expect_hash_pw()
-                .with(eq(alice_clone.password))
-                .once()
-                .return_once(|_| Ok(pw_hash.to_string()));
-            mock_provider.expect_create_token().never();
+                let mut mock_provider = MockAuthProvider::new();
+                mock_provider
+                    .expect_hash_pw()
+                    .with(eq(alice_clone.password))
+                    .once()
+                    .return_once(|_| Ok(pw_hash.to_string()));
+                mock_provider.expect_create_token().never();
 
-            let mock_repo = MockUserRepo {
-                insert_new: Some(Box::new(move |u| {
-                    assert!(
-                        alice_clone.name == u.name
-                            && alice_clone.email == u.email
-                            && alice_clone.username == u.username
-                            && pw_hash == u.password_hash
-                    );
-                    Err(RepoError::UniqueViolation(String::from(
-                        "users_username_unique",
-                    )))
-                })),
-                ..Default::default()
-            };
+                let mock_repo = MockUserRepo {
+                    insert_new: Some(Box::new(move |u| {
+                        assert!(
+                            alice_clone.name == u.name
+                                && alice_clone.email == u.email
+                                && alice_clone.username == u.username
+                                && pw_hash == u.password_hash
+                        );
+                        Err(RepoError::UniqueViolation(String::from(
+                            "users_username_unique",
+                        )))
+                    })),
+                    ..Default::default()
+                };
 
-            let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
-            let result = auth.signup(alice).await;
+                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+                let result = auth.signup(alice).await;
 
-            assert!(matches!(result, Err(AuthError::DuplicateUsername)));
+                assert!(matches!(result, Err(AuthError::DuplicateUsername)));
+            });
         }
 
-        #[tokio::test]
-        async fn correctly_creates_new_user_from_request() {
-            let alice_reg = alice_registration();
-            let alice_reg_clone = alice_reg.clone();
-            let alice_u = alice_user();
-            let alice_u_clone = alice_u.clone();
-            let token = "bwAB-924+2";
+        #[test]
+        fn correctly_creates_new_user_from_request() {
+            tokio_test(async {
+                let alice_reg = alice_registration();
+                let alice_reg_clone = alice_reg.clone();
+                let alice_u = alice_user();
+                let alice_u_clone = alice_u.clone();
+                let token = "bwAB-924+2";
 
-            let mut mock_provider = MockAuthProvider::new();
-            mock_provider
-                .expect_hash_pw()
-                .with(eq(alice_reg_clone.password))
-                .once()
-                .return_once(|_| Ok(alice_u_clone.password_hash));
-            mock_provider
-                .expect_create_token()
-                .with(eq(alice_u.id))
-                .once()
-                .return_once(|_| Ok(token.to_string()));
+                let mut mock_provider = MockAuthProvider::new();
+                mock_provider
+                    .expect_hash_pw()
+                    .with(eq(alice_reg_clone.password))
+                    .once()
+                    .return_once(|_| Ok(alice_u_clone.password_hash));
+                mock_provider
+                    .expect_create_token()
+                    .with(eq(alice_u.id))
+                    .once()
+                    .return_once(|_| Ok(token.to_string()));
 
-            let mock_repo = MockUserRepo {
-                insert_new: Some(Box::new(move |u| {
-                    assert!(
-                        u.name == alice_reg_clone.name
-                            && u.email == alice_reg_clone.email
-                            && u.username == alice_reg_clone.username
-                            && u.password_hash == alice_u.password_hash
-                    );
-                    Ok(alice_u.clone())
-                })),
-                ..Default::default()
-            };
+                let mock_repo = MockUserRepo {
+                    insert_new: Some(Box::new(move |u| {
+                        assert!(
+                            u.name == alice_reg_clone.name
+                                && u.email == alice_reg_clone.email
+                                && u.username == alice_reg_clone.username
+                                && u.password_hash == alice_u.password_hash
+                        );
+                        Ok(alice_u.clone())
+                    })),
+                    ..Default::default()
+                };
 
-            let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
-            let result = auth.signup(alice_reg).await;
+                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+                let result = auth.signup(alice_reg).await;
 
-            assert!(matches!(result, Ok(t) if t == token));
+                assert!(matches!(result, Ok(t) if t == token));
+            });
         }
     }
 
     mod login {
         use super::*;
 
-        #[tokio::test]
-        async fn handles_missing_account() {
-            let (email, pw) = ("man@plan.ca", "#caMan-pl4n");
+        #[test]
+        fn handles_missing_account() {
+            tokio_test(async {
+                let (email, pw) = ("man@plan.ca", "#caMan-pl4n");
 
-            let mock_repo = MockUserRepo {
-                get_by_email: Some(Box::new(move |e| {
-                    assert_eq!(email, e);
-                    Ok(None)
-                })),
-                ..Default::default()
-            };
+                let mock_repo = MockUserRepo {
+                    get_by_email: Some(Box::new(move |e| {
+                        assert_eq!(email, e);
+                        Ok(None)
+                    })),
+                    ..Default::default()
+                };
 
-            let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, MockAuthProvider::new());
-            assert!(matches!(
-                auth.login(email, pw).await,
-                Err(AuthError::NotFound)
-            ));
+                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, MockAuthProvider::new());
+                assert!(matches!(
+                    auth.login(email, pw).await,
+                    Err(AuthError::NotFound)
+                ));
+            });
         }
 
-        #[tokio::test]
-        async fn handles_incorrect_password() {
-            let alice = alice_user();
-            let alice_clone = alice.clone();
-            let invalid_pw = "this will be mocked";
+        #[test]
+        fn handles_incorrect_password() {
+            tokio_test(async {
+                let alice = alice_user();
+                let alice_clone = alice.clone();
+                let invalid_pw = "this will be mocked";
 
-            let mock_repo = MockUserRepo {
-                get_by_email: Some(Box::new(move |e| {
-                    assert_eq!(alice_clone.email, e);
-                    Ok(Some(alice_clone.clone()))
-                })),
-                ..Default::default()
-            };
+                let mock_repo = MockUserRepo {
+                    get_by_email: Some(Box::new(move |e| {
+                        assert_eq!(alice_clone.email, e);
+                        Ok(Some(alice_clone.clone()))
+                    })),
+                    ..Default::default()
+                };
 
-            let mut mock_provider = MockAuthProvider::new();
-            mock_provider
-                .expect_is_valid_pw()
-                .with(eq(invalid_pw), eq(alice.password_hash))
-                .once()
-                .return_once(|_, _| Ok(false));
+                let mut mock_provider = MockAuthProvider::new();
+                mock_provider
+                    .expect_is_valid_pw()
+                    .with(eq(invalid_pw), eq(alice.password_hash))
+                    .once()
+                    .return_once(|_, _| Ok(false));
 
-            let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
-            assert!(matches!(
-                auth.login(&alice.email, invalid_pw).await,
-                Err(AuthError::InvalidPassword)
-            ));
+                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+                assert!(matches!(
+                    auth.login(&alice.email, invalid_pw).await,
+                    Err(AuthError::InvalidPassword)
+                ));
+            });
         }
 
-        #[tokio::test]
-        async fn creates_token_for_valid_credentials() {
-            let alice = alice_user();
-            let alice_clone = alice.clone();
-            let correct_pw = "this will be mocked";
-            let token = "123_token_yeah";
+        #[test]
+        fn creates_token_for_valid_credentials() {
+            tokio_test(async {
+                let alice = alice_user();
+                let alice_clone = alice.clone();
+                let correct_pw = "this will be mocked";
+                let token = "123_token_yeah";
 
-            let mock_repo = MockUserRepo {
-                get_by_email: Some(Box::new(move |e| {
-                    assert_eq!(alice_clone.email, e);
-                    Ok(Some(alice_clone.clone()))
-                })),
-                ..Default::default()
-            };
+                let mock_repo = MockUserRepo {
+                    get_by_email: Some(Box::new(move |e| {
+                        assert_eq!(alice_clone.email, e);
+                        Ok(Some(alice_clone.clone()))
+                    })),
+                    ..Default::default()
+                };
 
-            let mut mock_provider = MockAuthProvider::new();
-            mock_provider
-                .expect_is_valid_pw()
-                .with(eq(correct_pw), eq(alice.password_hash))
-                .once()
-                .return_once(|_, _| Ok(true));
-            mock_provider
-                .expect_create_token()
-                .with(eq(alice.id))
-                .once()
-                .return_once(|_| Ok(token.to_string()));
+                let mut mock_provider = MockAuthProvider::new();
+                mock_provider
+                    .expect_is_valid_pw()
+                    .with(eq(correct_pw), eq(alice.password_hash))
+                    .once()
+                    .return_once(|_, _| Ok(true));
+                mock_provider
+                    .expect_create_token()
+                    .with(eq(alice.id))
+                    .once()
+                    .return_once(|_| Ok(token.to_string()));
 
-            let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
-            assert!(matches!(
-                auth.login(&alice.email, correct_pw).await,
-                Ok(t) if t == token
-            ));
+                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+                assert!(matches!(
+                    auth.login(&alice.email, correct_pw).await,
+                    Ok(t) if t == token
+                ));
+            });
         }
     }
 

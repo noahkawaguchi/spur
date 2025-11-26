@@ -48,7 +48,10 @@ mod tests {
         app_services::MockAuthenticator,
         domain::auth::AuthError,
         models::user::UserRegistration,
-        test_utils::http_bodies::{deserialize_body, serialize_body},
+        test_utils::{
+            http_bodies::{deserialize_body, serialize_body},
+            tokio_test,
+        },
     };
     use axum::{
         body::Body,
@@ -77,86 +80,94 @@ mod tests {
     mod signup {
         use super::*;
 
-        #[tokio::test]
-        async fn returns_token_for_successful_signup() {
-            let payload = dummy_signup_request();
-            let token = "t-0-k-3-n";
+        #[test]
+        fn returns_token_for_successful_signup() {
+            tokio_test(async {
+                let payload = dummy_signup_request();
+                let token = "t-0-k-3-n";
 
-            let mut mock_auth = MockAuthenticator::new();
-            mock_auth
-                .expect_signup()
-                .with(eq(UserRegistration::from(payload.clone())))
-                .once()
-                .return_once(|_| Ok(token.to_string()));
+                let mut mock_auth = MockAuthenticator::new();
+                mock_auth
+                    .expect_signup()
+                    .with(eq(UserRegistration::from(payload.clone())))
+                    .once()
+                    .return_once(|_| Ok(token.to_string()));
 
-            let resp = send_req(mock_auth, "/signup", &payload).await;
-            assert_eq!(resp.status(), StatusCode::CREATED);
+                let resp = send_req(mock_auth, "/signup", &payload).await;
+                assert_eq!(resp.status(), StatusCode::CREATED);
 
-            let resp_body = deserialize_body::<TokenResponse>(resp).await;
-            let expected = TokenResponse { token: token.to_string() };
-            assert_eq!(expected, resp_body);
+                let resp_body = deserialize_body::<TokenResponse>(resp).await;
+                let expected = TokenResponse { token: token.to_string() };
+                assert_eq!(expected, resp_body);
+            });
         }
 
-        #[tokio::test]
-        async fn translates_errors() {
-            let payload = dummy_signup_request();
+        #[test]
+        fn translates_errors() {
+            tokio_test(async {
+                let payload = dummy_signup_request();
 
-            let mut mock_auth = MockAuthenticator::new();
-            mock_auth
-                .expect_signup()
-                .with(eq(UserRegistration::from(payload.clone())))
-                .once()
-                .return_once(|_| Err(AuthError::DuplicateUsername));
+                let mut mock_auth = MockAuthenticator::new();
+                mock_auth
+                    .expect_signup()
+                    .with(eq(UserRegistration::from(payload.clone())))
+                    .once()
+                    .return_once(|_| Err(AuthError::DuplicateUsername));
 
-            let resp = send_req(mock_auth, "/signup", &payload).await;
-            assert_eq!(resp.status(), StatusCode::CONFLICT);
+                let resp = send_req(mock_auth, "/signup", &payload).await;
+                assert_eq!(resp.status(), StatusCode::CONFLICT);
 
-            let resp_body = deserialize_body::<ErrorResponse>(resp).await;
-            let expected = ErrorResponse { error: String::from("Username taken") };
-            assert_eq!(expected, resp_body);
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let expected = ErrorResponse { error: String::from("Username taken") };
+                assert_eq!(expected, resp_body);
+            });
         }
     }
 
     mod login {
         use super::*;
 
-        #[tokio::test]
-        async fn returns_token_for_successful_login() {
-            let payload = dummy_login_request();
-            let token = "t-0-k-3-n";
+        #[test]
+        fn returns_token_for_successful_login() {
+            tokio_test(async {
+                let payload = dummy_login_request();
+                let token = "t-0-k-3-n";
 
-            let mut mock_auth = MockAuthenticator::new();
-            mock_auth
-                .expect_login()
-                .with(eq(payload.email.clone()), eq(payload.password.clone()))
-                .once()
-                .return_once(|_, _| Ok(token.to_string()));
+                let mut mock_auth = MockAuthenticator::new();
+                mock_auth
+                    .expect_login()
+                    .with(eq(payload.email.clone()), eq(payload.password.clone()))
+                    .once()
+                    .return_once(|_, _| Ok(token.to_string()));
 
-            let resp = send_req(mock_auth, "/login", &payload).await;
-            assert_eq!(resp.status(), StatusCode::OK);
+                let resp = send_req(mock_auth, "/login", &payload).await;
+                assert_eq!(resp.status(), StatusCode::OK);
 
-            let resp_body = deserialize_body::<TokenResponse>(resp).await;
-            let expected = TokenResponse { token: token.to_string() };
-            assert_eq!(expected, resp_body);
+                let resp_body = deserialize_body::<TokenResponse>(resp).await;
+                let expected = TokenResponse { token: token.to_string() };
+                assert_eq!(expected, resp_body);
+            });
         }
 
-        #[tokio::test]
-        async fn translates_errors() {
-            let payload = dummy_login_request();
+        #[test]
+        fn translates_errors() {
+            tokio_test(async {
+                let payload = dummy_login_request();
 
-            let mut mock_auth = MockAuthenticator::new();
-            mock_auth
-                .expect_login()
-                .with(eq(payload.email.clone()), eq(payload.password.clone()))
-                .once()
-                .return_once(|_, _| Err(AuthError::InvalidPassword));
+                let mut mock_auth = MockAuthenticator::new();
+                mock_auth
+                    .expect_login()
+                    .with(eq(payload.email.clone()), eq(payload.password.clone()))
+                    .once()
+                    .return_once(|_, _| Err(AuthError::InvalidPassword));
 
-            let resp = send_req(mock_auth, "/login", &payload).await;
-            assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+                let resp = send_req(mock_auth, "/login", &payload).await;
+                assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 
-            let resp_body = deserialize_body::<ErrorResponse>(resp).await;
-            let expected = ErrorResponse { error: String::from("Invalid password") };
-            assert_eq!(expected, resp_body);
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let expected = ErrorResponse { error: String::from("Invalid password") };
+                assert_eq!(expected, resp_body);
+            });
         }
     }
 }
