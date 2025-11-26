@@ -36,12 +36,33 @@ Spur is a full-stack reply-based social platform. With no original posts, every 
 
 ## Features
 
-### _(Demonstrations coming soon)_
+_(All videos recorded using the real deployed app)_
 
-- User authentication using bcrypt hashing and JSON Web Tokens
-- Friendships between users
-- Reading and writing posts
-- Discovering new posts via parent/child relationships in the tree
+### User authentication using bcrypt hashing and JSON Web Tokens
+
+Log in to an existing account
+
+https://github.com/user-attachments/assets/a9acb27e-2c3c-4949-8092-a5cb25edff16
+
+Create a new account
+
+https://github.com/user-attachments/assets/648c0fa2-09f3-4c64-95df-b45d6923ebd0
+
+### Send and accept friend requests
+
+https://github.com/user-attachments/assets/f1717e8a-63b9-4075-9562-a4f97e6a836d
+
+https://github.com/user-attachments/assets/8d07fd44-3bef-45a8-9227-f57d5947607c
+
+### Read and reply to posts
+
+https://github.com/user-attachments/assets/99939975-6e8c-414d-b60e-5eec8b5034f9
+
+### Discover new posts via parent/child relationships in the tree
+
+https://github.com/user-attachments/assets/ff2c6a40-f763-47d1-9719-4580fc19ed5b
+
+There are also various business rules implemented, such as not replying to one's own post and not replying to the same post more than once.
 
 ## Design
 
