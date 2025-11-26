@@ -6,11 +6,11 @@
 
 1. [Concept](#concept)
 2. [Tech Stack](#tech-stack)
-3. [Features](#features)
-4. [Design](#design)
-5. [Testing](#testing)
-6. [Security and Safety](#security-and-safety)
-7. [Development and Deployment](#development-and-deployment)
+3. [Design](#design)
+4. [Testing](#testing)
+5. [Security and Safety](#security-and-safety)
+6. [Development and Deployment](#development-and-deployment)
+7. [Demo Videos](#demo-videos)
 
 ## Concept
 
@@ -33,15 +33,6 @@ Spur is a full-stack reply-based social platform. With no original posts, every 
 | **_Key Tools_**             | Docker, Caddy                | Vite, pnpm                    |
 | **_Testing_**               | Rust's native test framework | Vitest, React Testing Library |
 | **_Deployment_**            | AWS EC2                      | GitHub Pages                  |
-
-## Features
-
-### _(Demonstrations coming soon)_
-
-- User authentication using bcrypt hashing and JSON Web Tokens
-- Friendships between users
-- Reading and writing posts
-- Discovering new posts via parent/child relationships in the tree
 
 ## Design
 
@@ -98,3 +89,33 @@ The frontend is tested with Vitest and React Testing Library.
 - Both the backend and the frontend have `.env.example` files that describe the necessary environment variable configurations.
 - Common commands used in development are documented and automated via the `justfile` in the backend and `package.json` in the frontend.
 - The frontend is deployed via `pnpm run deploy`, and the backend is deployed as described in [backend/deploy/steps.md](backend/deploy/steps.md).
+
+## Demo Videos
+
+_(All videos recorded using the real deployed app)_
+
+### User authentication using bcrypt hashing and JSON Web Tokens
+
+Log in to an existing account
+
+https://github.com/user-attachments/assets/a9acb27e-2c3c-4949-8092-a5cb25edff16
+
+Create a new account
+
+https://github.com/user-attachments/assets/648c0fa2-09f3-4c64-95df-b45d6923ebd0
+
+### Send and accept friend requests
+
+https://github.com/user-attachments/assets/f1717e8a-63b9-4075-9562-a4f97e6a836d
+
+https://github.com/user-attachments/assets/8d07fd44-3bef-45a8-9227-f57d5947607c
+
+### Read and reply to posts
+
+https://github.com/user-attachments/assets/99939975-6e8c-414d-b60e-5eec8b5034f9
+
+### Discover new posts via parent/child relationships in the tree
+
+https://github.com/user-attachments/assets/ff2c6a40-f763-47d1-9719-4580fc19ed5b
+
+There are also various business rules implemented, such as not replying to one's own post and not replying to the same post more than once.
