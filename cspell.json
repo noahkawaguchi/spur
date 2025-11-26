@@ -24,7 +24,8 @@
     "rootlesskit",
     "rustup",
     "justfile",
-    "clippy"
+    "clippy",
+    "Twemoji"
   ],
   "useGitignore": true,
   "ignorePaths": ["pnpm-lock.yaml"],
