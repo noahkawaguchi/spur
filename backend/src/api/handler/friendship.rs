@@ -20,6 +20,15 @@ use axum::{
 };
 use std::sync::Arc;
 
+#[allow(clippy::needless_for_each, clippy::wildcard_imports)]
+pub mod docs {
+    use super::*;
+
+    #[derive(utoipa::OpenApi)]
+    #[openapi(paths(add_friend, list_friends, list_requests, friend_posts))]
+    pub struct FriendsDoc;
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", post(add_friend).get(list_friends))
@@ -28,6 +37,25 @@ pub fn routes() -> Router<AppState> {
 }
 
 /// Creates a new friend request or accepts an existing friend request.
+#[utoipa::path(
+    post,
+    tag = "friends",
+    path = "",
+    security(("jwt" = [])),
+    request_body = AddFriendRequest,
+    responses(
+        (
+            status = StatusCode::OK,
+            body = SuccessResponse,
+            description = "You are now friends",
+        ),
+        (
+            status = StatusCode::CREATED,
+            body = SuccessResponse,
+            description = "A new friend request was created",
+        ),
+    ),
+)]
 async fn add_friend(
     mutate_friendship_by_username: State<Arc<dyn MutateFriendshipByUsername>>,
     Extension(requester_id): Extension<i32>,
@@ -54,6 +82,13 @@ async fn add_friend(
 }
 
 /// Retrieves the usernames of the requester's friends.
+#[utoipa::path(
+    get,
+    tag = "friends",
+    path = "",
+    security(("jwt" = [])),
+    responses((status = StatusCode::OK, body = Vec<String>)),
+)]
 async fn list_friends(
     social_read: State<Arc<dyn SocialRead>>,
     Extension(requester_id): Extension<i32>,
@@ -65,6 +100,13 @@ async fn list_friends(
 }
 
 /// Retrieves the usernames of users who have pending friend requests to the requester.
+#[utoipa::path(
+    get,
+    tag = "friends",
+    path = "/requests",
+    security(("jwt" = [])),
+    responses((status = StatusCode::OK, body = Vec<String>)),
+)]
 async fn list_requests(
     social_read: State<Arc<dyn SocialRead>>,
     Extension(requester_id): Extension<i32>,
@@ -76,6 +118,13 @@ async fn list_requests(
 }
 
 /// Retrieves all posts written by the requester's friends.
+#[utoipa::path(
+    get,
+    tag = "friends",
+    path = "/posts",
+    security(("jwt" = [])),
+    responses((status = StatusCode::OK, body = Vec<PostResponse>)),
+)]
 async fn friend_posts(
     social_read: State<Arc<dyn SocialRead>>,
     Extension(requester_id): Extension<i32>,

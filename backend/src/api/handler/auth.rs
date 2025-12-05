@@ -11,13 +11,12 @@ use anyhow::Result;
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use std::sync::Arc;
 
-#[allow(clippy::needless_for_each)]
+#[allow(clippy::needless_for_each, clippy::wildcard_imports)]
 pub mod docs {
-    use super::{__path_login, __path_signup};
-    use utoipa::OpenApi;
+    use super::*;
 
-    #[derive(OpenApi)]
-    #[openapi(paths(signup, login), tags ((name = "auth")))]
+    #[derive(utoipa::OpenApi)]
+    #[openapi(paths(signup, login))]
     pub struct AuthDoc;
 }
 
@@ -27,10 +26,11 @@ pub fn routes() -> Router<AppState> {
         .route("/login", post(login))
 }
 
+/// Creates a new account and issues a JSON Web Token.
 #[utoipa::path(
     post,
+    tag = "auth",
     path = "/signup",
-    summary = "Sign up for a new account",
     request_body = SignupRequest,
     responses((status = StatusCode::CREATED, body = TokenResponse)),
 )]
@@ -44,10 +44,11 @@ async fn signup(
     ))
 }
 
+/// Verifies existing account information and issues a JSON Web Token.
 #[utoipa::path(
     post,
+    tag = "auth",
     path = "/login",
-    summary = "Log in to an existing account",
     request_body = LoginRequest,
     responses((status = StatusCode::OK, body = TokenResponse)),
 )]

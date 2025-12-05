@@ -19,11 +19,20 @@ use utoipa_swagger_ui::SwaggerUi;
 
 #[allow(clippy::needless_for_each)]
 mod docs {
-    use crate::api::handler::auth::docs::AuthDoc;
+    use crate::api::{
+        handler::{auth::docs::AuthDoc, friendship::docs::FriendsDoc},
+        utoipa_security::JwtAddon,
+    };
     use utoipa::OpenApi;
 
     #[derive(OpenApi)]
-    #[openapi(nest((path = "/auth", api = AuthDoc)))]
+    #[openapi(
+        modifiers(&JwtAddon),
+        nest(
+            (path = "/auth", api = AuthDoc),
+            (path = "/friends", api = FriendsDoc),
+        ),
+    )]
     pub(super) struct ApiDoc;
 }
 
