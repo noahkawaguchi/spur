@@ -15,6 +15,7 @@ use axum::{
         header::{AUTHORIZATION, CONTENT_TYPE},
     },
     middleware,
+    response::Redirect,
     routing::get,
 };
 use tower_http::cors::CorsLayer;
@@ -33,6 +34,7 @@ pub fn build(state: AppState, frontend_url: &str) -> Result<Router> {
         .allow_credentials(true);
 
     let app = Router::new()
+        .route("/", get(|| async { Redirect::to("/docs") }))
         .route("/ping", get(pong))
         .nest("/auth", auth::routes().with_state(state.clone())) // The only main public routes
         .merge(protected_routes(state))
