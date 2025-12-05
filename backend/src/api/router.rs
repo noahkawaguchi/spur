@@ -166,7 +166,7 @@ mod tests {
                 let resp = send_req(AppState::default(), "/ping", None).await;
                 assert_eq!(StatusCode::OK, resp.status());
                 let resp_body = resp_into_body_text(resp).await;
-                assert_eq!("pong!", resp_body);
+                assert_eq!("pong!\n", resp_body);
             });
         }
 
@@ -186,7 +186,7 @@ mod tests {
                 assert_eq!(StatusCode::OK, resp.status());
 
                 let resp_body = resp_into_body_text(resp).await;
-                assert_eq!("Your token is valid", resp_body);
+                assert_eq!("Your token is valid\n", resp_body);
             });
         }
 
