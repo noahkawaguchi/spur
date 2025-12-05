@@ -7,8 +7,9 @@
 # when compiling
 FROM rust:1.91.1-alpine3.22 AS builder
 
-# Install C headers and static libraries needed by dependencies in the builder stage
-RUN apk add --no-cache musl-dev
+# Install C headers and static libraries needed by dependencies in the builder stage and curl for
+# utoipa-swagger-ui
+RUN apk add --no-cache musl-dev curl
 
 WORKDIR /app
 
