@@ -41,6 +41,7 @@ pub fn routes() -> Router<AppState> {
     tag = "posts",
     path = "",
     security(("jwt" = [])),
+    request_body = CreatePostRequest,
     responses((status = StatusCode::CREATED, description = "The post was successfully created")),
 )]
 async fn create_new(

@@ -87,7 +87,13 @@ async fn add_friend(
     tag = "friends",
     path = "",
     security(("jwt" = [])),
-    responses((status = StatusCode::OK, body = Vec<String>)),
+    responses(
+        (
+            status = StatusCode::OK,
+            body = Vec<String>,
+            example = json!(["alice", "bob", "cool_user_123", "DinnerWithDiana"]),
+        ),
+    ),
 )]
 async fn list_friends(
     social_read: State<Arc<dyn SocialRead>>,
@@ -105,7 +111,13 @@ async fn list_friends(
     tag = "friends",
     path = "/requests",
     security(("jwt" = [])),
-    responses((status = StatusCode::OK, body = Vec<String>)),
+    responses(
+        (
+            status = StatusCode::OK,
+            body = Vec<String>,
+            example = json!(["Ako", "bruno", "c4554ndr4", "dan-o", "__EVELYN__"]),
+        ),
+    ),
 )]
 async fn list_requests(
     social_read: State<Arc<dyn SocialRead>>,

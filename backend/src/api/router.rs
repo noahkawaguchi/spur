@@ -78,6 +78,7 @@ mod docs {
     #[openapi(
         modifiers(&JwtAddon),
         paths(pong, token_check),
+        info(description = API_DESC),
         nest(
             (path = "/auth", api = AuthDoc),
             (path = "/friends", api = FriendsDoc),
@@ -85,6 +86,10 @@ mod docs {
         ),
     )]
     pub(super) struct ApiDoc;
+
+    const API_DESC: &str = "### Reply-based social platform
+
+#### Repository: [github.com/noahkawaguchi/spur](https://github.com/noahkawaguchi/spur)";
 
     struct JwtAddon;
 
