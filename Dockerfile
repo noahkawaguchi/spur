@@ -5,7 +5,7 @@
 # This base image's default target triple for Rust, {architecture here}-unknown-linux-musl, is
 # already the one desired in the runtime stage, so there's no need to specify a different target
 # when compiling
-FROM rust:1.91.0-alpine3.22 AS builder
+FROM rust:1.91.1-alpine3.22 AS builder
 
 # Install C headers and static libraries needed by dependencies in the builder stage
 RUN apk add --no-cache musl-dev
