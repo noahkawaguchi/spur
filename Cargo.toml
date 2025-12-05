@@ -21,7 +21,6 @@ axum = { version = "0.8.4", features = ["macros"] }
 axum-extra = { version = "0.12.0", features = ["typed-header"] }
 bcrypt = "0.17.0"
 chrono = "0.4.41"
-colored = "3.0.0"
 dotenvy = "0.15.7"
 env_logger = "0.11.8"
 jsonwebtoken = { version = "10.1.0", default-features = false, features = ["rust_crypto"] }

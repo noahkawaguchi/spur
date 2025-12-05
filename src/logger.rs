@@ -1,4 +1,3 @@
-use colored::Colorize;
 use env_logger::{DEFAULT_FILTER_ENV, Env};
 use log::{Level, LevelFilter, log_enabled};
 
@@ -19,11 +18,7 @@ pub fn init_with_default(default_level: LevelFilter) {
         && !val.eq_ignore_ascii_case(LevelFilter::Off.as_str())
     {
         eprintln!(
-            "{}",
-            format!(
-                "Warning: Logging is off but environment variable {DEFAULT_FILTER_ENV} is: {val}"
-            )
-            .red()
+            "Warning: Logging is off but environment variable {DEFAULT_FILTER_ENV} is: {val}"
         );
     }
 
