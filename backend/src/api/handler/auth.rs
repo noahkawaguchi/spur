@@ -10,11 +10,16 @@ use crate::{
 use anyhow::Result;
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use std::sync::Arc;
-use utoipa::OpenApi;
 
-#[derive(OpenApi)]
-#[openapi(paths(signup, login), tags ((name = "auth")))]
-pub struct AuthDoc;
+#[allow(clippy::needless_for_each)]
+pub mod docs {
+    use super::{__path_login, __path_signup};
+    use utoipa::OpenApi;
+
+    #[derive(OpenApi)]
+    #[openapi(paths(signup, login), tags ((name = "auth")))]
+    pub struct AuthDoc;
+}
 
 pub fn routes() -> Router<AppState> {
     Router::new()
