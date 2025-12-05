@@ -1,12 +1,4 @@
 .env*
 !.env.example
 
-.vscode/
-
-# Backend
 target/
-
-# Frontend
-node_modules/
-dist/
-coverage/
