@@ -17,26 +17,6 @@ use tower_http::cors::CorsLayer;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-#[allow(clippy::needless_for_each)]
-mod docs {
-    use crate::api::{
-        handler::{auth::docs::AuthDoc, friendship::docs::FriendsDoc, post::docs::PostsDoc},
-        utoipa_security::JwtAddon,
-    };
-    use utoipa::OpenApi;
-
-    #[derive(OpenApi)]
-    #[openapi(
-        modifiers(&JwtAddon),
-        nest(
-            (path = "/auth", api = AuthDoc),
-            (path = "/friends", api = FriendsDoc),
-            (path = "/posts", api = PostsDoc),
-        ),
-    )]
-    pub(super) struct ApiDoc;
-}
-
 /// Creates the API/web layer and sets it up to accept requests from the provided origin.
 pub fn build(state: AppState, frontend_url: &str) -> Result<Router> {
     let cors = CorsLayer::new()
@@ -62,6 +42,50 @@ fn protected_routes(state: AppState) -> Router {
         .nest("/posts", post::routes())
         .route_layer(middleware::from_fn_with_state(state.clone(), validate_jwt))
         .with_state(state)
+}
+
+#[allow(clippy::needless_for_each)]
+mod docs {
+    use crate::api::handler::{
+        auth::docs::AuthDoc, friendship::docs::FriendsDoc, post::docs::PostsDoc,
+    };
+    use utoipa::{
+        Modify,
+        openapi::{
+            OpenApi,
+            security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
+        },
+    };
+
+    #[derive(utoipa::OpenApi)]
+    #[openapi(
+        modifiers(&JwtAddon),
+        nest(
+            (path = "/auth", api = AuthDoc),
+            (path = "/friends", api = FriendsDoc),
+            (path = "/posts", api = PostsDoc),
+        ),
+    )]
+    pub(super) struct ApiDoc;
+
+    struct JwtAddon;
+
+    impl Modify for JwtAddon {
+        fn modify(&self, openapi: &mut OpenApi) {
+            if let Some(components) = openapi.components.as_mut() {
+                components.add_security_scheme(
+                    "jwt",
+                    SecurityScheme::Http(
+                        HttpBuilder::new()
+                            .scheme(HttpAuthScheme::Bearer)
+                            .bearer_format("JWT")
+                            .description(Some("Enter the token created at signup or login"))
+                            .build(),
+                    ),
+                );
+            }
+        }
+    }
 }
 
 #[cfg(test)]
