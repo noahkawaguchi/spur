@@ -2,39 +2,47 @@ use crate::models::post::PostWithAuthor;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// A general-purpose error response struct.
+/// A general-purpose error response.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub error: String,
 }
 
-/// A general-purpose success response struct.
+/// A general-purpose success response.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct SuccessResponse {
     pub message: String,
 }
 
-/// A response struct for sending an auth token.
+/// A response for sending an auth token.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct TokenResponse {
     pub token: String,
 }
 
-/// A response struct for sending information about a post.
+/// A response for sending information about a post.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PostResponse {
+    /// The numeric ID of the post.
     pub id: i32,
+    /// The username of the author of the post.
     pub author_username: String,
+    /// The ID of the post that this post is in reply to.
     pub parent_id: Option<i32>,
+    /// The content of the post.
     pub body: String,
+    /// The time the post was created in milliseconds since the Unix epoch.
     pub created_at_ms: i64,
+    /// If edited, the time the post was edited in milliseconds since the Unix epoch.
     pub edited_at_ms: Option<i64>,
+    /// If archived, the time the post was archived in milliseconds since the Unix epoch.
     pub archived_at_ms: Option<i64>,
+    /// If deleted, the time the post was deleted in milliseconds since the Unix epoch.
     pub deleted_at_ms: Option<i64>,
 }
 
