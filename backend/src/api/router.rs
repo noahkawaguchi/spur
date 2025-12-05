@@ -1,5 +1,9 @@
 use super::{
-    handler::{auth, friendship, post},
+    handler::{
+        auth::{self, docs::AuthDoc},
+        friendship::{self, docs::FriendsDoc},
+        post::{self, docs::PostsDoc},
+    },
     middleware::validate_jwt,
 };
 use crate::state::AppState;
@@ -14,7 +18,10 @@ use axum::{
     routing::get,
 };
 use tower_http::cors::CorsLayer;
-use utoipa::OpenApi;
+use utoipa::{
+    Modify, OpenApi,
+    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
+};
 use utoipa_swagger_ui::SwaggerUi;
 
 /// Creates the API/web layer and sets it up to accept requests from the provided origin.
@@ -26,7 +33,7 @@ pub fn build(state: AppState, frontend_url: &str) -> Result<Router> {
         .allow_credentials(true);
 
     let app = Router::new()
-        .route("/ping", get(|| async { "pong!" })) // Simple health check route with no auth
+        .route("/ping", get(pong))
         .nest("/auth", auth::routes().with_state(state.clone())) // The only main public routes
         .merge(protected_routes(state))
         .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", docs::ApiDoc::openapi()))
@@ -37,29 +44,40 @@ pub fn build(state: AppState, frontend_url: &str) -> Result<Router> {
 
 fn protected_routes(state: AppState) -> Router {
     Router::new()
-        .route("/auth/check", get(|| async { "Your token is valid" })) // Simple token check route
+        .route("/auth/check", get(token_check))
         .nest("/friends", friendship::routes())
         .nest("/posts", post::routes())
         .route_layer(middleware::from_fn_with_state(state.clone(), validate_jwt))
         .with_state(state)
 }
 
-#[allow(clippy::needless_for_each)]
-mod docs {
-    use crate::api::handler::{
-        auth::docs::AuthDoc, friendship::docs::FriendsDoc, post::docs::PostsDoc,
-    };
-    use utoipa::{
-        Modify,
-        openapi::{
-            OpenApi,
-            security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
-        },
-    };
+/// Allows simply checking whether the server is running without needing to authenticate.
+#[utoipa::path(
+    get,
+    tag = "health",
+    path = "/ping",
+    responses((status = StatusCode::OK, body = &'static str)),
+)]
+async fn pong() -> &'static str { "pong!\n" }
 
-    #[derive(utoipa::OpenApi)]
+/// Checks the validity of a JSON Web Token.
+#[utoipa::path(
+    get,
+    tag = "auth",
+    path = "/auth/check",
+    security(("jwt" = [])),
+    responses((status = StatusCode::OK, body = &'static str)),
+)]
+async fn token_check() -> &'static str { "Your token is valid\n" }
+
+#[allow(clippy::needless_for_each, clippy::wildcard_imports)]
+mod docs {
+    use super::*;
+
+    #[derive(OpenApi)]
     #[openapi(
         modifiers(&JwtAddon),
+        paths(pong, token_check),
         nest(
             (path = "/auth", api = AuthDoc),
             (path = "/friends", api = FriendsDoc),
@@ -71,7 +89,7 @@ mod docs {
     struct JwtAddon;
 
     impl Modify for JwtAddon {
-        fn modify(&self, openapi: &mut OpenApi) {
+        fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
             if let Some(components) = openapi.components.as_mut() {
                 components.add_security_scheme(
                     "jwt",
