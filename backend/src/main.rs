@@ -26,7 +26,7 @@ fn main() -> Result<()> {
 
         let config = AppConfig::load()?;
         let state = AppState::init(&config).await?;
-        let app = router::build(state, &config.frontend_url)?;
+        let app = router::build(state);
         let listener = TcpListener::bind(&config.bind_addr).await?;
 
         #[cfg(debug_assertions)]

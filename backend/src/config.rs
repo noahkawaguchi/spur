@@ -8,7 +8,6 @@ use std::{
 
 pub struct AppConfig {
     pub database_url: String,
-    pub frontend_url: String,
     pub bind_addr: String,
     pub jwt_secret: String,
     pub max_pool_connections: u32,
@@ -26,7 +25,6 @@ impl AppConfig {
             // Definitely different in dev and prod?
             // -> No defaults, must be set as environment variables
             database_url: Self::get_env("DATABASE_URL")?,
-            frontend_url: Self::get_env("FRONTEND_URL")?,
             bind_addr: Self::get_env("BIND_ADDR")?,
             jwt_secret: Self::get_env("JWT_SECRET")?,
 
