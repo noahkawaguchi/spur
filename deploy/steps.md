@@ -1,6 +1,6 @@
-# Backend Deployment Steps
+# Deployment Steps
 
-This document documents the steps of the backend deployment process from an Ubuntu instance on AWS EC2. It's not fully scripted because many of the commands require `sudo` and/or manual interactivity.
+This document documents the steps of the deployment process from an Ubuntu instance on AWS EC2. It's not fully scripted because many of the commands require `sudo` and/or manual interactivity.
 
 ## Step 0: System basics
 
@@ -62,7 +62,7 @@ cd spur
 The `bootstrap.sh` utility is available in the main Spur repo.
 
 ```bash
-wget https://raw.githubusercontent.com/noahkawaguchi/spur/main/backend/deploy/bootstrap.sh
+wget https://raw.githubusercontent.com/noahkawaguchi/spur/main/deploy/bootstrap.sh
 chmod +x bootstrap.sh
 ```
 

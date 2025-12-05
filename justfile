@@ -13,7 +13,7 @@ set dotenv-load := true
 
 dc-project := "docker compose -p spur"
 
-# Start the full backend dev stack with migrations and seed data if necessary (default recipe)
+# Start the full dev stack with migrations and seed data if necessary (this is the default recipe)
 dc-up: img-build
     {{dc-project}} --profile init -f docker-compose.yml -f docker-compose.dev.yml up -d
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
 
 ################################################################################
-# Description: Minimal bootstrap script to set up and run the backend Docker
-#              Compose stack in its production configuration using only Docker
-#              images without the full repo.
+# Description: Minimal bootstrap script to set up and run the Docker Compose
+#              stack in its production configuration using only Docker images
+#              without the full repo.
 #
 # Requires:    wget and docker
 #
@@ -17,7 +17,7 @@
 
 set -e
 
-REPO_BACKEND=https://raw.githubusercontent.com/noahkawaguchi/spur/main/backend
+REPO_URL=https://raw.githubusercontent.com/noahkawaguchi/spur/main
 
 # Provides the user with a prompt asking if they "want to $1" and exits with
 # status 1 if they respond with something other than "y" or "yes" (case
@@ -35,15 +35,15 @@ confirm() {
   esac
 }
 
-# Downloads a file from the main Spur repo's backend subdirectory.
+# Downloads a file from the main Spur repo.
 #
 # Usage: pull_file <file_path> [other_args]
-#   file_path     The path to the file relative to the backend subdirectory.
+#   file_path     The path to the file relative to the repository root.
 #   other_args    Any other args to pass to wget in addition to the URL.
 pull_file() {
   file_path="$1"
   shift
-  wget "$REPO_BACKEND/$file_path" "$@"
+  wget "$REPO_URL/$file_path" "$@"
 }
 
 # Starts the project's Docker Compose stack with the `init` profile.
