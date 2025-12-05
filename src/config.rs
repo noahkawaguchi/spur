@@ -25,13 +25,13 @@ impl AppConfig {
             // Definitely different in dev and prod?
             // -> No defaults, must be set as environment variables
             database_url: Self::get_env("DATABASE_URL")?,
-            bind_addr: Self::get_env("BIND_ADDR")?,
             jwt_secret: Self::get_env("JWT_SECRET")?,
 
             // Possibly the same in dev and prod?
             // -> Hardcoded defaults that can be overridden with environment variables
-            max_pool_connections: Self::get_env_or_default(10, "MAX_POOL_CONNECTIONS")?,
-            db_conn_timeout_secs: Self::get_env_or_default(15, "DB_CONN_TIMEOUT_SECS")?,
+            bind_addr: Self::get_env_or_else(|| String::from("0.0.0.0:8080"), "BIND_ADDR")?,
+            max_pool_connections: Self::get_env_or_else(|| 10, "MAX_POOL_CONNECTIONS")?,
+            db_conn_timeout_secs: Self::get_env_or_else(|| 15, "DB_CONN_TIMEOUT_SECS")?,
         })
     }
 
@@ -39,13 +39,22 @@ impl AppConfig {
         env::var(key).with_context(|| format!("failed to load environment variable {key}"))
     }
 
-    fn get_env_or_default<T>(default: T, key: &'static str) -> Result<T>
+    /// Reads in an environment variable using `key`, or if not found, computes a default from a
+    /// closure.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the environment variable is present but is not valid Unicode or cannot be
+    /// parsed as `T`.
+    fn get_env_or_else<T, F>(op: F, key: &'static str) -> Result<T>
     where
         T: FromStr + Display,
         T::Err: Send + Sync + 'static + std::error::Error,
+        F: FnOnce() -> T,
     {
         match env::var(key) {
             Err(VarError::NotPresent) => {
+                let default = op();
                 log::warn!("Environment variable {key} not found, using {default}");
                 Ok(default)
             }

@@ -6,23 +6,23 @@ use std::{
 };
 
 /// Makes a very lightweight attempt to connect to the main server over localhost as a health check.
-/// Gets the port from the same `BIND_ADDR` environment variable that the server uses. Waits for 300
-/// ms unless a different value is provided via the environment variable `HEALTHCHECK_MILLIS`.
+/// Just like the server, gets the port from the `BIND_ADDR` environment variable or defaults to
+/// 8080. Waits for 300 ms unless a different value is provided via the environment variable
+/// `HEALTHCHECK_MILLIS`.
 fn main() -> Result<(), Box<dyn Error>> {
-    let port = env::var("BIND_ADDR")?
-        .split_once(':')
-        .ok_or("failed to split BIND_ADDR on ':'")?
-        .1
-        .parse()?;
+    // Split off the port from the address or default to 8080
+    let port = env::var("BIND_ADDR").map_or(Ok(8080), |val| {
+        val.split_once(':')
+            .ok_or("failed to split BIND_ADDR on ':'")?
+            .1
+            .parse()
+            .map_err(|e| format!("failed to parse port from BIND_ADDR as u16: {e}"))
+    })?;
 
     let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
 
-    let timeout = Duration::from_millis(
-        env::var("HEALTHCHECK_MILLIS")
-            .ok()
-            .and_then(|val| val.parse().ok())
-            .unwrap_or(300),
-    );
+    let timeout =
+        Duration::from_millis(env::var("HEALTHCHECK_MILLIS").map_or(Ok(300), |val| val.parse())?);
 
     TcpStream::connect_timeout(&socket, timeout)?;
 
