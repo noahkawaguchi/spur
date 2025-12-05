@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use validator::Validate;
 
-#[derive(Serialize, Deserialize, Validate)]
+#[derive(Serialize, Deserialize, Validate, ToSchema)]
 pub struct LoginRequest {
     #[validate(email(message = "not a valid email address"))]
     pub email: String,

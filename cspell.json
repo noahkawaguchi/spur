@@ -25,7 +25,8 @@
     "rustup",
     "justfile",
     "clippy",
-    "Twemoji"
+    "Twemoji",
+    "utoipa"
   ],
   "useGitignore": true,
   "ignorePaths": ["pnpm-lock.yaml"],

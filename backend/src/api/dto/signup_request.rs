@@ -2,6 +2,7 @@ use crate::models::user::UserRegistration;
 use lazy_regex::{Regex, lazy_regex};
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
+use utoipa::ToSchema;
 use validator::{Validate, ValidationError};
 
 static USERNAME_RE: LazyLock<Regex> = LazyLock::new(|| lazy_regex!("^[A-Za-z0-9_-]+$").clone());
@@ -9,7 +10,7 @@ const LENGTH_CODE: &str = "length";
 const CHARS_CODE: &str = "character_classes";
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq, Clone))]
-#[derive(Serialize, Deserialize, Validate)]
+#[derive(Serialize, Deserialize, Validate, ToSchema)]
 pub struct SignupRequest {
     #[validate(length(min = 1, message = "name cannot be empty"))]
     pub name: String,

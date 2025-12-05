@@ -10,6 +10,11 @@ use crate::{
 use anyhow::Result;
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use std::sync::Arc;
+use utoipa::OpenApi;
+
+#[derive(OpenApi)]
+#[openapi(paths(signup, login), tags ((name = "auth")))]
+pub struct AuthDoc;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -17,6 +22,13 @@ pub fn routes() -> Router<AppState> {
         .route("/login", post(login))
 }
 
+#[utoipa::path(
+    post,
+    path = "/signup",
+    summary = "Sign up for a new account",
+    request_body = SignupRequest,
+    responses((status = StatusCode::CREATED, body = TokenResponse)),
+)]
 async fn signup(
     auth: State<Arc<dyn Authenticator>>,
     ValidatedJson(payload): ValidatedJson<SignupRequest>,
@@ -27,6 +39,13 @@ async fn signup(
     ))
 }
 
+#[utoipa::path(
+    post,
+    path = "/login",
+    summary = "Log in to an existing account",
+    request_body = LoginRequest,
+    responses((status = StatusCode::OK, body = TokenResponse)),
+)]
 async fn login(
     auth: State<Arc<dyn Authenticator>>,
     payload: ValidatedJson<LoginRequest>,

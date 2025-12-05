@@ -14,6 +14,12 @@ use axum::{
     routing::get,
 };
 use tower_http::cors::CorsLayer;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
+
+#[derive(OpenApi)]
+#[openapi(nest((path = "/auth", api = auth::AuthDoc)))]
+struct ApiDoc;
 
 /// Creates the API/web layer and sets it up to accept requests from the provided origin.
 pub fn build(state: AppState, frontend_url: &str) -> Result<Router> {
@@ -27,6 +33,7 @@ pub fn build(state: AppState, frontend_url: &str) -> Result<Router> {
         .route("/ping", get(|| async { "pong!" })) // Simple health check route with no auth
         .nest("/auth", auth::routes().with_state(state.clone())) // The only main public routes
         .merge(protected_routes(state))
+        .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(cors);
 
     Ok(app)

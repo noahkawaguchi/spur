@@ -1,5 +1,6 @@
 use crate::models::post::PostWithAuthor;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 /// A general-purpose error response struct.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
@@ -17,7 +18,7 @@ pub struct SuccessResponse {
 
 /// A response struct for sending an auth token.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct TokenResponse {
     pub token: String,
 }
