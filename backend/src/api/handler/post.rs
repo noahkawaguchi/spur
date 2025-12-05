@@ -17,6 +17,15 @@ use axum::{
 };
 use std::sync::Arc;
 
+#[allow(clippy::needless_for_each, clippy::wildcard_imports)]
+pub mod docs {
+    use super::*;
+
+    #[derive(utoipa::OpenApi)]
+    #[openapi(paths(create_new, by_post_id, child_posts, specific_user_posts, own_posts))]
+    pub struct PostsDoc;
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", post(create_new))
@@ -27,6 +36,13 @@ pub fn routes() -> Router<AppState> {
 }
 
 /// Creates a new post.
+#[utoipa::path(
+    post,
+    tag = "posts",
+    path = "",
+    security(("jwt" = [])),
+    responses((status = StatusCode::CREATED, description = "The post was successfully created")),
+)]
 async fn create_new(
     post_svc: State<Arc<dyn PostSvc>>,
     Extension(requester_id): Extension<i32>,
@@ -39,6 +55,13 @@ async fn create_new(
 }
 
 /// Retrieves a post using its ID.
+#[utoipa::path(
+    get,
+    tag = "posts",
+    path = "/{post_id}",
+    security(("jwt" = [])),
+    responses((status = StatusCode::OK, body = PostResponse)),
+)]
 async fn by_post_id(
     post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Path(post_id): Path<i32>,
@@ -50,6 +73,13 @@ async fn by_post_id(
 }
 
 /// Retrieves the children of the post with the provided ID.
+#[utoipa::path(
+    get,
+    tag = "posts",
+    path = "/{post_id}/children",
+    security(("jwt" = [])),
+    responses((status = StatusCode::OK, body = Vec<PostResponse>)),
+)]
 async fn child_posts(
     post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Path(parent_id): Path<i32>,
@@ -61,6 +91,13 @@ async fn child_posts(
 }
 
 /// Retrieves posts written by the user with the specified username.
+#[utoipa::path(
+    get,
+    tag = "posts",
+    path = "/user/{author_username}",
+    security(("jwt" = [])),
+    responses((status = StatusCode::OK, body = Vec<PostResponse>)),
+)]
 async fn specific_user_posts(
     post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Path(author_username): Path<String>,
@@ -77,6 +114,13 @@ async fn specific_user_posts(
 }
 
 /// Retrieves the requester's own posts.
+#[utoipa::path(
+    get,
+    tag = "posts",
+    path = "/me",
+    security(("jwt" = [])),
+    responses((status = StatusCode::OK, body = Vec<PostResponse>)),
+)]
 async fn own_posts(
     post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Extension(requester_id): Extension<i32>,
