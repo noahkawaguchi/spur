@@ -38,7 +38,12 @@ fn protected_routes(state: AppState) -> Router {
     get,
     tag = "health",
     path = "/ping",
-    responses((status = StatusCode::OK, body = &'static str)),
+    responses((
+        status = StatusCode::OK,
+        body = &'static str,
+        description = "the server is running",
+        example = "pong!\n",
+    )),
 )]
 async fn pong() -> &'static str { "pong!\n" }
 
@@ -48,7 +53,12 @@ async fn pong() -> &'static str { "pong!\n" }
     tag = "auth",
     path = "/auth/check",
     security(("jwt" = [])),
-    responses((status = StatusCode::OK, body = &'static str)),
+    responses((
+        status = StatusCode::OK,
+        body = &'static str,
+        description = "token check passed",
+        example = "Your token is valid\n",
+    )),
 )]
 async fn token_check() -> &'static str { "Your token is valid\n" }
 
@@ -69,9 +79,13 @@ mod docs {
     )]
     pub(super) struct ApiDoc;
 
-    const API_DESC: &str = "### Reply-based social platform
+    const API_DESC: &str = "Spur is a reply-based social platform. The docs below detail the \
+various endpoints, and the \"Try it out\" functionality uses the real deployed server. Endpoints \
+with a lock symbol require authentication using a JSON Web Token acquired via the login or signup \
+endpoints. (See the \"Authorize\" button.)
 
-#### Repository: [github.com/noahkawaguchi/spur](https://github.com/noahkawaguchi/spur)";
+More information and the source code are available at \
+[github.com/noahkawaguchi/spur](https://github.com/noahkawaguchi/spur).";
 
     struct JwtAddon;
 

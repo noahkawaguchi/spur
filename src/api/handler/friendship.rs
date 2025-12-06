@@ -47,12 +47,12 @@ pub fn routes() -> Router<AppState> {
         (
             status = StatusCode::OK,
             body = SuccessResponse,
-            description = "You are now friends",
+            description = "became friends",
         ),
         (
             status = StatusCode::CREATED,
             body = SuccessResponse,
-            description = "A new friend request was created",
+            description = "created a new friend request",
         ),
     ),
 )]
@@ -91,6 +91,7 @@ async fn add_friend(
         (
             status = StatusCode::OK,
             body = Vec<String>,
+            description = "a list of your friends",
             example = json!(["alice", "bob", "cool_user_123", "DinnerWithDiana"]),
         ),
     ),
@@ -111,13 +112,12 @@ async fn list_friends(
     tag = "friends",
     path = "/requests",
     security(("jwt" = [])),
-    responses(
-        (
-            status = StatusCode::OK,
-            body = Vec<String>,
-            example = json!(["Ako", "bruno", "c4554ndr4", "dan-o", "__EVELYN__"]),
-        ),
-    ),
+    responses((
+        status = StatusCode::OK,
+        body = Vec<String>,
+        description = "a list of people who want to be friends with you",
+        example = json!(["Ako", "bruno", "c4554ndr4", "dan-o", "__EVELYN__"]),
+    )),
 )]
 async fn list_requests(
     social_read: State<Arc<dyn SocialRead>>,
@@ -135,7 +135,11 @@ async fn list_requests(
     tag = "friends",
     path = "/posts",
     security(("jwt" = [])),
-    responses((status = StatusCode::OK, body = Vec<PostResponse>)),
+    responses((
+        status = StatusCode::OK,
+        body = Vec<PostResponse>,
+        description = "a list of all of your friends' posts"
+    )),
 )]
 async fn friend_posts(
     social_read: State<Arc<dyn SocialRead>>,

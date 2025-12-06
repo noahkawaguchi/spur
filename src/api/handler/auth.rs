@@ -32,7 +32,11 @@ pub fn routes() -> Router<AppState> {
     tag = "auth",
     path = "/signup",
     request_body = SignupRequest,
-    responses((status = StatusCode::CREATED, body = TokenResponse)),
+    responses((
+        status = StatusCode::CREATED,
+        body = TokenResponse,
+        description = "new account created",
+    )),
 )]
 async fn signup(
     auth: State<Arc<dyn Authenticator>>,
@@ -50,7 +54,11 @@ async fn signup(
     tag = "auth",
     path = "/login",
     request_body = LoginRequest,
-    responses((status = StatusCode::OK, body = TokenResponse)),
+    responses((
+        status = StatusCode::OK,
+        body = TokenResponse,
+        description = "successful login",
+    )),
 )]
 async fn login(
     auth: State<Arc<dyn Authenticator>>,

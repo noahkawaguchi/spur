@@ -42,7 +42,7 @@ pub fn routes() -> Router<AppState> {
     path = "",
     security(("jwt" = [])),
     request_body = CreatePostRequest,
-    responses((status = StatusCode::CREATED, description = "The post was successfully created")),
+    responses((status = StatusCode::CREATED, description = "new post created")),
 )]
 async fn create_new(
     post_svc: State<Arc<dyn PostSvc>>,
@@ -61,7 +61,7 @@ async fn create_new(
     tag = "posts",
     path = "/{post_id}",
     security(("jwt" = [])),
-    responses((status = StatusCode::OK, body = PostResponse)),
+    responses((status = StatusCode::OK, body = PostResponse, description = "the requested post")),
 )]
 async fn by_post_id(
     post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
@@ -79,7 +79,11 @@ async fn by_post_id(
     tag = "posts",
     path = "/{post_id}/children",
     security(("jwt" = [])),
-    responses((status = StatusCode::OK, body = Vec<PostResponse>)),
+    responses((
+        status = StatusCode::OK,
+        body = Vec<PostResponse>,
+        description = "a list of all replies to the specified post",
+    )),
 )]
 async fn child_posts(
     post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
@@ -97,7 +101,11 @@ async fn child_posts(
     tag = "posts",
     path = "/user/{author_username}",
     security(("jwt" = [])),
-    responses((status = StatusCode::OK, body = Vec<PostResponse>)),
+    responses((
+        status = StatusCode::OK,
+        body = Vec<PostResponse>,
+        description = "a list of all posts written by the specified user",
+    )),
 )]
 async fn specific_user_posts(
     post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
@@ -120,7 +128,11 @@ async fn specific_user_posts(
     tag = "posts",
     path = "/me",
     security(("jwt" = [])),
-    responses((status = StatusCode::OK, body = Vec<PostResponse>)),
+    responses((
+        status = StatusCode::OK,
+        body = Vec<PostResponse>,
+        description = "a list of all posts written by you",
+    )),
 )]
 async fn own_posts(
     post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
