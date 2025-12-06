@@ -4,7 +4,7 @@ use anyhow::{Result, anyhow};
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
     #[error("Account not found")]
-    NotFound,
+    NonexistentAccount,
 
     #[error(
         "An account with this email already exists. Try logging in or using a different email."

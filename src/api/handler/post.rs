@@ -1,7 +1,10 @@
 use super::api_result;
 use crate::{
     api::{
-        dto::{requests::CreatePostRequest, responses::PostResponse},
+        dto::{
+            requests::CreatePostRequest,
+            responses::{ErrorResponse, PostResponse},
+        },
         validated_json::ValidatedJson,
     },
     domain::post::PostSvc,
@@ -42,7 +45,32 @@ pub fn routes() -> Router<AppState> {
     path = "",
     security(("jwt" = [])),
     request_body = CreatePostRequest,
-    responses((status = StatusCode::CREATED, description = "new post created")),
+    responses(
+        (
+            status = StatusCode::CREATED,
+            description = "new post created",
+        ),
+        (
+            status = StatusCode::NOT_FOUND,
+            body = ErrorResponse,
+            description = "parent post not found",
+        ),
+        (
+            status = StatusCode::CONFLICT,
+            body = ErrorResponse,
+            description = "duplicate reply to the same post",
+        ),
+        (
+            status = StatusCode::GONE,
+            body = ErrorResponse,
+            description = "parent post was deleted",
+        ),
+        (
+            status = StatusCode::UNPROCESSABLE_ENTITY,
+            body = ErrorResponse,
+            description = "cannot reply to one's own post or an archived post",
+        ),
+    ),
 )]
 async fn create_new(
     post_svc: State<Arc<dyn PostSvc>>,
@@ -61,7 +89,17 @@ async fn create_new(
     tag = "posts",
     path = "/{post_id}",
     security(("jwt" = [])),
-    responses((status = StatusCode::OK, body = PostResponse, description = "the requested post")),
+    responses(
+        (
+            status = StatusCode::OK,
+            body = PostResponse,
+            description = "the requested post"),
+        (
+            status = StatusCode::NOT_FOUND,
+            body = ErrorResponse,
+            description = "requested post not found",
+        ),
+    ),
 )]
 async fn by_post_id(
     post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,

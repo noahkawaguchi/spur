@@ -4,7 +4,7 @@ use utoipa::ToSchema;
 
 /// A general-purpose error response.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct ErrorResponse {
     pub error: String,
 }

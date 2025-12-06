@@ -1,7 +1,11 @@
 use super::api_result;
 use crate::{
     api::{
-        dto::{requests::LoginRequest, responses::TokenResponse, signup_request::SignupRequest},
+        dto::{
+            requests::LoginRequest,
+            responses::{ErrorResponse, TokenResponse},
+            signup_request::SignupRequest,
+        },
         validated_json::ValidatedJson,
     },
     app_services::Authenticator,
@@ -32,11 +36,18 @@ pub fn routes() -> Router<AppState> {
     tag = "auth",
     path = "/signup",
     request_body = SignupRequest,
-    responses((
-        status = StatusCode::CREATED,
-        body = TokenResponse,
-        description = "new account created",
-    )),
+    responses(
+        (
+            status = StatusCode::CREATED,
+            body = TokenResponse,
+            description = "new account created",
+        ),
+        (
+            status = StatusCode::CONFLICT,
+            body = ErrorResponse,
+            description = "duplicate email or username",
+        ),
+    ),
 )]
 async fn signup(
     auth: State<Arc<dyn Authenticator>>,
@@ -54,11 +65,23 @@ async fn signup(
     tag = "auth",
     path = "/login",
     request_body = LoginRequest,
-    responses((
-        status = StatusCode::OK,
-        body = TokenResponse,
-        description = "successful login",
-    )),
+    responses(
+        (
+            status = StatusCode::OK,
+            body = TokenResponse,
+            description = "successful login",
+        ),
+        (
+            status = StatusCode::NOT_FOUND,
+            body = ErrorResponse,
+            description = "account not found",
+        ),
+        (
+            status = StatusCode::UNAUTHORIZED,
+            body = ErrorResponse,
+            description = "invalid password",
+        ),
+    ),
 )]
 async fn login(
     auth: State<Arc<dyn Authenticator>>,

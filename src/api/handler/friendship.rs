@@ -3,7 +3,7 @@ use crate::{
     api::{
         dto::{
             requests::AddFriendRequest,
-            responses::{PostResponse, SuccessResponse},
+            responses::{ErrorResponse, PostResponse, SuccessResponse},
         },
         validated_json::ValidatedJson,
     },
@@ -54,6 +54,21 @@ pub fn routes() -> Router<AppState> {
             body = SuccessResponse,
             description = "created a new friend request",
         ),
+        (
+            status = StatusCode::NOT_FOUND,
+            body = ErrorResponse,
+            description = "nonexistent user",
+        ),
+        (
+            status = StatusCode::CONFLICT,
+            body = ErrorResponse,
+            description = "already friends or already requested",
+        ),
+        (
+            status = StatusCode::UNPROCESSABLE_ENTITY,
+            body = ErrorResponse,
+            description = "cannot be friends with oneself",
+        ),
     ),
 )]
 async fn add_friend(
@@ -87,14 +102,12 @@ async fn add_friend(
     tag = "friends",
     path = "",
     security(("jwt" = [])),
-    responses(
-        (
-            status = StatusCode::OK,
-            body = Vec<String>,
-            description = "a list of your friends",
-            example = json!(["alice", "bob", "cool_user_123", "DinnerWithDiana"]),
-        ),
-    ),
+    responses((
+        status = StatusCode::OK,
+        body = Vec<String>,
+        description = "a list of your friends",
+        example = json!(["alice", "bob", "cool_user_123", "DinnerWithDiana"]),
+    )),
 )]
 async fn list_friends(
     social_read: State<Arc<dyn SocialRead>>,

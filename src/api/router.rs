@@ -79,13 +79,28 @@ mod docs {
     )]
     pub(super) struct ApiDoc;
 
-    const API_DESC: &str = "Spur is a reply-based social platform. The docs below detail the \
-various endpoints, and the \"Try it out\" functionality uses the real deployed server. Endpoints \
-with a lock symbol require authentication using a JSON Web Token acquired via the login or signup \
-endpoints. (See the \"Authorize\" button.)
+    const API_DESC: &str = "
+Spur is a reply-based social platform. More information and the source code are available at \
+[github.com/noahkawaguchi/spur](https://github.com/noahkawaguchi/spur).
 
-More information and the source code are available at \
-[github.com/noahkawaguchi/spur](https://github.com/noahkawaguchi/spur).";
+The docs below detail the various endpoints, and the \"Try it out\" functionality uses the real \
+deployed server. Protected endpoints (the ones with a lock symbol) require authentication using a \
+JSON Web Token. A token can be acquired via the login or signup endpoints and entered using the \
+\"Authorize\" button.
+
+### Common error responses
+
+- All endpoints may return:
+  - 400 Bad Request - malformed request
+  - 500 Internal Server Error - unexpected technical issue
+- All protected endpoints may return:
+  - 400 Bad Request - authentication header missing
+  - 401 Unauthorized - expired or invalid token
+- All POST endpoints may return:
+  - 422 Unprocessable Entity - JSON body failed validation logic (e.g. illegal username characters)
+
+Other errors specific to each endpoint are documented below.
+";
 
     struct JwtAddon;
 

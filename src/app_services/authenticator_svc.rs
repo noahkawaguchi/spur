@@ -42,7 +42,7 @@ where
             .repo
             .get_by_email(self.uow.single_exec(), email)
             .await?
-            .ok_or(AuthError::NotFound)?;
+            .ok_or(AuthError::NonexistentAccount)?;
 
         self.provider
             .is_valid_pw(pw, &existing_user.password_hash)?
@@ -227,7 +227,7 @@ mod tests {
                 let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, MockAuthProvider::new());
                 assert!(matches!(
                     auth.login(email, pw).await,
-                    Err(AuthError::NotFound)
+                    Err(AuthError::NonexistentAccount)
                 ));
             });
         }

@@ -37,7 +37,7 @@ impl IntoResponse for ApiError {
             }
 
             // 404 Not Found
-            Self::Auth(AuthError::NotFound)
+            Self::Auth(AuthError::NonexistentAccount)
             | Self::Post(PostError::NotFound)
             | Self::Friendship(FriendshipError::NonexistentUser)
             | Self::Read(ReadError::NotFound) => (StatusCode::NOT_FOUND, self.to_string()),
