@@ -5,6 +5,9 @@
 # Load a .env file if present
 set dotenv-load := true
 
+# The tag to use for the Postgres Docker image. Should match the one in the Compose files.
+pg-tag := "18.0-alpine3.22"
+
 ####################################################################################################
 # Dev containers/volume/network
 #
@@ -66,7 +69,7 @@ sqlx-prep:
     if docker inspect {{prep-db-name}} >/dev/null 2>&1; then \
         docker rm -f {{prep-db-name}}; sleep 3; fi
     docker run --rm --name {{prep-db-name}} --env-file .env -p {{prep-db-port}}:5432 -d \
-        postgres:18.0-alpine3.22
+        postgres:{{pg-tag}}
     sleep 1;
     sqlx migrate run -D {{prep-db-url}}
     cargo sqlx prepare -D {{prep-db-url}} -- --workspace --all-targets --all-features
@@ -80,7 +83,7 @@ sqlx-prep:
 ####################################################################################################
 
 # A URL to pass to Atlas so that it can create an ephemeral DB to work in
-ephemeral-pg := "docker://postgres/17/dev"
+ephemeral-pg := "docker://postgres/" + pg-tag + "/dev"
 
 # The master schema to be edited by hand and diffed by Atlas
 schema-file := "file://schema.sql"
