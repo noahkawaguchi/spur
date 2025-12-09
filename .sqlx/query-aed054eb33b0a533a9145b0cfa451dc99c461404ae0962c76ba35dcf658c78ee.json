@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO post (author_id, parent_id, body) VALUES (1, NULL, 'root post')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "aed054eb33b0a533a9145b0cfa451dc99c461404ae0962c76ba35dcf658c78ee"
+}

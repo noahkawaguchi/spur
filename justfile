@@ -65,9 +65,11 @@ prep-db-url := "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:" \
 sqlx-prep:
     if docker inspect {{prep-db-name}} >/dev/null 2>&1; then \
         docker rm -f {{prep-db-name}}; sleep 3; fi
-    docker run --rm --name {{prep-db-name}} --env-file .env -p {{prep-db-port}}:5432 -d postgres:17
+    docker run --rm --name {{prep-db-name}} --env-file .env -p {{prep-db-port}}:5432 -d \
+        postgres:18.0-alpine3.22
+    sleep 1;
     sqlx migrate run -D {{prep-db-url}}
-    cargo sqlx prepare -D {{prep-db-url}}
+    cargo sqlx prepare -D {{prep-db-url}} -- --workspace --all-targets --all-features
     docker stop {{prep-db-name}}
 
 ####################################################################################################
