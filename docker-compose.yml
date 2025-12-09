@@ -1,7 +1,10 @@
-x-spur-image: &spur_image ghcr.io/noahkawaguchi/spur:${SPUR_IMG_TAG:?error}
-
-x-database-url: &db_url >-
-  postgres://${POSTGRES_USER:?error}:${POSTGRES_PASSWORD:?error}@db:5432/${POSTGRES_DB:?error}
+# Shared config for all three containers that use the main Spur Docker image
+x-spur-image-shared: &spur_image
+  image: ghcr.io/noahkawaguchi/spur:${SPUR_IMG_TAG:?error}
+  env_file: .env
+  environment:
+    DATABASE_URL: >-
+      postgres://${POSTGRES_USER:?error}:${POSTGRES_PASSWORD:?error}@db:5432/${POSTGRES_DB:?error}
 
 services:
   db:
@@ -22,32 +25,23 @@ services:
       start_period: 2s
 
   migrate:
-    image: *spur_image
+    <<: *spur_image
     entrypoint: [/migrate]
-    env_file: .env
-    environment:
-      DATABASE_URL: *db_url
     depends_on:
       db: { condition: service_healthy }
 
   seed:
-    image: *spur_image
+    <<: *spur_image
     profiles: [init]
     entrypoint: [/seed]
-    env_file: .env
-    environment:
-      DATABASE_URL: *db_url
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
 
   spur:
-    image: *spur_image
+    <<: *spur_image
     restart: unless-stopped
     expose: ["8080"]
-    env_file: .env
-    environment:
-      DATABASE_URL: *db_url
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
