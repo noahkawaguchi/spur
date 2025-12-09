@@ -110,11 +110,11 @@ dc-test := "docker compose -p spur-test -f docker-compose.test.yml"
 
 # Run tests in Docker
 test:
-    {{dc-test}} run --remove-orphans --build test
+    {{dc-test}} run --build --rm test
 
 # Remove the Compose stack used for testing
 test-clean:
-    {{dc-test}} down --remove-orphans --rmi local
+    {{dc-test}} down --rmi local
 
 # Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
 coverage:
