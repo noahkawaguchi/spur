@@ -99,7 +99,19 @@ migration name:
 
 ####################################################################################################
 # Testing and code quality
+#
+# Running tests in Docker requires the Docker CLI and a running Docker daemon.
 ####################################################################################################
+
+dc-test := "docker compose -p spur-test -f docker-compose.test.yml"
+
+# Run tests in Docker
+test:
+    {{dc-test}} run --remove-orphans --build test
+
+# Remove the Compose stack used for testing
+test-clean:
+    {{dc-test}} down --remove-orphans --rmi local
 
 # Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
 coverage:

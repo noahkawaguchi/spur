@@ -1,0 +1,25 @@
+FROM rust:1.91.1-alpine3.22
+
+# curl for utoipa-swagger-ui build
+RUN apk add --no-cache curl
+
+WORKDIR /test
+
+# Pre-build dependencies so they're cached even if the app code changes
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src \
+  && echo "fn main() {}" > src/main.rs \
+  && cargo test --no-run --workspace --all-targets \
+  && rm -rf src
+
+# Explicitly copy only the directories that are needed
+COPY migrations migrations
+COPY .sqlx .sqlx
+COPY src src
+
+# Make SQLx use the .sqlx directory at compile time even though DATABASE_URL will be set.
+# Tests can still use DATABASE_URL at runtime.
+ENV SQLX_OFFLINE=true
+
+ENTRYPOINT ["cargo", "test"]
+CMD ["--frozen", "--workspace", "--all-targets"]
