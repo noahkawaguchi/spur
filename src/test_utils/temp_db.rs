@@ -11,8 +11,12 @@ where
     Fut: Future<Output = ()>,
 {
     // Establish the normal dev database connection in order to create the test database
-    dotenvy::dotenv().expect("failed to load .env file");
-    let admin_url = std::env::var("DATABASE_URL").expect("DATABASE_URL not set");
+    let admin_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+        // Only try to load DATABASE_URL from a .env file if it's not already present
+        dotenvy::dotenv().expect("failed to load .env file");
+        std::env::var("DATABASE_URL").expect("DATABASE_URL not set")
+    });
+
     let admin_pool = sqlx::PgPool::connect(&admin_url)
         .await
         .expect("failed to connect to admin pool");
