@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:18.0-alpine3.22
+    restart: unless-stopped
+    expose: ["5432"]
+    env_file: .env
+    healthcheck:
+      test:
+        [
+          CMD-SHELL,
+          "pg_isready -U ${POSTGRES_USER:?error} -d ${POSTGRES_DB:?error}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 2s
+
+  test:
+    build:
+      dockerfile: Dockerfile.test
+    environment:
+      DATABASE_URL: >-
+        postgres://${POSTGRES_USER:?error}:${POSTGRES_PASSWORD:?error}@db:5432/${POSTGRES_DB:?error}
+    depends_on:
+      db: { condition: service_healthy }
