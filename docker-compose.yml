@@ -1,3 +1,8 @@
+x-spur-image: &spur_image ghcr.io/noahkawaguchi/spur:${SPUR_IMG_TAG:?error}
+
+x-database-url: &db_url >-
+  postgres://${POSTGRES_USER:?error}:${POSTGRES_PASSWORD:?error}@db:5432/${POSTGRES_DB:?error}
+
 services:
   db:
     image: postgres:18.0-alpine3.22
@@ -6,39 +11,43 @@ services:
     env_file: .env
     volumes: [pg_data:/var/lib/postgresql]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?error} -d ${POSTGRES_DB:?error}"]
+      test:
+        [
+          CMD-SHELL,
+          "pg_isready -U ${POSTGRES_USER:?error} -d ${POSTGRES_DB:?error}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 6
       start_period: 2s
 
   migrate:
-    image: "ghcr.io/noahkawaguchi/spur:${SPUR_IMG_TAG:?error}"
-    entrypoint: ["/migrate"]
+    image: *spur_image
+    entrypoint: [/migrate]
     env_file: .env
     environment:
-      DATABASE_URL: ${DOCKER_DATABASE_URL:?error}
+      DATABASE_URL: *db_url
     depends_on:
       db: { condition: service_healthy }
 
   seed:
-    image: "ghcr.io/noahkawaguchi/spur:${SPUR_IMG_TAG:?error}"
-    profiles: ["init"]
-    entrypoint: ["/seed"]
+    image: *spur_image
+    profiles: [init]
+    entrypoint: [/seed]
     env_file: .env
     environment:
-      DATABASE_URL: ${DOCKER_DATABASE_URL:?error}
+      DATABASE_URL: *db_url
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
 
   spur:
-    image: "ghcr.io/noahkawaguchi/spur:${SPUR_IMG_TAG:?error}"
+    image: *spur_image
     restart: unless-stopped
     expose: ["8080"]
     env_file: .env
     environment:
-      DATABASE_URL: ${DOCKER_DATABASE_URL:?error}
+      DATABASE_URL: *db_url
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
@@ -46,7 +55,7 @@ services:
   caddy:
     image: caddy:2.10.2-alpine
     restart: unless-stopped
-    ports: ["80:80", "443:443"]
+    ports: [80:80, 443:443]
     env_file: .env
     volumes:
       - ./caddy_conf:/etc/caddy:ro # Directory containing the Caddyfile
@@ -54,7 +63,6 @@ services:
       - caddy_config:/config
     depends_on:
       spur: { condition: service_healthy }
-
 
 volumes:
   pg_data: {}
