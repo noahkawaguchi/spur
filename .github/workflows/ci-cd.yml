@@ -1,0 +1,93 @@
+name: CI/CD
+
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+  workflow_dispatch: {}
+
+jobs:
+  format-check:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v6
+        with: { persist-credentials: false }
+      - uses: dtolnay/rust-toolchain@nightly
+        with: { components: rustfmt }
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+
+  lint:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v6
+        with: { persist-credentials: false }
+      - uses: dtolnay/rust-toolchain@1.91.1
+        with: { components: clippy }
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --workspace --all-targets
+
+  spell-check:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v6
+        with: { persist-credentials: false }
+      - uses: streetsidesoftware/cspell-action@v8
+
+  test:
+    runs-on: ubuntu-24.04-arm
+
+    services:
+      postgres:
+        image: postgres:18.0-alpine3.22
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: [5432:5432]
+
+    steps:
+      - uses: actions/checkout@v6
+        with: { persist-credentials: false }
+      - uses: dtolnay/rust-toolchain@1.91.1
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace --all-targets
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+          SQLX_OFFLINE: true
+
+  # Always builds the Docker image (with caching), but only pushes it to GHCR if the workflow was
+  # triggered by a push to main. Publishes both a commit hash tag and a latest tag.
+  container-image:
+    runs-on: ubuntu-24.04-arm
+    needs: [format-check, lint, spell-check, test]
+    permissions: { packages: write }
+
+    steps:
+      - uses: docker/setup-buildx-action@v3 # Necessary for caching in build-push-action
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha
+            type=raw,value=latest
+
+      - uses: docker/build-push-action@v6
+        with:
+          # Only push the image when pushing to main
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

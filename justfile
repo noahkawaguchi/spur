@@ -1,24 +1,32 @@
 ####################################################################################################
+#
+# Using this justfile requires the command runner `just`, the Docker CLI, and a running Docker
+# daemon. Other dependencies are documented below with the recipes that need them.
+#
+####################################################################################################
+
+####################################################################################################
 # Settings/config
 ####################################################################################################
 
 # Load a .env file if present
 set dotenv-load := true
 
-# The tag to use for the Postgres Docker image. Should match the one in the Compose files.
+# The tag to use for the Postgres Docker image. Should match the one used in `docker-compose.yml`.
 pg-tag := "18.0-alpine3.22"
 
 ####################################################################################################
-# Dev containers/volume/network
-#
-# Requires the Docker CLI and a running VM (e.g. Docker Desktop, Colima) or equivalent.
+# Main Docker Compose stack
 ####################################################################################################
 
-dc-project := "docker compose -p spur"
+spur-img-tag := env("SPUR_IMG_TAG", "latest")
+dc-project := "docker compose -p spur -f docker-compose.yml -f docker-compose.dev.yml" \
+              + " --profile init"
 
-# Start the full dev stack with migrations and seed data if necessary (this is the default recipe)
-dc-up: img-build
-    {{dc-project}} --profile init -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Build/start the Compose stack with migrations and seed data if necessary (the default recipe)
+dc-up:
+    docker build -t ghcr.io/noahkawaguchi/spur:{{spur-img-tag}} .
+    {{dc-project}} up -d
 
 # Stop the project's running containers
 dc-stop:
@@ -30,27 +38,6 @@ dc-down:
     {{dc-project}} down --volumes
 
 ####################################################################################################
-# Spur Docker image
-#
-# Pushing to GHCR requires being logged into the Docker CLI.
-####################################################################################################
-
-img-url := "ghcr.io/noahkawaguchi/spur:$SPUR_IMG_TAG"
-
-# Build the Spur Docker image
-img-build:
-    docker build -t {{img-url}} .
-
-# Push the Spur Docker image to GHCR, refusing to overwrite if the image/tag already exists
-img-push:
-    @if docker pull {{img-url}} >/dev/null 2>&1; then \
-        echo "\nImage/tag already exists, refusing to overwrite: {{img-url}}\n"; \
-        exit 1; \
-    fi
-    just img-build
-    docker push {{img-url}}
-
-####################################################################################################
 # Pre-compilation step for compile time checked SQL queries without a live DB connection (needed for
 # building in a Docker container)
 #
@@ -59,27 +46,15 @@ img-push:
 # required for this project is: `cargo install sqlx-cli --no-default-features --features postgres`
 ####################################################################################################
 
-prep-db-name := "spur_sqlx_prep_db"
-prep-db-port := "55432"
-prep-db-url := "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:" \
-               + prep-db-port + "/$POSTGRES_DB"
-
 # Update the `.sqlx` directory using an ephemeral Postgres container (after any query modifications)
-sqlx-prep:
-    if docker inspect {{prep-db-name}} >/dev/null 2>&1; then \
-        docker rm -f {{prep-db-name}}; sleep 3; fi
-    docker run --rm --name {{prep-db-name}} --env-file .env -p {{prep-db-port}}:5432 -d \
-        postgres:{{pg-tag}}
-    sleep 1;
-    sqlx migrate run -D {{prep-db-url}}
-    cargo sqlx prepare -D {{prep-db-url}} -- --workspace --all-targets --all-features
-    docker stop {{prep-db-name}}
+sqlx-prep: temp-db-start && temp-db-stop
+    sqlx migrate run -D {{temp-db-url}}
+    cargo sqlx prepare -D {{temp-db-url}} -- --workspace --all-targets --all-features
 
 ####################################################################################################
 # Migrations
 #
 # Requires the Atlas CLI (https://atlasgo.io/getting-started#installation).
-# Recipes that use an ephemeral DB require the VM for Docker to be running.
 ####################################################################################################
 
 # A URL to pass to Atlas so that it can create an ephemeral DB to work in
@@ -102,24 +77,42 @@ migration name:
 
 ####################################################################################################
 # Testing and code quality
-#
-# Running tests in Docker requires the Docker CLI and a running Docker daemon.
 ####################################################################################################
 
-dc-test := "docker compose -p spur-test -f docker-compose.test.yml"
-
-# Run tests in Docker
-test:
-    {{dc-test}} run --remove-orphans --build test
-
-# Remove the Compose stack used for testing
-test-clean:
-    {{dc-test}} down --remove-orphans --rmi local
+# Run tests using an ephemeral Postgres container
+test: temp-db-start && temp-db-stop
+    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo test --workspace --all-targets
 
 # Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
-coverage:
-    cargo llvm-cov --open
+coverage: temp-db-start && temp-db-stop
+    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo llvm-cov --open --workspace --all-targets
 
 # Check spelling according to `cspell.json`. Requires `npm i -g cspell`.
 spell-check:
     cspell .
+
+####################################################################################################
+# Ephemeral Postgres container helper utilities
+#
+# These recipes are hidden because they are primarily meant to be used by other recipes as
+# dependencies, but they can be called directly if necessary.
+####################################################################################################
+
+temp-db-name := "spur_temp_db"
+temp-db-port := env("SPUR_TEMP_DB_PORT", "55432")
+temp-db-url := "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:" \
+               + temp-db-port + "/$POSTGRES_DB"
+
+# Start an ephemeral Postgres container and wait until it's ready
+[private]
+temp-db-start:
+    if docker inspect {{temp-db-name}} >/dev/null 2>&1; then \
+        docker rm -f {{temp-db-name}}; sleep 3; fi
+    docker run --rm --name {{temp-db-name}} --env-file .env -p {{temp-db-port}}:5432 -d \
+        postgres:{{pg-tag}}
+    until docker exec {{temp-db-name}} pg_isready > /dev/null 2>&1; do sleep 1; done
+
+# Stop the ephemeral Postgres container (also removing it)
+[private]
+temp-db-stop:
+    docker stop {{temp-db-name}}
