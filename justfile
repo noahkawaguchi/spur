@@ -70,7 +70,7 @@ sqlx-prep:
         docker rm -f {{prep-db-name}}; sleep 3; fi
     docker run --rm --name {{prep-db-name}} --env-file .env -p {{prep-db-port}}:5432 -d \
         postgres:{{pg-tag}}
-    sleep 1;
+    until docker exec {{prep-db-name}} pg_isready > /dev/null 2>&1; do sleep 1; done
     sqlx migrate run -D {{prep-db-url}}
     cargo sqlx prepare -D {{prep-db-url}} -- --workspace --all-targets --all-features
     docker stop {{prep-db-name}}
@@ -103,18 +103,27 @@ migration name:
 ####################################################################################################
 # Testing and code quality
 #
-# Running tests in Docker requires the Docker CLI and a running Docker daemon.
+# The ephemeral Postgres DB requires the Docker CLI and a running Docker daemon.
 ####################################################################################################
 
-dc-test := "docker compose -p spur-test -f docker-compose.test.yml"
+test-db-name := "spur_test_db"
+test-db-port := "2345"
+test-db-url := "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:" \
+               + test-db-port + "/$POSTGRES_DB"
 
-# Run tests in Docker
+# Run tests using an ephemeral Postgres container
 test:
-    {{dc-test}} run --build --rm test
+    if docker inspect {{test-db-name}} >/dev/null 2>&1; then \
+        docker rm -f {{test-db-name}}; sleep 3; fi
+    docker run --rm --name {{test-db-name}} --env-file .env -p {{test-db-port}}:5432 -d \
+        postgres:{{pg-tag}}
+    until docker exec {{test-db-name}} pg_isready > /dev/null 2>&1; do sleep 1; done
+    DATABASE_URL={{test-db-url}} SQLX_OFFLINE=true cargo test --workspace --all-targets
+    docker stop {{test-db-name}} > /dev/null 2>&1 &
 
-# Remove the Compose stack used for testing
+# Manually stop the test database container
 test-clean:
-    {{dc-test}} down --rmi local
+    docker stop {{test-db-name}}
 
 # Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
 coverage:
