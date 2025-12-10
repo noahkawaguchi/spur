@@ -14,7 +14,7 @@ pg-tag := "18.0-alpine3.22"
 # Requires the Docker CLI and a running Docker daemon.
 ####################################################################################################
 
-spur-img-tag := env('SPUR_IMG_TAG', 'latest')
+spur-img-tag := env("SPUR_IMG_TAG", "latest")
 dc-project := "docker compose -p spur -f docker-compose.yml -f docker-compose.dev.yml" \
               + " --profile init"
 
@@ -41,21 +41,10 @@ dc-down:
 # required for this project is: `cargo install sqlx-cli --no-default-features --features postgres`
 ####################################################################################################
 
-prep-db-name := "spur_sqlx_prep_db"
-prep-db-port := "55432"
-prep-db-url := "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:" \
-               + prep-db-port + "/$POSTGRES_DB"
-
 # Update the `.sqlx` directory using an ephemeral Postgres container (after any query modifications)
-sqlx-prep:
-    if docker inspect {{prep-db-name}} >/dev/null 2>&1; then \
-        docker rm -f {{prep-db-name}}; sleep 3; fi
-    docker run --rm --name {{prep-db-name}} --env-file .env -p {{prep-db-port}}:5432 -d \
-        postgres:{{pg-tag}}
-    until docker exec {{prep-db-name}} pg_isready > /dev/null 2>&1; do sleep 1; done
-    sqlx migrate run -D {{prep-db-url}}
-    cargo sqlx prepare -D {{prep-db-url}} -- --workspace --all-targets --all-features
-    docker stop {{prep-db-name}}
+sqlx-prep: temp-db-start && temp-db-stop
+    sqlx migrate run -D {{temp-db-url}}
+    cargo sqlx prepare -D {{temp-db-url}} -- --workspace --all-targets --all-features
 
 ####################################################################################################
 # Migrations
@@ -85,32 +74,44 @@ migration name:
 ####################################################################################################
 # Testing and code quality
 #
-# The ephemeral Postgres DB requires the Docker CLI and a running Docker daemon.
+# Some tests require the Docker CLI and a running Docker daemon.
 ####################################################################################################
 
-test-db-name := "spur_test_db"
-test-db-port := "2345"
-test-db-url := "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:" \
-               + test-db-port + "/$POSTGRES_DB"
-
 # Run tests using an ephemeral Postgres container
-test:
-    if docker inspect {{test-db-name}} >/dev/null 2>&1; then \
-        docker rm -f {{test-db-name}}; sleep 3; fi
-    docker run --rm --name {{test-db-name}} --env-file .env -p {{test-db-port}}:5432 -d \
-        postgres:{{pg-tag}}
-    until docker exec {{test-db-name}} pg_isready > /dev/null 2>&1; do sleep 1; done
-    DATABASE_URL={{test-db-url}} SQLX_OFFLINE=true cargo test --workspace --all-targets
-    docker stop {{test-db-name}} > /dev/null 2>&1 &
-
-# Manually stop the test database container
-test-clean:
-    docker stop {{test-db-name}}
+test: temp-db-start && temp-db-stop
+    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo test --workspace --all-targets
 
 # Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
-coverage:
-    cargo llvm-cov --open
+coverage: temp-db-start && temp-db-stop
+    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo llvm-cov --open --workspace --all-targets
 
 # Check spelling according to `cspell.json`. Requires `npm i -g cspell`.
 spell-check:
     cspell .
+
+####################################################################################################
+# Ephemeral Postgres container helper utilities
+#
+# Requires the Docker CLI and a running Docker daemon. These recipes are hidden because they are
+# primarily meant to be used as dependencies for other recipes, but they can be called manually if
+# necessary.
+####################################################################################################
+
+temp-db-name := "spur_temp_db"
+temp-db-port := env("SPUR_TEMP_DB_PORT", "55432")
+temp-db-url := "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:" \
+               + temp-db-port + "/$POSTGRES_DB"
+
+# Start an ephemeral Postgres container and wait until it's ready
+[private]
+temp-db-start:
+    if docker inspect {{temp-db-name}} >/dev/null 2>&1; then \
+        docker rm -f {{temp-db-name}}; sleep 3; fi
+    docker run --rm --name {{temp-db-name}} --env-file .env -p {{temp-db-port}}:5432 -d \
+        postgres:{{pg-tag}}
+    until docker exec {{temp-db-name}} pg_isready > /dev/null 2>&1; do sleep 1; done
+
+# Stop the ephemeral Postgres container (also removing it)
+[private]
+temp-db-stop:
+    docker stop {{temp-db-name}}
