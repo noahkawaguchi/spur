@@ -21,7 +21,10 @@
     "rustup",
     "justfile",
     "clippy",
-    "utoipa"
+    "utoipa",
+    "buildx",
+    "Swatinem",
+    "dtolnay"
   ],
   "useGitignore": true,
   "language": "en",
