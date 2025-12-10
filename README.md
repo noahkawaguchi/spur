@@ -55,12 +55,14 @@ domain services   app services   \
 
 ## Testing
 
-The project is tested with Rust's native test framework and Mockall in the Tokio runtime.
+The project is tested with Rust's native test framework and Mockall in the Tokio runtime. Some tests use ephemeral PostgreSQL containers, so a running Docker daemon is required.
 
-- Run tests: `cargo test` (The development database must be running.)
+- Run tests: `just test`
 - Show coverage: `just coverage`
 
-Due to the decoupled design, the testing strategy focuses on dependency injection using a combination of automatic mocks from the `mockall` crate and manual mocks. SQL schemas and queries are tested using ephemeral test databases in Docker.
+Due to the decoupled design, the testing strategy focuses on dependency injection using a combination of automatic mocks from the `mockall` crate and manual mocks.
+
+Tests and other code quality checks run with each pull request and merge into main using GitHub Actions, and all checks must pass before a branch is merged or the container image is deployed.
 
 ## Security and Safety
 
@@ -69,7 +71,7 @@ Due to the decoupled design, the testing strategy focuses on dependency injectio
 - The Docker Compose stack runs rootless to avoid the security concerns of running Docker as root. The binaries inside the app containers also run rootless.
 - The containers in the stack are exposed to each other only through an internal Docker network, not localhost. All communications outside this network must first go through the Caddy container, which provides HTTPS.
 - HTTP requests that access user data must have the standard Authorization Bearer header with a valid JSON Web Token.
-- The main server binary and the three helper binaries contain no `unsafe`, `unwrap`, or `expect`. This is enforced using lints set to the `forbid` level. (`unwrap` and `expect` are allowed in tests.)
+- The main server binary and the three helper binaries contain no `unsafe`, `unwrap`, or `expect`. This is enforced in CI using lints set to the `forbid` level. (`unwrap` and `expect` are allowed in tests.)
 
 ## Development and Deployment
 
@@ -77,4 +79,5 @@ Due to the decoupled design, the testing strategy focuses on dependency injectio
 - `just` is a command runner that can be installed via one of the methods described [here](https://github.com/casey/just/blob/master/README.md#installation).
 - Common commands used in development and any additional tools they require are documented (and automated) via the `justfile`.
 - The `.env.example` file describes the necessary environment variable configurations.
-- The project is deployed as described in [deploy/steps.md](deploy/steps.md).
+- The project's kanban board is on GitHub Projects [here](https://github.com/users/noahkawaguchi/projects/2).
+- A new version of the container image is automatically published to GHCR with each successful CI/CD run that was triggered by a merge into main. The project is then deployed on AWS EC2 as described in [deploy/steps.md](deploy/steps.md).
