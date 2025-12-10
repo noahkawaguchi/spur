@@ -30,27 +30,6 @@ dc-down:
     {{dc-project}} down --volumes
 
 ####################################################################################################
-# Spur Docker image
-#
-# Pushing to GHCR requires being logged into the Docker CLI.
-####################################################################################################
-
-img-url := "ghcr.io/noahkawaguchi/spur:$SPUR_IMG_TAG"
-
-# Build the Spur Docker image
-img-build:
-    docker build -t {{img-url}} .
-
-# Push the Spur Docker image to GHCR, refusing to overwrite if the image/tag already exists
-img-push:
-    @if docker pull {{img-url}} >/dev/null 2>&1; then \
-        echo "\nImage/tag already exists, refusing to overwrite: {{img-url}}\n"; \
-        exit 1; \
-    fi
-    just img-build
-    docker push {{img-url}}
-
-####################################################################################################
 # Pre-compilation step for compile time checked SQL queries without a live DB connection (needed for
 # building in a Docker container)
 #
