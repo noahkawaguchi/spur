@@ -1,24 +1,29 @@
 ####################################################################################################
+#
+# Using this justfile requires the command runner `just`, the Docker CLI, and a running Docker
+# daemon. Other dependencies are documented below with the recipes that need them.
+#
+####################################################################################################
+
+####################################################################################################
 # Settings/config
 ####################################################################################################
 
 # Load a .env file if present
 set dotenv-load := true
 
-# The tag to use for the Postgres Docker image. Should match the one in the Compose files.
+# The tag to use for the Postgres Docker image. Should match the one used in `docker-compose.yml`.
 pg-tag := "18.0-alpine3.22"
 
 ####################################################################################################
-# Dev containers/volume/network
-#
-# Requires the Docker CLI and a running Docker daemon.
+# Main Docker Compose stack
 ####################################################################################################
 
 spur-img-tag := env("SPUR_IMG_TAG", "latest")
 dc-project := "docker compose -p spur -f docker-compose.yml -f docker-compose.dev.yml" \
               + " --profile init"
 
-# Build/start the full dev stack with migrations and seed data if necessary (the default recipe)
+# Build/start the Compose stack with migrations and seed data if necessary (the default recipe)
 dc-up:
     docker build -t ghcr.io/noahkawaguchi/spur:{{spur-img-tag}} .
     {{dc-project}} up -d
@@ -50,7 +55,6 @@ sqlx-prep: temp-db-start && temp-db-stop
 # Migrations
 #
 # Requires the Atlas CLI (https://atlasgo.io/getting-started#installation).
-# Recipes that use an ephemeral DB require the VM for Docker to be running.
 ####################################################################################################
 
 # A URL to pass to Atlas so that it can create an ephemeral DB to work in
@@ -73,8 +77,6 @@ migration name:
 
 ####################################################################################################
 # Testing and code quality
-#
-# Some tests require the Docker CLI and a running Docker daemon.
 ####################################################################################################
 
 # Run tests using an ephemeral Postgres container
@@ -92,9 +94,8 @@ spell-check:
 ####################################################################################################
 # Ephemeral Postgres container helper utilities
 #
-# Requires the Docker CLI and a running Docker daemon. These recipes are hidden because they are
-# primarily meant to be used as dependencies for other recipes, but they can be called manually if
-# necessary.
+# These recipes are hidden because they are primarily meant to be used by other recipes as
+# dependencies, but they can be called directly if necessary.
 ####################################################################################################
 
 temp-db-name := "spur_temp_db"
