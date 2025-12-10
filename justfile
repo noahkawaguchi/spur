@@ -11,14 +11,17 @@ pg-tag := "18.0-alpine3.22"
 ####################################################################################################
 # Dev containers/volume/network
 #
-# Requires the Docker CLI and a running VM (e.g. Docker Desktop, Colima) or equivalent.
+# Requires the Docker CLI and a running Docker daemon.
 ####################################################################################################
 
-dc-project := "docker compose -p spur"
+spur-img-tag := env('SPUR_IMG_TAG', 'latest')
+dc-project := "docker compose -p spur -f docker-compose.yml -f docker-compose.dev.yml" \
+              + " --profile init"
 
-# Start the full dev stack with migrations and seed data if necessary (this is the default recipe)
-dc-up: img-build
-    {{dc-project}} --profile init -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Build/start the full dev stack with migrations and seed data if necessary (the default recipe)
+dc-up:
+    docker build -t ghcr.io/noahkawaguchi/spur:{{spur-img-tag}} .
+    {{dc-project}} up -d
 
 # Stop the project's running containers
 dc-stop:

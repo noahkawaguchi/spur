@@ -1,6 +1,6 @@
 # Shared config for all three containers that use the main Spur Docker image
 x-spur-image-shared: &spur_image
-  image: ghcr.io/noahkawaguchi/spur:${SPUR_IMG_TAG:?error}
+  image: ghcr.io/noahkawaguchi/spur:${SPUR_IMG_TAG:-latest}
   env_file: .env
   environment:
     DATABASE_URL: >-
