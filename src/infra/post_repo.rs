@@ -42,9 +42,7 @@ impl PostRepo for PgPostRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{
-        seed_data::seed_users_and_root_post, time::within_five_seconds, tokio_test,
-    };
+    use crate::test_utils::{seed_data::seed_users_and_root_post, time::within_five_seconds};
     use anyhow::{Context, Result};
     use chrono::Utc;
     use sqlx::PgPool;

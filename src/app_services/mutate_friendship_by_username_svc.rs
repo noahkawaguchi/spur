@@ -83,7 +83,7 @@ mod tests {
         mock_repos::{MockFriendshipRepo, MockUserRepo},
         tokio_test,
     };
-    use anyhow::{Context, Result};
+    use anyhow::Result;
 
     mod add_friend {
         use super::*;

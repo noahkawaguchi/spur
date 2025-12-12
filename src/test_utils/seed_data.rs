@@ -117,7 +117,7 @@ pub async fn seed_root_post(pool: &sqlx::PgPool) -> Result<()> {
 
 /// Seeds a test database with users (IDs 1, 2, 3, and 4) and the root post (by user 1).
 pub async fn seed_users_and_root_post(pool: &PgPool) -> Result<[NewUser; 4]> {
-    let new_users = seed_users(&pool).await?;
-    seed_root_post(&pool).await?;
+    let new_users = seed_users(pool).await?;
+    seed_root_post(pool).await?;
     Ok(new_users)
 }

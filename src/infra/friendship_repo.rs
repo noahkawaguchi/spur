@@ -78,9 +78,7 @@ impl FriendshipRepo for PgFriendshipRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{
-        seed_data::seed_users, temp_db::with_test_pool, time::within_five_seconds, tokio_test,
-    };
+    use crate::test_utils::{seed_data::seed_users, time::within_five_seconds};
     use anyhow::{Context, Result};
     use chrono::{DateTime, Utc};
     use sqlx::PgPool;

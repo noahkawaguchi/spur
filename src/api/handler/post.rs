@@ -200,7 +200,7 @@ mod tests {
             tokio_test,
         },
     };
-    use anyhow::{Context, Result, anyhow};
+    use anyhow::{Result, anyhow};
     use axum::{
         body::Body,
         http::{Method, Request, header::CONTENT_TYPE},

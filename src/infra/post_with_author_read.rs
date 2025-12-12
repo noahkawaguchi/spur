@@ -89,9 +89,8 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
 mod tests {
     use super::*;
     use crate::{
-        domain::post::PostRepo,
-        infra::post_repo::PgPostRepo,
-        test_utils::{seed_data::seed_users_and_root_post, tokio_test},
+        domain::post::PostRepo, infra::post_repo::PgPostRepo,
+        test_utils::seed_data::seed_users_and_root_post,
     };
     use anyhow::Result;
     use chrono::Utc;

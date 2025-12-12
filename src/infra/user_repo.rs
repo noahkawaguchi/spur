@@ -71,7 +71,7 @@ impl UserRepo for PgUserRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{temp_db::with_test_pool, time::within_five_seconds, tokio_test};
+    use crate::test_utils::time::within_five_seconds;
     use anyhow::{Context, Result};
     use chrono::Utc;
     use sqlx::PgPool;
