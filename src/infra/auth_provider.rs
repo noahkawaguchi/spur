@@ -75,27 +75,30 @@ mod tests {
         use super::*;
 
         #[test]
-        fn hashes_and_validates_valid_password() {
+        fn hashes_and_validates_valid_password() -> Result<()> {
             let password = "password123";
             let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
-            let hash = auth.hash_pw(password).unwrap();
-            assert!(auth.is_valid_pw(password, &hash).unwrap());
+            let hash = auth.hash_pw(password)?;
+            assert!(auth.is_valid_pw(password, &hash)?);
+            Ok(())
         }
 
         #[test]
-        fn identifies_invalid_password() {
+        fn identifies_invalid_password() -> Result<()> {
             let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
-            let hash = auth.hash_pw("correct password").unwrap();
-            assert!(!auth.is_valid_pw("incorrect!", &hash).unwrap());
+            let hash = auth.hash_pw("correct password")?;
+            assert!(!auth.is_valid_pw("incorrect!", &hash)?);
+            Ok(())
         }
 
         #[test]
-        fn identifies_invalid_hash() {
+        fn identifies_invalid_hash() -> Result<()> {
             let password = "this password is correct";
             let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
-            let _correct_hash = auth.hash_pw(password).unwrap();
-            let incorrect_hash = auth.hash_pw("some other password").unwrap();
-            assert!(!auth.is_valid_pw(password, &incorrect_hash).unwrap());
+            let _correct_hash = auth.hash_pw(password)?;
+            let incorrect_hash = auth.hash_pw("some other password")?;
+            assert!(!auth.is_valid_pw(password, &incorrect_hash)?);
+            Ok(())
         }
     }
 
@@ -103,27 +106,30 @@ mod tests {
         use super::*;
 
         #[test]
-        fn creates_and_validates_valid_token() {
+        fn creates_and_validates_valid_token() -> Result<()> {
             let user_id = 25_925;
             let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
-            let token = auth.create_token(user_id).unwrap();
-            assert_eq!(user_id, auth.validate_token(&token).unwrap());
+            let token = auth.create_token(user_id)?;
+            assert_eq!(user_id, auth.validate_token(&token)?);
+            Ok(())
         }
 
         #[test]
-        fn identifies_invalid_token() {
+        fn identifies_invalid_token() -> Result<()> {
             let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
-            let _correct_token = auth.create_token(5432).unwrap();
+            let _correct_token = auth.create_token(5432)?;
             assert!(auth.validate_token("not correct").is_err());
+            Ok(())
         }
 
         #[test]
-        fn creates_different_tokens_for_different_ids() {
+        fn creates_different_tokens_for_different_ids() -> Result<()> {
             let (user_id_1, user_id_2) = (42, 43);
             let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
-            let _token_1 = auth.create_token(user_id_1).unwrap();
-            let token_2 = auth.create_token(user_id_2).unwrap();
-            assert_ne!(user_id_1, auth.validate_token(&token_2).unwrap());
+            let _token_1 = auth.create_token(user_id_1)?;
+            let token_2 = auth.create_token(user_id_2)?;
+            assert_ne!(user_id_1, auth.validate_token(&token_2)?);
+            Ok(())
         }
     }
 
@@ -131,22 +137,27 @@ mod tests {
         use super::*;
 
         #[test]
-        fn converts_types_and_calculates_expiration() {
+        fn converts_types_and_calculates_expiration() -> Result<()> {
             let id = 825;
             let tomorrow = Utc::now()
                 .checked_add_days(Days::new(1))
-                .expect("failed to compute tomorrow");
+                .context("failed to compute tomorrow")?;
 
-            let claims = Claims::new(id).expect("failed to create claims");
+            let claims = Claims::new(id).context("failed to create claims")?;
 
             let exp = DateTime::from_timestamp(
-                claims.exp.try_into().expect("failed to convert u64 to i64"),
+                claims
+                    .exp
+                    .try_into()
+                    .context("failed to convert u64 to i64")?,
                 0,
             )
-            .expect("failed to create datetime");
+            .context("failed to create datetime")?;
 
             assert!(within_five_seconds(exp, tomorrow));
             assert_eq!(claims.sub, id.to_string());
+
+            Ok(())
         }
     }
 }

@@ -102,7 +102,7 @@ mod tests {
     #[test]
     fn disallows_replying_to_a_deleted_post() -> Result<()> {
         tokio_test(async {
-            let mut deleted_parent = dummy_data::post::number1();
+            let mut deleted_parent = dummy_data::post::number1()?;
             deleted_parent.deleted_at = Some(Utc::now());
 
             run_unacceptable_parent_test(
@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn disallows_replying_to_an_archived_post() -> Result<()> {
         tokio_test(async {
-            let mut archived_parent = dummy_data::post::number1();
+            let mut archived_parent = dummy_data::post::number1()?;
             archived_parent.archived_at = Some(Utc::now());
 
             run_unacceptable_parent_test(
@@ -132,10 +132,12 @@ mod tests {
     #[test]
     fn disallows_replying_to_ones_own_post() -> Result<()> {
         tokio_test(async {
-            let self_reply_parent = dummy_data::post::number1();
+            let self_reply_parent = dummy_data::post::number1()?;
 
             run_unacceptable_parent_test(
-                self_reply_parent.author_id.unwrap(),
+                self_reply_parent
+                    .author_id
+                    .context("unexpected None author ID")?,
                 Some(self_reply_parent),
                 PostError::SelfReply,
             )
@@ -146,7 +148,7 @@ mod tests {
     #[test]
     fn creates_post_and_commits_if_all_conditions_are_met() -> Result<()> {
         tokio_test(async {
-            let parent_post = dummy_data::post::number1();
+            let parent_post = dummy_data::post::number1()?;
             let parent_post_id = parent_post.id;
             let new_post_author_id =
                 parent_post.author_id.context("unexpected None author ID")? + 15;
@@ -225,9 +227,9 @@ mod tests {
                         // Alternating between the first and second dummy posts because the third is
                         // marked as deleted, which correctly causes a different error
                         Ok(Some(if i & 1 == 1 {
-                            dummy_data::post::number1()
+                            dummy_data::post::number1()?
                         } else {
-                            dummy_data::post::number2()
+                            dummy_data::post::number2()?
                         }))
                     })),
                     insert_new: Some(Box::new(

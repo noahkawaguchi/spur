@@ -1,5 +1,6 @@
 pub mod user {
     use crate::models::user::User;
+    use anyhow::{Context, Result};
     use chrono::{Days, Months, Utc};
 
     pub fn number1() -> User {
@@ -13,8 +14,8 @@ pub mod user {
         }
     }
 
-    pub fn number2() -> User {
-        User {
+    pub fn number2() -> Result<User> {
+        Ok(User {
             id: 42,
             name: String::from("Gillian Jill"),
             email: String::from("gillian@jill.org"),
@@ -22,12 +23,12 @@ pub mod user {
             password_hash: String::from("aab52i4n&$"),
             created_at: Utc::now()
                 .checked_sub_days(Days::new(1))
-                .expect("failed to subtract one day from now"),
-        }
+                .context("failed to subtract one day from now")?,
+        })
     }
 
-    pub fn number3() -> User {
-        User {
+    pub fn number3() -> Result<User> {
+        Ok(User {
             id: 43,
             name: String::from("Harold Old"),
             email: String::from("harold@old.jp"),
@@ -35,12 +36,12 @@ pub mod user {
             password_hash: String::from("ljb42b50%&$@"),
             created_at: Utc::now()
                 .checked_sub_months(Months::new(1))
-                .expect("failed to subtract one month from now"),
-        }
+                .context("failed to subtract one month from now")?,
+        })
     }
 
-    pub fn number4() -> User {
-        User {
+    pub fn number4() -> Result<User> {
+        Ok(User {
             id: 44,
             name: String::from("Greg Egg"),
             email: String::from("egg_greg@egg.gg"),
@@ -48,63 +49,86 @@ pub mod user {
             password_hash: String::from("5%2b@$$@bu"),
             created_at: Utc::now()
                 .checked_sub_months(Months::new(6))
-                .expect("failed to subtract six months from now"),
-        }
+                .context("failed to subtract six months from now")?,
+        })
     }
 }
 
 pub mod post {
     use crate::{models::post::Post, test_utils::dummy_data::post_with_author};
+    use anyhow::Result;
 
-    pub fn number1() -> Post { post_with_author::number1().into() }
-    pub fn number2() -> Post { post_with_author::number2().into() }
+    pub fn number1() -> Result<Post> { Ok(post_with_author::number1()?.into()) }
+    pub fn number2() -> Result<Post> { Ok(post_with_author::number2()?.into()) }
 }
 
 pub mod post_with_author {
     use crate::models::post::PostWithAuthor;
+    use anyhow::{Context, Result};
     use chrono::{TimeZone, Utc};
 
-    pub fn number1() -> PostWithAuthor {
-        PostWithAuthor {
+    pub fn number1() -> Result<PostWithAuthor> {
+        Ok(PostWithAuthor {
             id: 24,
             author_id: Some(255),
             parent_id: Some(42),
             body: Some(String::from("cool post body")),
-            created_at: Utc.timestamp_millis_opt(29_489_571).unwrap(),
+            created_at: Utc
+                .timestamp_millis_opt(29_489_571)
+                .single()
+                .context("unexpected ambiguous UTC time")?,
             edited_at: None,
             archived_at: None,
             deleted_at: None,
             author_username: Some(String::from("jack54444mack")),
-        }
+        })
     }
 
-    pub fn number2() -> PostWithAuthor {
-        PostWithAuthor {
+    pub fn number2() -> Result<PostWithAuthor> {
+        Ok(PostWithAuthor {
             id: 999,
             author_id: Some(2431),
             parent_id: Some(94),
             body: Some(String::from("one two three test post")),
-            created_at: Utc.timestamp_millis_opt(249_982_133).unwrap(),
-            edited_at: Some(Utc.timestamp_millis_opt(444_843_343).unwrap()),
+            created_at: Utc
+                .timestamp_millis_opt(249_982_133)
+                .single()
+                .context("unexpected ambiguous UTC time")?,
+            edited_at: Some(
+                Utc.timestamp_millis_opt(444_843_343)
+                    .single()
+                    .context("unexpected ambiguous UTC time")?,
+            ),
             archived_at: None,
             deleted_at: None,
             author_username: Some(String::from("helmet_man")),
-        }
+        })
     }
 
-    pub fn number3() -> PostWithAuthor {
-        PostWithAuthor {
+    pub fn number3() -> Result<PostWithAuthor> {
+        Ok(PostWithAuthor {
             id: 1324,
             author_id: Some(44),
             parent_id: Some(5432),
             body: Some(String::from("hello from the world 🗺️")),
-            created_at: Utc.timestamp_millis_opt(294_424).unwrap(),
+            created_at: Utc
+                .timestamp_millis_opt(294_424)
+                .single()
+                .context("unexpected ambiguous UTC time")?,
             edited_at: None,
-            archived_at: Some(Utc.timestamp_millis_opt(442_422).unwrap()),
-            deleted_at: Some(Utc.timestamp_millis_opt(99_942_901).unwrap()),
+            archived_at: Some(
+                Utc.timestamp_millis_opt(442_422)
+                    .single()
+                    .context("unexpected ambiguous UTC time")?,
+            ),
+            deleted_at: Some(
+                Utc.timestamp_millis_opt(99_942_901)
+                    .single()
+                    .context("unexpected ambiguous UTC time")?,
+            ),
             author_username: Some(String::from("aunt_flo")),
-        }
+        })
     }
 
-    pub fn all3() -> [PostWithAuthor; 3] { [number1(), number2(), number3()] }
+    pub fn all3() -> Result<[PostWithAuthor; 3]> { Ok([number1()?, number2()?, number3()?]) }
 }

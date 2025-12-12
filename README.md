@@ -71,7 +71,7 @@ Tests and other code quality checks run with each pull request and merge into ma
 - The Docker Compose stack runs rootless to avoid the security concerns of running Docker as root. The binaries inside the app containers also run rootless.
 - The containers in the stack are exposed to each other only through an internal Docker network, not localhost. All communications outside this network must first go through the Caddy container, which provides HTTPS.
 - HTTP requests that access user data must have the standard Authorization Bearer header with a valid JSON Web Token.
-- The main server binary and the three helper binaries contain no `unsafe`, `unwrap`, or `expect`. This is enforced in CI using lints set to the `forbid` level. (`unwrap` and `expect` are allowed in tests.)
+- The entire repository contains no `unsafe`, `unwrap`, or `expect`. This is enforced in CI using lints set to the `forbid` level.
 
 ## Development and Deployment
 

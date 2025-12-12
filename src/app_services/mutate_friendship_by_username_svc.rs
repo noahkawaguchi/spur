@@ -134,7 +134,7 @@ mod tests {
         #[test]
         fn disallows_duplicate_friend_requests() -> Result<()> {
             tokio_test(async {
-                let desired_friend = dummy_data::user::number2();
+                let desired_friend = dummy_data::user::number2()?;
                 let desired_friend_clone = desired_friend.clone();
                 let desired_friend_username_clone = desired_friend.username.clone();
                 let my_id = desired_friend.id + 3;
@@ -177,7 +177,7 @@ mod tests {
         #[test]
         fn accepts_a_friend_request_in_the_opposite_direction() -> Result<()> {
             tokio_test(async {
-                let added_me = dummy_data::user::number3();
+                let added_me = dummy_data::user::number3()?;
                 let added_me_clone = added_me.clone();
                 let added_me_username_clone = added_me.username.clone();
                 let my_id = added_me.id + 100;
@@ -224,7 +224,7 @@ mod tests {
         #[test]
         fn creates_a_request_if_no_relationship() -> Result<()> {
             tokio_test(async {
-                let does_not_know_me = dummy_data::user::number4();
+                let does_not_know_me = dummy_data::user::number4()?;
                 let does_not_know_me_clone = does_not_know_me.clone();
                 let does_not_know_me_username_clone = does_not_know_me.username.clone();
                 let my_id = does_not_know_me.id - 7;

@@ -102,7 +102,7 @@ mod tests {
         let read = PgPostWithAuthorRead::new(pool.clone());
 
         let body = "This post exists!";
-        repo.insert_new(&pool, 2, 1, body).await.unwrap();
+        repo.insert_new(&pool, 2, 1, body).await?;
 
         let actual = read.by_post_id(2).await;
         let expected = PostWithAuthor {
@@ -163,7 +163,7 @@ mod tests {
         // Should not retrieve grandchildren
         repo.insert_new(&pool, 2, 4, "I'm your grandchild, not your child") // ID 5
             .await?;
-        let first_child = read.by_post_id(4).await.unwrap();
+        let first_child = read.by_post_id(4).await?;
         assert!(matches!(
             read.by_parent(parent_id).await,
             Ok(v) if v.len() == 1 && v[0] == first_child
@@ -173,8 +173,8 @@ mod tests {
             .await?;
         repo.insert_new(&pool, 3, parent_id, "Third child here") // ID 7
             .await?;
-        let second_child = read.by_post_id(6).await.unwrap();
-        let third_child = read.by_post_id(7).await.unwrap();
+        let second_child = read.by_post_id(6).await?;
+        let third_child = read.by_post_id(7).await?;
         // Should be sorted in descending order of creation time
         let expected_children = vec![third_child, second_child, first_child];
         assert!(matches!(

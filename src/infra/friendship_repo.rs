@@ -158,8 +158,8 @@ mod tests {
         let repo = PgFriendshipRepo;
         seed_users(&pool).await?;
 
-        let ids1 = UserIdPair::new(1, 3).unwrap();
-        let ids2 = UserIdPair::new(2, 3).unwrap();
+        let ids1 = UserIdPair::new(1, 3)?;
+        let ids2 = UserIdPair::new(2, 3)?;
 
         let status = repo
             .get_status(&pool, &ids2)

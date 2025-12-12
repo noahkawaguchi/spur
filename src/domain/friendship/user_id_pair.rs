@@ -49,17 +49,19 @@ mod tests {
     // used internally.
 
     #[test]
-    fn reorders_out_of_order_ids() {
-        let ids = UserIdPair::new(52, 14).unwrap();
+    fn reorders_out_of_order_ids() -> Result<()> {
+        let ids = UserIdPair::new(52, 14)?;
         assert_eq!(ids.lesser(), 14);
         assert_eq!(ids.greater(), 52);
+        Ok(())
     }
 
     #[test]
-    fn keeps_already_ordered_ids() {
-        let ids = UserIdPair::new(4, 100).unwrap();
+    fn keeps_already_ordered_ids() -> Result<()> {
+        let ids = UserIdPair::new(4, 100)?;
         assert_eq!(ids.lesser(), 4);
         assert_eq!(ids.greater(), 100);
+        Ok(())
     }
 
     #[test]
@@ -69,19 +71,22 @@ mod tests {
     }
 
     #[test]
-    fn reports_position_of_provided_id() {
-        let ids = UserIdPair::new(88, 8).unwrap();
-        assert!(ids.is_lesser(8).unwrap());
-        assert!(!ids.is_lesser(88).unwrap());
+    fn reports_position_of_provided_id() -> Result<()> {
+        let ids = UserIdPair::new(88, 8)?;
+        assert!(ids.is_lesser(8)?);
+        assert!(!ids.is_lesser(88)?);
+        Ok(())
     }
 
     #[test]
-    fn refuses_to_report_position_of_irrelevant_id() {
-        let ids = UserIdPair::new(24, 99_991).unwrap();
+    fn refuses_to_report_position_of_irrelevant_id() -> Result<()> {
+        let ids = UserIdPair::new(24, 99_991)?;
         let result = ids.is_lesser(25);
 
         assert!(result.is_err_and(|e| e.to_string()
             == "Internal logic error: UserIdPair `is_lesser` \
                 was erroneously passed an irrelevant ID"));
+
+        Ok(())
     }
 }

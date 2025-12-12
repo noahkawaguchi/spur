@@ -48,7 +48,7 @@ mod tests {
             tokio_test,
         },
     };
-    use anyhow::Result;
+    use anyhow::{Result, anyhow};
     use axum::http::{Method, Request, header::CONTENT_TYPE};
 
     #[test]
@@ -89,9 +89,10 @@ mod tests {
                 .header(CONTENT_TYPE, "application/json")
                 .body(serialize_body(&payload)?)?;
 
-            let resp = ValidatedJson::<SignupRequest>::from_request(req, &())
-                .await
-                .unwrap_err();
+            let Err(resp) = ValidatedJson::<SignupRequest>::from_request(req, &()).await else {
+                return Err(anyhow!("unexpected Ok for invalid JSON"));
+            };
+
             let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
             let expected = ErrorResponse {
                 error: String::from(

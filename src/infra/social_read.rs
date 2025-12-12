@@ -118,19 +118,19 @@ mod tests {
         let repo = PgFriendshipRepo;
         let [u1, u2, _, _] = seed_users(&pool).await?;
 
-        let ids1 = UserIdPair::new(1, 3).unwrap();
-        let ids2 = UserIdPair::new(2, 3).unwrap();
+        let ids1 = UserIdPair::new(1, 3)?;
+        let ids2 = UserIdPair::new(2, 3)?;
 
         // No requests, no friends
         let requests = read
             .pending_requests(3)
             .await
-            .expect("failed to get empty requests");
+            .context("failed to get empty requests")?;
         assert!(requests.is_empty());
         let friends = read
             .friend_usernames(3)
             .await
-            .expect("failed to get empty friends");
+            .context("failed to get empty friends")?;
         assert!(friends.is_empty());
 
         // Two requests, no friends

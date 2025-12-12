@@ -116,7 +116,7 @@ mod tests {
             let got_by_id = repo
                 .get_by_id(
                     &pool,
-                    i32::try_from(i + 1).expect("failed to convert usize to i32"),
+                    i32::try_from(i + 1).context("failed to convert usize to i32")?,
                 )
                 .await
                 .context("failed to get user by ID")?

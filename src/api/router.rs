@@ -167,7 +167,7 @@ mod tests {
             }
 
             super::build(state)
-                .oneshot(req.body(Body::empty()).unwrap())
+                .oneshot(req.body(Body::empty())?)
                 .await
                 .map_err(Into::into)
         }
@@ -254,7 +254,7 @@ mod tests {
             }
 
             super::build(state)
-                .oneshot(req.body(body).unwrap())
+                .oneshot(req.body(body)?)
                 .await
                 .map_err(Into::into)
         }
