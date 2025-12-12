@@ -80,8 +80,11 @@ migration name:
 ####################################################################################################
 
 # Run tests using an ephemeral Postgres container
-test: temp-db-start && temp-db-stop
-    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo test --workspace --all-targets
+test: temp-db-start
+    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo test --workspace --all-targets; \
+    status=$?; \
+    just temp-db-stop; \
+    exit $status
 
 # Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
 coverage: temp-db-start && temp-db-stop

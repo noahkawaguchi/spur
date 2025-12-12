@@ -178,7 +178,7 @@ mod tests {
             tokio_test,
         },
     };
-    use anyhow::anyhow;
+    use anyhow::{Result, anyhow};
     use axum::{
         body::Body,
         http::{Method, Request, header::CONTENT_TYPE},
@@ -190,7 +190,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn reports_successfully_becoming_friends() {
+        fn reports_successfully_becoming_friends() -> Result<()> {
             tokio_test(async {
                 let requester_id = 42;
                 let recipient_username = "jonathan_johnson";
@@ -210,30 +210,31 @@ mod tests {
 
                 let req_body = serialize_body(&AddFriendRequest {
                     recipient_username: String::from(recipient_username),
-                });
+                })?;
 
                 let mut req = Request::builder()
                     .method(Method::POST)
                     .uri("/")
                     .header(CONTENT_TYPE, "application/json")
-                    .body(req_body)
-                    .unwrap();
+                    .body(req_body)?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::OK);
 
-                let resp_body = deserialize_body::<SuccessResponse>(resp).await;
+                let resp_body = deserialize_body::<SuccessResponse>(resp).await?;
                 let expected = SuccessResponse {
                     message: format!("You are now friends with {recipient_username}"),
                 };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn reports_successfully_creating_a_friend_request() {
+        fn reports_successfully_creating_a_friend_request() -> Result<()> {
             tokio_test(async {
                 let requester_id = 43;
                 let recipient_username = "jane_sane";
@@ -253,30 +254,31 @@ mod tests {
 
                 let req_body = serialize_body(&AddFriendRequest {
                     recipient_username: String::from(recipient_username),
-                });
+                })?;
 
                 let mut req = Request::builder()
                     .method(Method::POST)
                     .uri("/")
                     .header(CONTENT_TYPE, "application/json")
-                    .body(req_body)
-                    .unwrap();
+                    .body(req_body)?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::CREATED);
 
-                let resp_body = deserialize_body::<SuccessResponse>(resp).await;
+                let resp_body = deserialize_body::<SuccessResponse>(resp).await?;
                 let expected = SuccessResponse {
                     message: format!("Created a friend request to {recipient_username}"),
                 };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn translates_errors() {
+        fn translates_errors() -> Result<()> {
             tokio_test(async {
                 let requester_id = 44;
                 let recipient_username = "malcolm_holmes";
@@ -296,26 +298,27 @@ mod tests {
 
                 let req_body = serialize_body(&AddFriendRequest {
                     recipient_username: String::from(recipient_username),
-                });
+                })?;
 
                 let mut req = Request::builder()
                     .method(Method::POST)
                     .uri("/")
                     .header(CONTENT_TYPE, "application/json")
-                    .body(req_body)
-                    .unwrap();
+                    .body(req_body)?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::CONFLICT);
 
-                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
                 let expected = ErrorResponse {
                     error: String::from("Pending friend request to this user already exists"),
                 };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
     }
 
@@ -323,7 +326,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn lists_retrieved_usernames() {
+        fn lists_retrieved_usernames() -> Result<()> {
             tokio_test(async {
                 let requester_id = 44;
                 let friends = vec![
@@ -347,21 +350,22 @@ mod tests {
                 let mut req = Request::builder()
                     .method(Method::GET)
                     .uri("/")
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::OK);
 
-                let resp_body = deserialize_body::<Vec<String>>(resp).await;
+                let resp_body = deserialize_body::<Vec<String>>(resp).await?;
                 assert_eq!(friends, resp_body);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn translates_errors() {
+        fn translates_errors() -> Result<()> {
             tokio_test(async {
                 let requester_id = 450;
 
@@ -379,18 +383,19 @@ mod tests {
                 let mut req = Request::builder()
                     .method(Method::GET)
                     .uri("/")
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 
-                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
                 let expected = ErrorResponse { error: String::from("Not found") };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
     }
 
@@ -398,7 +403,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn lists_retrieved_usernames() {
+        fn lists_retrieved_usernames() -> Result<()> {
             tokio_test(async {
                 let requester_id = 5;
                 let requesters = vec![
@@ -422,21 +427,22 @@ mod tests {
                 let mut req = Request::builder()
                     .method(Method::GET)
                     .uri("/requests")
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::OK);
 
-                let resp_body = deserialize_body::<Vec<String>>(resp).await;
+                let resp_body = deserialize_body::<Vec<String>>(resp).await?;
                 assert_eq!(requesters, resp_body);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn translates_errors() {
+        fn translates_errors() -> Result<()> {
             tokio_test(async {
                 let requester_id = 56;
 
@@ -454,18 +460,19 @@ mod tests {
                 let mut req = Request::builder()
                     .method(Method::GET)
                     .uri("/requests")
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
 
-                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
                 let expected = ErrorResponse { error: String::from("internal server error") };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
     }
 
@@ -473,10 +480,10 @@ mod tests {
         use super::*;
 
         #[test]
-        fn lists_friend_posts() {
+        fn lists_friend_posts() -> Result<()> {
             tokio_test(async {
                 let requester_id = 557;
-                let posts = post_with_author::all3();
+                let posts = post_with_author::all3()?;
                 let posts_clone = posts.clone();
 
                 let mut mock_social_read = MockSocialRead::new();
@@ -493,21 +500,22 @@ mod tests {
                 let mut req = Request::builder()
                     .method(Method::GET)
                     .uri("/posts")
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::OK);
 
-                let resp_body = deserialize_body::<Vec<PostResponse>>(resp).await;
+                let resp_body = deserialize_body::<Vec<PostResponse>>(resp).await?;
                 assert_eq!(posts.map_into::<Vec<PostResponse>>(), resp_body);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn translates_errors() {
+        fn translates_errors() -> Result<()> {
             tokio_test(async {
                 let requester_id = 915;
 
@@ -525,18 +533,19 @@ mod tests {
                 let mut req = Request::builder()
                     .method(Method::GET)
                     .uri("/posts")
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 
-                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
                 let expected = ErrorResponse { error: String::from("Not found") };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
     }
 }

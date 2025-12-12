@@ -65,14 +65,14 @@ mod tests {
         models::post::Post,
         test_utils::{dummy_data, fake_db::FakeUow, mock_repos::MockPostRepo, tokio_test},
     };
-    use anyhow::anyhow;
+    use anyhow::{Context, Result, anyhow};
     use chrono::Utc;
 
     async fn run_unacceptable_parent_test(
         author_id: i32,
         parent_post: Option<Post>,
         expected_post_error: PostError,
-    ) {
+    ) -> Result<()> {
         let parent_post_id = parent_post.as_ref().map_or(543, |post| post.id);
 
         let mock_repo = MockPostRepo {
@@ -83,69 +83,75 @@ mod tests {
             ..Default::default()
         };
 
-        let (fake_uow, probe) = FakeUow::with_probe();
+        let (fake_uow, probe) = FakeUow::with_probe()?;
         let result = PostDomainSvc::new(fake_uow, mock_repo)
             .create_new(author_id, parent_post_id, "My parent is unacceptable")
             .await;
 
         assert!(matches!(result, Err(e) if e == expected_post_error));
         assert!(!probe.commit_called());
+
+        Ok(())
     }
 
     #[test]
-    fn disallows_replying_to_a_nonexistent_post() {
-        tokio_test(async {
-            run_unacceptable_parent_test(20, None, PostError::NotFound).await;
-        });
+    fn disallows_replying_to_a_nonexistent_post() -> Result<()> {
+        tokio_test(async { run_unacceptable_parent_test(20, None, PostError::NotFound).await })
     }
 
     #[test]
-    fn disallows_replying_to_a_deleted_post() {
+    fn disallows_replying_to_a_deleted_post() -> Result<()> {
         tokio_test(async {
-            let mut deleted_parent = dummy_data::post::number1();
+            let mut deleted_parent = dummy_data::post::number1()?;
             deleted_parent.deleted_at = Some(Utc::now());
+
             run_unacceptable_parent_test(
                 deleted_parent.author_id.unwrap_or(41) + 1,
                 Some(deleted_parent),
                 PostError::DeletedParent,
             )
-            .await;
-        });
+            .await
+        })
     }
 
     #[test]
-    fn disallows_replying_to_an_archived_post() {
+    fn disallows_replying_to_an_archived_post() -> Result<()> {
         tokio_test(async {
-            let mut archived_parent = dummy_data::post::number1();
+            let mut archived_parent = dummy_data::post::number1()?;
             archived_parent.archived_at = Some(Utc::now());
+
             run_unacceptable_parent_test(
                 archived_parent.author_id.unwrap_or(43) - 1,
                 Some(archived_parent),
                 PostError::ArchivedParent,
             )
-            .await;
-        });
+            .await
+        })
     }
 
     #[test]
-    fn disallows_replying_to_ones_own_post() {
+    fn disallows_replying_to_ones_own_post() -> Result<()> {
         tokio_test(async {
-            let self_reply_parent = dummy_data::post::number1();
+            let self_reply_parent = dummy_data::post::number1()?;
+
             run_unacceptable_parent_test(
-                self_reply_parent.author_id.unwrap(),
+                self_reply_parent
+                    .author_id
+                    .context("unexpected None author ID")?,
                 Some(self_reply_parent),
                 PostError::SelfReply,
             )
-            .await;
-        });
+            .await
+        })
     }
 
     #[test]
-    fn creates_post_and_commits_if_all_conditions_are_met() {
+    fn creates_post_and_commits_if_all_conditions_are_met() -> Result<()> {
         tokio_test(async {
-            let parent_post = dummy_data::post::number1();
+            let parent_post = dummy_data::post::number1()?;
             let parent_post_id = parent_post.id;
-            let new_post_author_id = parent_post.author_id.unwrap() + 15;
+            let new_post_author_id =
+                parent_post.author_id.context("unexpected None author ID")? + 15;
             let new_post_body = "This is a new post that should work";
 
             let mock_repo = MockPostRepo {
@@ -163,18 +169,20 @@ mod tests {
                 )),
             };
 
-            let (fake_uow, probe) = FakeUow::with_probe();
+            let (fake_uow, probe) = FakeUow::with_probe()?;
             let result = PostDomainSvc::new(fake_uow, mock_repo)
                 .create_new(new_post_author_id, parent_post_id, new_post_body)
                 .await;
 
             assert!(matches!(result, Ok(())));
             assert!(probe.commit_called());
-        });
+
+            Ok(())
+        })
     }
 
     #[test]
-    fn translates_repo_errors() {
+    fn translates_repo_errors() -> Result<()> {
         tokio_test(async {
             let author_ids = [1, 2, 3, 4, 5];
             let parent_ids = [10, 20, 30, 40, 50];
@@ -219,9 +227,9 @@ mod tests {
                         // Alternating between the first and second dummy posts because the third is
                         // marked as deleted, which correctly causes a different error
                         Ok(Some(if i & 1 == 1 {
-                            dummy_data::post::number1()
+                            dummy_data::post::number1()?
                         } else {
-                            dummy_data::post::number2()
+                            dummy_data::post::number2()?
                         }))
                     })),
                     insert_new: Some(Box::new(
@@ -234,7 +242,7 @@ mod tests {
                     )),
                 };
 
-                let (fake_uow, probe) = FakeUow::with_probe();
+                let (fake_uow, probe) = FakeUow::with_probe()?;
                 let result = PostDomainSvc::new(fake_uow, mock_post_repo)
                     .create_new(author_ids[i], parent_ids[i], post_bodies[i])
                     .await;
@@ -242,6 +250,8 @@ mod tests {
                 assert!(matches!(result, Err(e) if e == post_error));
                 assert!(!probe.commit_called());
             }
-        });
+
+            Ok(())
+        })
     }
 }

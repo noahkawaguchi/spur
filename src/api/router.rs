@@ -138,6 +138,7 @@ mod tests {
             tokio_test,
         },
     };
+    use anyhow::Result;
     use axum::{
         body::Body,
         http::{
@@ -154,30 +155,37 @@ mod tests {
     mod auth_requirement {
         use super::*;
 
-        async fn send_req(state: AppState, uri: &str, token: Option<&str>) -> Response<Body> {
+        async fn send_req(
+            state: AppState,
+            uri: &str,
+            token: Option<&str>,
+        ) -> Result<Response<Body>> {
             let mut req = Request::builder().uri(uri).method(Method::GET);
+
             if let Some(tok) = token {
                 req = req.header(AUTHORIZATION, format!("Bearer {tok}"));
             }
+
             super::build(state)
-                .oneshot(req.body(Body::empty()).unwrap())
+                .oneshot(req.body(Body::empty())?)
                 .await
-                .unwrap()
+                .map_err(Into::into)
         }
 
         #[test]
-        fn does_not_require_auth_for_public_route() {
+        fn does_not_require_auth_for_public_route() -> Result<()> {
             tokio_test(async {
                 // Auth should not be accessed
-                let resp = send_req(AppState::default(), "/ping", None).await;
+                let resp = send_req(AppState::default(), "/ping", None).await?;
                 assert_eq!(StatusCode::OK, resp.status());
-                let resp_body = resp_into_body_text(resp).await;
+                let resp_body = resp_into_body_text(resp).await?;
                 assert_eq!("pong!\n", resp_body);
-            });
+                Ok(())
+            })
         }
 
         #[test]
-        fn allows_access_to_protected_route_if_authenticated() {
+        fn allows_access_to_protected_route_if_authenticated() -> Result<()> {
             tokio_test(async {
                 let mut mock_auth = MockAuthenticator::new();
                 mock_auth
@@ -188,16 +196,18 @@ mod tests {
 
                 let state = AppState { auth: Arc::new(mock_auth), ..Default::default() };
 
-                let resp = send_req(state, "/auth/check", Some(TEST_TOKEN)).await;
+                let resp = send_req(state, "/auth/check", Some(TEST_TOKEN)).await?;
                 assert_eq!(StatusCode::OK, resp.status());
 
-                let resp_body = resp_into_body_text(resp).await;
+                let resp_body = resp_into_body_text(resp).await?;
                 assert_eq!("Your token is valid\n", resp_body);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn disallows_access_to_protected_route_if_unauthenticated() {
+        fn disallows_access_to_protected_route_if_unauthenticated() -> Result<()> {
             tokio_test(async {
                 let mut mock_auth = MockAuthenticator::new();
                 mock_auth
@@ -208,15 +218,19 @@ mod tests {
 
                 let state = AppState { auth: Arc::new(mock_auth), ..Default::default() };
 
-                let resp = send_req(state, "/auth/check", Some(TEST_TOKEN)).await;
+                let resp = send_req(state, "/auth/check", Some(TEST_TOKEN)).await?;
+
                 assert_eq!(StatusCode::UNAUTHORIZED, resp.status());
 
-                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
                 let expected = ErrorResponse {
                     error: String::from("Expired or invalid token. Try logging in again."),
                 };
+
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
     }
 
@@ -229,22 +243,24 @@ mod tests {
             uri: &str,
             token: Option<&str>,
             body: Body,
-        ) -> Response<Body> {
+        ) -> Result<Response<Body>> {
             let mut req = Request::builder().uri(uri).method(&method);
+
             if let Some(tok) = token {
                 req = req.header(AUTHORIZATION, format!("Bearer {tok}"));
             }
             if method == Method::POST {
                 req = req.header(CONTENT_TYPE, "application/json");
             }
+
             super::build(state)
-                .oneshot(req.body(body).unwrap())
+                .oneshot(req.body(body)?)
                 .await
-                .unwrap()
+                .map_err(Into::into)
         }
 
         #[test]
-        fn passes_state_to_handler_for_public_endpoint() {
+        fn passes_state_to_handler_for_public_endpoint() -> Result<()> {
             tokio_test(async {
                 let payload = dummy_login_request();
 
@@ -260,19 +276,21 @@ mod tests {
                     Method::POST,
                     "/auth/login",
                     None,
-                    serialize_body(&payload),
+                    serialize_body(&payload)?,
                 )
-                .await;
+                .await?;
 
                 assert_eq!(StatusCode::OK, resp.status());
-                let resp_body = deserialize_body::<TokenResponse>(resp).await;
+                let resp_body = deserialize_body::<TokenResponse>(resp).await?;
                 let expected = TokenResponse { token: TEST_TOKEN.to_string() };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn passes_state_to_handler_for_protected_endpoint() {
+        fn passes_state_to_handler_for_protected_endpoint() -> Result<()> {
             tokio_test(async {
                 let user_id = 615;
                 let requester_usernames = vec![
@@ -308,12 +326,14 @@ mod tests {
                     Some(TEST_TOKEN),
                     Body::empty(),
                 )
-                .await;
+                .await?;
 
                 assert_eq!(StatusCode::OK, resp.status());
-                let resp_body = deserialize_body::<Vec<String>>(resp).await;
+                let resp_body = deserialize_body::<Vec<String>>(resp).await?;
                 assert_eq!(requester_usernames, resp_body);
-            });
+
+                Ok(())
+            })
         }
     }
 }

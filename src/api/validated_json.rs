@@ -48,10 +48,11 @@ mod tests {
             tokio_test,
         },
     };
+    use anyhow::{Result, anyhow};
     use axum::http::{Method, Request, header::CONTENT_TYPE};
 
     #[test]
-    fn allows_valid_json_values() {
+    fn allows_valid_json_values() -> Result<()> {
         tokio_test(async {
             let payload = SignupRequest {
                 name: String::from("Sam Snead"),
@@ -64,16 +65,16 @@ mod tests {
                 .uri("/anything")
                 .method(Method::POST)
                 .header(CONTENT_TYPE, "application/json")
-                .body(serialize_body(&payload))
-                .unwrap();
+                .body(serialize_body(&payload)?)?;
 
             let result = ValidatedJson::<SignupRequest>::from_request(req, &()).await;
             assert!(matches!(result, Ok(ValidatedJson(validated)) if validated == payload));
-        });
+            Ok(())
+        })
     }
 
     #[test]
-    fn disallows_invalid_json_values() {
+    fn disallows_invalid_json_values() -> Result<()> {
         tokio_test(async {
             let payload = SignupRequest {
                 name: String::from("Sam Snead"),
@@ -86,13 +87,13 @@ mod tests {
                 .uri("/anything")
                 .method(Method::POST)
                 .header(CONTENT_TYPE, "application/json")
-                .body(serialize_body(&payload))
-                .unwrap();
+                .body(serialize_body(&payload)?)?;
 
-            let resp = ValidatedJson::<SignupRequest>::from_request(req, &())
-                .await
-                .unwrap_err();
-            let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+            let Err(resp) = ValidatedJson::<SignupRequest>::from_request(req, &()).await else {
+                return Err(anyhow!("unexpected Ok for invalid JSON"));
+            };
+
+            let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
             let expected = ErrorResponse {
                 error: String::from(
                     "username: username may only contain English letters, \
@@ -101,6 +102,8 @@ mod tests {
             };
 
             assert_eq!(expected, resp_body);
-        });
+
+            Ok(())
+        })
     }
 }

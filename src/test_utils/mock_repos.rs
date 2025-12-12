@@ -10,6 +10,7 @@ use crate::{
         user::{NewUser, User},
     },
 };
+use anyhow::Context;
 use sqlx::PgExecutor;
 
 #[allow(clippy::type_complexity)]
@@ -29,28 +30,40 @@ impl UserRepo for MockUserRepo {
         _exec: impl PgExecutor<'_>,
         new_user: &NewUser,
     ) -> Result<User, RepoError> {
-        (self.insert_new.as_ref().unwrap())(new_user)
+        (self
+            .insert_new
+            .as_ref()
+            .context("mock user repo insert new")?)(new_user)
     }
     async fn get_by_id(
         &self,
         _exec: impl PgExecutor<'_>,
         id: i32,
     ) -> Result<Option<User>, RepoError> {
-        (self.get_by_id.as_ref().unwrap())(id)
+        (self
+            .get_by_id
+            .as_ref()
+            .context("mock user repo get by ID")?)(id)
     }
     async fn get_by_email(
         &self,
         _exec: impl PgExecutor<'_>,
         email: &str,
     ) -> Result<Option<User>, RepoError> {
-        (self.get_by_email.as_ref().unwrap())(email)
+        (self
+            .get_by_email
+            .as_ref()
+            .context("mock user repo get by email")?)(email)
     }
     async fn get_by_username_exclusive(
         &self,
         _exec: impl PgExecutor<'_>,
         username: &str,
     ) -> Result<Option<User>, RepoError> {
-        (self.get_by_username_exclusive.as_ref().unwrap())(username)
+        (self
+            .get_by_username_exclusive
+            .as_ref()
+            .context("mock user repo get by username exclusive")?)(username)
     }
 }
 
@@ -71,7 +84,10 @@ impl FriendshipRepo for MockFriendshipRepo {
         ids: &UserIdPair,
         requester_id: i32,
     ) -> Result<(), RepoError> {
-        (self.new_request.as_ref().unwrap())(ids, requester_id)
+        (self
+            .new_request
+            .as_ref()
+            .context("mock friendship repo new request")?)(ids, requester_id)
     }
 
     async fn accept_request(
@@ -79,7 +95,10 @@ impl FriendshipRepo for MockFriendshipRepo {
         _exec: impl PgExecutor<'_>,
         ids: &UserIdPair,
     ) -> Result<(), RepoError> {
-        (self.accept_request.as_ref().unwrap())(ids)
+        (self
+            .accept_request
+            .as_ref()
+            .context("mock friendship repo accept request")?)(ids)
     }
 
     async fn get_status(
@@ -87,7 +106,10 @@ impl FriendshipRepo for MockFriendshipRepo {
         _exec: impl PgExecutor<'_>,
         ids: &UserIdPair,
     ) -> Result<FriendshipStatus, RepoError> {
-        (self.get_status.as_ref().unwrap())(ids)
+        (self
+            .get_status
+            .as_ref()
+            .context("mock friendship repo get status")?)(ids)
     }
 }
 
@@ -108,7 +130,10 @@ impl PostRepo for MockPostRepo {
         parent_id: i32,
         body: &str,
     ) -> Result<(), RepoError> {
-        (self.insert_new.as_ref().unwrap())(author_id, parent_id, body)
+        (self
+            .insert_new
+            .as_ref()
+            .context("mock post repo insert new")?)(author_id, parent_id, body)
     }
 
     async fn get_by_id_exclusive(
@@ -116,6 +141,9 @@ impl PostRepo for MockPostRepo {
         _exec: impl PgExecutor<'_>,
         id: i32,
     ) -> Result<Option<Post>, RepoError> {
-        (self.get_by_id_exclusive.as_ref().unwrap())(id)
+        (self
+            .get_by_id_exclusive
+            .as_ref()
+            .context("mock post repo get by ID exclusive")?)(id)
     }
 }
