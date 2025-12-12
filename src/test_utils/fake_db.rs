@@ -2,6 +2,7 @@ use crate::{
     app_services::uow::{Tx, UnitOfWork},
     domain::RepoError,
 };
+use anyhow::{Context, Result};
 use sqlx::{PgExecutor, PgPool, postgres::PgPoolOptions};
 use std::{
     sync::{
@@ -13,13 +14,13 @@ use std::{
 
 /// Creates a fake `PgPool` for tests in which one is required but never used. Simpler than mocking
 /// a unit of work if transactions will not be used in the test.
-pub fn fake_pool() -> PgPool {
+pub fn fake_pool() -> Result<PgPool> {
     PgPoolOptions::new()
         // Fail fast if something attempts to actually hit the DB
         .acquire_timeout(Duration::from_millis(50))
         // Must look like a URL
         .connect_lazy("postgres://user:pass@127.0.0.1:1/not_real")
-        .expect("lazy pool should always build")
+        .context("lazy pool should always build")
 }
 
 /// Probe for checking if a fake transaction was committed.
@@ -43,10 +44,10 @@ pub struct FakeUow {
 }
 
 impl FakeUow {
-    pub fn with_probe() -> (Self, CommitProbe) {
+    pub fn with_probe() -> Result<(Self, CommitProbe)> {
         let probe = CommitProbe(Arc::new(AtomicBool::new(false)));
-        let fake_tx = FakeTx { pool: fake_pool(), probe: probe.clone() };
-        (Self { fake_tx }, probe)
+        let fake_tx = FakeTx { pool: fake_pool()?, probe: probe.clone() };
+        Ok((Self { fake_tx }, probe))
     }
 }
 
@@ -56,12 +57,15 @@ impl Tx for FakeTx {
         self.probe.0.store(true, SeqCst);
         Ok(())
     }
+
     fn exec(&mut self) -> impl PgExecutor<'_> { &self.pool }
 }
 
 #[async_trait::async_trait]
 impl UnitOfWork for FakeUow {
     type Tx<'c> = FakeTx;
+
     async fn begin_uow<'c>(&self) -> Result<Self::Tx<'c>, RepoError> { Ok(self.fake_tx.clone()) }
+
     fn single_exec(&self) -> impl PgExecutor<'_> { &self.fake_tx.pool }
 }

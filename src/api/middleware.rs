@@ -38,6 +38,7 @@ mod tests {
             tokio_test,
         },
     };
+    use anyhow::Result;
     use axum::{
         Extension, Json, Router,
         body::Body,
@@ -67,12 +68,12 @@ mod tests {
     async fn send_req(
         header_val: Option<&str>,
         mock_auth: impl Authenticator + 'static,
-    ) -> Response {
+    ) -> Result<Response> {
         let mut req = Request::builder().method(Method::GET).uri(ID_ROUTE);
         if let Some(bearer_tok) = header_val {
             req = req.header(AUTHORIZATION, bearer_tok);
         }
-        let req_body = req.body(Body::empty()).unwrap();
+        let req_body = req.body(Body::empty())?;
 
         Router::new()
             .route(ID_ROUTE, get(what_is_my_id))
@@ -82,11 +83,11 @@ mod tests {
             ))
             .oneshot(req_body)
             .await
-            .unwrap()
+            .map_err(Into::into)
     }
 
     #[test]
-    fn passes_requester_id_for_valid_token() {
+    fn passes_requester_id_for_valid_token() -> Result<()> {
         tokio_test(async {
             let requester_id = 654;
             let token = "This token is valid!!1!";
@@ -98,46 +99,51 @@ mod tests {
                 .once()
                 .return_once(move |_| Ok(requester_id));
 
-            let resp = send_req(Some(&format!("Bearer {token}")), mock_auth).await;
+            let resp = send_req(Some(&format!("Bearer {token}")), mock_auth).await?;
             assert_eq!(StatusCode::OK, resp.status());
 
-            let resp_body = deserialize_body::<RequesterId>(resp).await;
+            let resp_body = deserialize_body::<RequesterId>(resp).await?;
             assert_eq!(RequesterId { requester_id }, resp_body);
-        });
+
+            Ok(())
+        })
     }
 
     #[test]
-    fn disallows_missing_auth_header() {
+    fn disallows_missing_auth_header() -> Result<()> {
         tokio_test(async {
-            let resp = send_req(None, MockAuthenticator::new()).await;
+            let resp = send_req(None, MockAuthenticator::new()).await?;
             assert_eq!(StatusCode::BAD_REQUEST, resp.status());
-            let body = resp_into_body_text(resp).await;
+            let body = resp_into_body_text(resp).await?;
             assert_eq!("Header of type `authorization` was missing", body);
-        });
+            Ok(())
+        })
     }
 
     #[test]
-    fn disallows_empty_auth_header() {
+    fn disallows_empty_auth_header() -> Result<()> {
         tokio_test(async {
-            let resp = send_req(Some(""), MockAuthenticator::new()).await;
+            let resp = send_req(Some(""), MockAuthenticator::new()).await?;
             assert_eq!(StatusCode::BAD_REQUEST, resp.status());
-            let body = resp_into_body_text(resp).await;
+            let body = resp_into_body_text(resp).await?;
             assert_eq!("invalid HTTP header (authorization)", body);
-        });
+            Ok(())
+        })
     }
 
     #[test]
-    fn disallows_bearer_with_no_token() {
+    fn disallows_bearer_with_no_token() -> Result<()> {
         tokio_test(async {
-            let resp = send_req(Some("Bearer"), MockAuthenticator::new()).await;
+            let resp = send_req(Some("Bearer"), MockAuthenticator::new()).await?;
             assert_eq!(StatusCode::BAD_REQUEST, resp.status());
-            let body = resp_into_body_text(resp).await;
+            let body = resp_into_body_text(resp).await?;
             assert_eq!("invalid HTTP header (authorization)", body);
-        });
+            Ok(())
+        })
     }
 
     #[test]
-    fn disallows_invalid_token() {
+    fn disallows_invalid_token() -> Result<()> {
         tokio_test(async {
             let token = "nonsense";
 
@@ -148,14 +154,16 @@ mod tests {
                 .once()
                 .return_once(|_| Err(AuthError::TokenValidation));
 
-            let resp = send_req(Some(&format!("Bearer {token}")), mock_auth).await;
+            let resp = send_req(Some(&format!("Bearer {token}")), mock_auth).await?;
             assert_eq!(StatusCode::UNAUTHORIZED, resp.status());
 
-            let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+            let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
             let expected = ErrorResponse {
                 error: String::from("Expired or invalid token. Try logging in again."),
             };
             assert_eq!(expected, resp_body);
-        });
+
+            Ok(())
+        })
     }
 }

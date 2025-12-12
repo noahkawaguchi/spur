@@ -5,17 +5,13 @@ use crate::{
     },
     infra::{friendship_repo::PgFriendshipRepo, user_repo::PgUserRepo},
     models::user::NewUser,
-    test_utils::temp_db::with_test_pool,
 };
+use anyhow::{Context, Result};
 use sqlx::PgPool;
 
 /// Inserts four new users into the test database and returns them as they were inserted.
 /// They will automatically be given IDs 1, 2, 3, and 4 if there are no other existing users.
-///
-/// # Panics
-///
-/// Panics if any of the insertions fail. This function should only be used in testing.
-pub async fn seed_users(pool: &PgPool) -> [NewUser; 4] {
+pub async fn seed_users(pool: &PgPool) -> Result<[NewUser; 4]> {
     let user_repo = PgUserRepo;
 
     let drake = NewUser {
@@ -49,24 +45,24 @@ pub async fn seed_users(pool: &PgPool) -> [NewUser; 4] {
     user_repo
         .insert_new(pool, &drake)
         .await
-        .expect("failed to insert Drake");
+        .context("failed to insert Drake")?;
 
     user_repo
         .insert_new(pool, &eunice)
         .await
-        .expect("failed to insert Eunice");
+        .context("failed to insert Eunice")?;
 
     user_repo
         .insert_new(pool, &felipe)
         .await
-        .expect("failed to insert Felipe");
+        .context("failed to insert Felipe")?;
 
     user_repo
         .insert_new(pool, &gillian)
         .await
-        .expect("failed to insert Gillian");
+        .context("failed to insert Gillian")?;
 
-    [drake, eunice, felipe, gillian]
+    Ok([drake, eunice, felipe, gillian])
 }
 
 /// Inserts friend requests and friendships into the test database, assuming users with IDs 1, 2,
@@ -87,29 +83,23 @@ pub async fn seed_users(pool: &PgPool) -> [NewUser; 4] {
 /// - User 2 => friends with 3 and 4
 /// - User 3 => friends with 2
 /// - User 4 => friends with 2
-///
-/// # Panics
-///
-/// Panics if any of the insertions fail. This function should only be used in testing.
-pub async fn seed_friends(pool: &PgPool) {
-    let two_and_three = UserIdPair::new(2, 3).unwrap();
-    let two_and_four = UserIdPair::new(4, 2).unwrap();
+pub async fn seed_friends(pool: &PgPool) -> Result<()> {
+    let two_and_three = UserIdPair::new(2, 3)?;
+    let two_and_four = UserIdPair::new(4, 2)?;
 
     let repo = PgFriendshipRepo;
 
     // Confirmed requests
-    repo.new_request(pool, &two_and_three, 2).await.unwrap();
-    repo.new_request(pool, &two_and_four, 4).await.unwrap();
-    repo.accept_request(pool, &two_and_three).await.unwrap();
-    repo.accept_request(pool, &two_and_four).await.unwrap();
+    repo.new_request(pool, &two_and_three, 2).await?;
+    repo.new_request(pool, &two_and_four, 4).await?;
+    repo.accept_request(pool, &two_and_three).await?;
+    repo.accept_request(pool, &two_and_four).await?;
 
     // Unconfirmed requests
-    repo.new_request(pool, &UserIdPair::new(1, 3).unwrap(), 3)
-        .await
-        .unwrap();
-    repo.new_request(pool, &UserIdPair::new(4, 3).unwrap(), 3)
-        .await
-        .unwrap();
+    repo.new_request(pool, &UserIdPair::new(1, 3)?, 3).await?;
+    repo.new_request(pool, &UserIdPair::new(4, 3)?, 3).await?;
+
+    Ok(())
 }
 
 /// Inserts the "root" of the tree of posts, the only post allowed to have a NULL parent post. This
@@ -117,28 +107,17 @@ pub async fn seed_friends(pool: &PgPool) {
 /// inserted in the normal fashion where a non-NULL parent post ID is required.
 ///
 /// *Assumes a user with ID 1 already exists,* who will be the author of this post.
-///
-/// # Panics
-///
-/// Panics if the insertion fails for any reason.
-pub async fn seed_root_post(pool: &sqlx::PgPool) {
+pub async fn seed_root_post(pool: &sqlx::PgPool) -> Result<()> {
     sqlx::query!("INSERT INTO post (author_id, parent_id, body) VALUES (1, NULL, 'root post')")
         .execute(pool)
         .await
-        .expect("failed to insert root post");
+        .context("failed to insert root post")
+        .map(|_| ())
 }
 
-/// Runs the provided test on an ephemeral test database seeded with users (IDs 1, 2, 3, and 4) and
-/// the root post (by user 1).
-pub async fn with_seeded_users_and_root_post<F, Fut>(test: F)
-where
-    F: FnOnce(PgPool, [NewUser; 4]) -> Fut,
-    Fut: std::future::Future<Output = ()>,
-{
-    with_test_pool(|pool| async move {
-        let new_users = seed_users(&pool).await;
-        seed_root_post(&pool).await;
-        test(pool, new_users).await;
-    })
-    .await;
+/// Seeds a test database with users (IDs 1, 2, 3, and 4) and the root post (by user 1).
+pub async fn seed_users_and_root_post(pool: &PgPool) -> Result<[NewUser; 4]> {
+    let new_users = seed_users(&pool).await?;
+    seed_root_post(&pool).await?;
+    Ok(new_users)
 }

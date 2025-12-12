@@ -83,18 +83,19 @@ mod tests {
         mock_repos::{MockFriendshipRepo, MockUserRepo},
         tokio_test,
     };
+    use anyhow::{Context, Result};
 
     mod add_friend {
         use super::*;
 
         #[test]
-        fn disallows_sending_a_friend_request_to_a_friend() {
+        fn disallows_sending_a_friend_request_to_a_friend() -> Result<()> {
             tokio_test(async {
                 let my_friend = dummy_data::user::number1();
                 let my_friend_username_clone = my_friend.username.clone();
                 let my_friend_clone = my_friend.clone();
                 let my_id = my_friend.id - 1;
-                let ids = UserIdPair::new(my_id, my_friend.id).unwrap();
+                let ids = UserIdPair::new(my_id, my_friend.id)?;
 
                 let mock_user_repo = MockUserRepo {
                     get_by_username_exclusive: Some(Box::new(move |passed_username| {
@@ -112,7 +113,7 @@ mod tests {
                     ..Default::default()
                 };
 
-                let (fake_uow, probe) = FakeUow::with_probe();
+                let (fake_uow, probe) = FakeUow::with_probe()?;
 
                 let friendship_svc = MutateFriendshipByUsernameSvc::new(
                     fake_uow,
@@ -125,17 +126,19 @@ mod tests {
 
                 assert!(matches!(result, Err(FriendshipError::AlreadyFriends)));
                 assert!(probe.commit_called());
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn disallows_duplicate_friend_requests() {
+        fn disallows_duplicate_friend_requests() -> Result<()> {
             tokio_test(async {
                 let desired_friend = dummy_data::user::number2();
                 let desired_friend_clone = desired_friend.clone();
                 let desired_friend_username_clone = desired_friend.username.clone();
                 let my_id = desired_friend.id + 3;
-                let ids = UserIdPair::new(my_id, desired_friend.id).unwrap();
+                let ids = UserIdPair::new(my_id, desired_friend.id)?;
 
                 let mock_user_repo = MockUserRepo {
                     get_by_username_exclusive: Some(Box::new(move |passed_username| {
@@ -153,7 +156,7 @@ mod tests {
                     ..Default::default()
                 };
 
-                let (fake_uow, probe) = FakeUow::with_probe();
+                let (fake_uow, probe) = FakeUow::with_probe()?;
 
                 let friendship_svc = MutateFriendshipByUsernameSvc::new(
                     fake_uow,
@@ -166,17 +169,19 @@ mod tests {
 
                 assert!(matches!(result, Err(FriendshipError::AlreadyRequested)));
                 assert!(probe.commit_called());
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn accepts_a_friend_request_in_the_opposite_direction() {
+        fn accepts_a_friend_request_in_the_opposite_direction() -> Result<()> {
             tokio_test(async {
                 let added_me = dummy_data::user::number3();
                 let added_me_clone = added_me.clone();
                 let added_me_username_clone = added_me.username.clone();
                 let my_id = added_me.id + 100;
-                let ids = UserIdPair::new(my_id, added_me.id).unwrap();
+                let ids = UserIdPair::new(my_id, added_me.id)?;
 
                 let mock_user_repo = MockUserRepo {
                     get_by_username_exclusive: Some(Box::new(move |passed_username| {
@@ -198,7 +203,7 @@ mod tests {
                     ..Default::default()
                 };
 
-                let (fake_uow, probe) = FakeUow::with_probe();
+                let (fake_uow, probe) = FakeUow::with_probe()?;
 
                 let friendship_svc = MutateFriendshipByUsernameSvc::new(
                     fake_uow,
@@ -211,17 +216,19 @@ mod tests {
 
                 assert!(matches!(result, Ok(true)));
                 assert!(probe.commit_called());
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn creates_a_request_if_no_relationship() {
+        fn creates_a_request_if_no_relationship() -> Result<()> {
             tokio_test(async {
                 let does_not_know_me = dummy_data::user::number4();
                 let does_not_know_me_clone = does_not_know_me.clone();
                 let does_not_know_me_username_clone = does_not_know_me.username.clone();
                 let my_id = does_not_know_me.id - 7;
-                let ids = UserIdPair::new(my_id, does_not_know_me.id).unwrap();
+                let ids = UserIdPair::new(my_id, does_not_know_me.id)?;
 
                 let mock_user_svc = MockUserRepo {
                     get_by_username_exclusive: Some(Box::new(move |passed_username| {
@@ -244,7 +251,7 @@ mod tests {
                     ..Default::default()
                 };
 
-                let (fake_uow, probe) = FakeUow::with_probe();
+                let (fake_uow, probe) = FakeUow::with_probe()?;
 
                 let friendship_svc = MutateFriendshipByUsernameSvc::new(
                     fake_uow,
@@ -257,7 +264,9 @@ mod tests {
 
                 assert!(matches!(result, Ok(false)));
                 assert!(probe.commit_called());
-            });
+
+                Ok(())
+            })
         }
     }
 }

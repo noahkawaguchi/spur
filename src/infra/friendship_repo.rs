@@ -81,6 +81,7 @@ mod tests {
     use crate::test_utils::{
         seed_data::seed_users, temp_db::with_test_pool, time::within_five_seconds, tokio_test,
     };
+    use anyhow::{Context, Result};
     use chrono::{DateTime, Utc};
     use sqlx::PgPool;
 
@@ -92,7 +93,7 @@ mod tests {
         confirmed_at: Option<DateTime<Utc>>,
     }
 
-    async fn must_get_friendship(pool: &PgPool, first_id: i32, second_id: i32) -> Friendship {
+    async fn get_friendship(pool: &PgPool, first_id: i32, second_id: i32) -> Result<Friendship> {
         sqlx::query_as!(
             Friendship,
             "SELECT * FROM friendship WHERE lesser_id = $1 AND greater_id = $2",
@@ -101,109 +102,100 @@ mod tests {
         )
         .fetch_one(pool)
         .await
-        .expect("failed to get friendship")
+        .context("failed to get friendship")
     }
 
-    #[test]
-    fn sets_initial_values_on_insertion() {
-        tokio_test(async {
-            with_test_pool(|pool| async move {
-                let repo = PgFriendshipRepo;
-                seed_users(&pool).await;
+    #[sqlx::test]
+    async fn sets_initial_values_on_insertion(pool: PgPool) -> Result<()> {
+        let repo = PgFriendshipRepo;
+        seed_users(&pool).await?;
 
-                repo.new_request(&pool, &UserIdPair::new(1, 2).unwrap(), 1)
-                    .await
-                    .expect("failed to insert new request");
+        repo.new_request(&pool, &UserIdPair::new(1, 2)?, 1)
+            .await
+            .context("failed to insert new request")?;
 
-                let friendship = must_get_friendship(&pool, 1, 2).await;
+        let friendship = get_friendship(&pool, 1, 2).await?;
 
-                assert_eq!(friendship.lesser_id, 1);
-                assert_eq!(friendship.greater_id, 2);
-                assert!(friendship.lesser_requested);
-                assert!(within_five_seconds(friendship.requested_at, Utc::now()));
-                assert!(friendship.confirmed_at.is_none());
-            })
-            .await;
-        });
+        assert_eq!(friendship.lesser_id, 1);
+        assert_eq!(friendship.greater_id, 2);
+        assert!(friendship.lesser_requested);
+        assert!(within_five_seconds(friendship.requested_at, Utc::now()));
+        assert!(friendship.confirmed_at.is_none());
+
+        Ok(())
     }
 
-    #[test]
-    fn updates_values_for_accepted_request() {
-        tokio_test(async {
-            with_test_pool(|pool| async move {
-                let repo = PgFriendshipRepo;
-                seed_users(&pool).await;
-                let ids = UserIdPair::new(1, 3).unwrap();
+    #[sqlx::test]
+    async fn updates_values_for_accepted_request(pool: PgPool) -> Result<()> {
+        let repo = PgFriendshipRepo;
+        seed_users(&pool).await?;
+        let ids = UserIdPair::new(1, 3)?;
 
-                repo.new_request(&pool, &ids, 3)
-                    .await
-                    .expect("failed to insert new request");
+        repo.new_request(&pool, &ids, 3)
+            .await
+            .context("failed to insert new request")?;
 
-                repo.accept_request(&pool, &ids)
-                    .await
-                    .expect("failed to accept request");
+        repo.accept_request(&pool, &ids)
+            .await
+            .context("failed to accept request")?;
 
-                let friendship = must_get_friendship(&pool, 1, 3).await;
+        let friendship = get_friendship(&pool, 1, 3).await?;
 
-                assert_eq!(friendship.lesser_id, 1);
-                assert_eq!(friendship.greater_id, 3);
-                assert!(!friendship.lesser_requested);
-                assert!(within_five_seconds(friendship.requested_at, Utc::now()));
-                assert!(within_five_seconds(
-                    friendship
-                        .confirmed_at
-                        .expect("unexpected None confirmation time"),
-                    Utc::now(),
-                ));
-            })
-            .await;
-        });
+        assert_eq!(friendship.lesser_id, 1);
+        assert_eq!(friendship.greater_id, 3);
+        assert!(!friendship.lesser_requested);
+        assert!(within_five_seconds(friendship.requested_at, Utc::now()));
+        assert!(within_five_seconds(
+            friendship
+                .confirmed_at
+                .context("unexpected None confirmation time")?,
+            Utc::now(),
+        ));
+
+        Ok(())
     }
 
-    #[test]
-    fn gets_all_four_possible_statuses() {
-        tokio_test(async {
-            with_test_pool(|pool| async move {
-                let repo = PgFriendshipRepo;
-                seed_users(&pool).await;
+    #[sqlx::test]
+    async fn gets_all_four_possible_statuses(pool: PgPool) -> Result<()> {
+        let repo = PgFriendshipRepo;
+        seed_users(&pool).await?;
 
-                let ids1 = UserIdPair::new(1, 3).unwrap();
-                let ids2 = UserIdPair::new(2, 3).unwrap();
+        let ids1 = UserIdPair::new(1, 3).unwrap();
+        let ids2 = UserIdPair::new(2, 3).unwrap();
 
-                let status = repo
-                    .get_status(&pool, &ids2)
-                    .await
-                    .expect("failed to get status");
-                assert_eq!(status, FriendshipStatus::Nil);
+        let status = repo
+            .get_status(&pool, &ids2)
+            .await
+            .context("failed to get status")?;
+        assert_eq!(status, FriendshipStatus::Nil);
 
-                repo.new_request(&pool, &ids2, 3)
-                    .await
-                    .expect("failed to create new request");
-                let status = repo
-                    .get_status(&pool, &ids2)
-                    .await
-                    .expect("failed to get status");
-                assert_eq!(status, FriendshipStatus::PendingFrom(3));
+        repo.new_request(&pool, &ids2, 3)
+            .await
+            .context("failed to create new request")?;
+        let status = repo
+            .get_status(&pool, &ids2)
+            .await
+            .context("failed to get status")?;
+        assert_eq!(status, FriendshipStatus::PendingFrom(3));
 
-                repo.new_request(&pool, &ids1, 1)
-                    .await
-                    .expect("failed to create new request");
-                let status = repo
-                    .get_status(&pool, &ids1)
-                    .await
-                    .expect("failed to get status");
-                assert_eq!(status, FriendshipStatus::PendingFrom(1));
+        repo.new_request(&pool, &ids1, 1)
+            .await
+            .context("failed to create new request")?;
+        let status = repo
+            .get_status(&pool, &ids1)
+            .await
+            .context("failed to get status")?;
+        assert_eq!(status, FriendshipStatus::PendingFrom(1));
 
-                repo.accept_request(&pool, &ids2)
-                    .await
-                    .expect("failed to accept request");
-                let status = repo
-                    .get_status(&pool, &ids2)
-                    .await
-                    .expect("failed to get status");
-                assert_eq!(status, FriendshipStatus::Friends);
-            })
-            .await;
-        });
+        repo.accept_request(&pool, &ids2)
+            .await
+            .context("failed to accept request")?;
+        let status = repo
+            .get_status(&pool, &ids2)
+            .await
+            .context("failed to get status")?;
+        assert_eq!(status, FriendshipStatus::Friends);
+
+        Ok(())
     }
 }

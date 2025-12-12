@@ -200,7 +200,7 @@ mod tests {
             tokio_test,
         },
     };
-    use anyhow::anyhow;
+    use anyhow::{Context, Result, anyhow};
     use axum::{
         body::Body,
         http::{Method, Request, header::CONTENT_TYPE},
@@ -212,7 +212,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn reports_successfully_creating_a_post() {
+        fn reports_successfully_creating_a_post() -> Result<()> {
             tokio_test(async {
                 let requester_id = 93;
                 let payload = CreatePostRequest {
@@ -238,18 +238,19 @@ mod tests {
                     .method(Method::POST)
                     .uri("/")
                     .header(CONTENT_TYPE, "application/json")
-                    .body(serialize_body(&payload))
-                    .unwrap();
+                    .body(serialize_body(&payload)?)?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::CREATED);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn translates_errors() {
+        fn translates_errors() -> Result<()> {
             tokio_test(async {
                 let requester_id = 2052;
                 let payload =
@@ -273,19 +274,20 @@ mod tests {
                     .method(Method::POST)
                     .uri("/")
                     .header(CONTENT_TYPE, "application/json")
-                    .body(serialize_body(&payload))
-                    .unwrap();
+                    .body(serialize_body(&payload)?)?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::GONE);
 
-                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
                 let expected =
                     ErrorResponse { error: String::from("Cannot reply to a deleted post") };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
     }
 
@@ -293,7 +295,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn retrieves_the_post() {
+        fn retrieves_the_post() -> Result<()> {
             tokio_test(async {
                 let [_, post, _] = post_with_author::all3();
                 let post_clone = post.clone();
@@ -314,19 +316,20 @@ mod tests {
                 let req = Request::builder()
                     .method(Method::GET)
                     .uri(format!("/{}", post.id))
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::OK);
 
-                let resp_body = deserialize_body::<PostResponse>(resp).await;
+                let resp_body = deserialize_body::<PostResponse>(resp).await?;
                 assert_eq!(PostResponse::from(post), resp_body);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn translates_errors() {
+        fn translates_errors() -> Result<()> {
             tokio_test(async {
                 let post_id = 2414;
 
@@ -346,16 +349,17 @@ mod tests {
                 let req = Request::builder()
                     .method(Method::GET)
                     .uri(format!("/{post_id}"))
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 
-                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
                 let expected = ErrorResponse { error: String::from("Not found") };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
     }
 
@@ -363,7 +367,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn retrieves_child_posts() {
+        fn retrieves_child_posts() -> Result<()> {
             tokio_test(async {
                 let parent_id = 92;
                 let posts = post_with_author::all3(); // Not actually children
@@ -385,19 +389,20 @@ mod tests {
                 let req = Request::builder()
                     .method(Method::GET)
                     .uri(format!("/{parent_id}/children"))
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::OK);
 
-                let resp_body = deserialize_body::<Vec<PostResponse>>(resp).await;
+                let resp_body = deserialize_body::<Vec<PostResponse>>(resp).await?;
                 assert_eq!(posts.map_into::<Vec<PostResponse>>(), resp_body);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn translates_errors() {
+        fn translates_errors() -> Result<()> {
             tokio_test(async {
                 let parent_id = 257;
 
@@ -419,16 +424,17 @@ mod tests {
                 let req = Request::builder()
                     .method(Method::GET)
                     .uri(format!("/{parent_id}/children"))
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
 
-                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
                 let expected = ErrorResponse { error: String::from("internal server error") };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
     }
 
@@ -436,7 +442,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn retrieves_posts_by_a_user() {
+        fn retrieves_posts_by_a_user() -> Result<()> {
             tokio_test(async {
                 let posts = post_with_author::all3();
                 let posts_vec = posts.to_vec();
@@ -458,19 +464,20 @@ mod tests {
                 let req = Request::builder()
                     .method(Method::GET)
                     .uri(format!("/user/{author_username}"))
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::OK);
 
-                let resp_body = deserialize_body::<Vec<PostResponse>>(resp).await;
+                let resp_body = deserialize_body::<Vec<PostResponse>>(resp).await?;
                 assert_eq!(posts.map_into::<Vec<PostResponse>>(), resp_body);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn translates_errors() {
+        fn translates_errors() -> Result<()> {
             tokio_test(async {
                 let username = "anything_here";
 
@@ -490,16 +497,17 @@ mod tests {
                 let req = Request::builder()
                     .method(Method::GET)
                     .uri(format!("/user/{username}"))
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
 
-                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
                 let expected = ErrorResponse { error: String::from("internal server error") };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
     }
 
@@ -507,7 +515,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn retrieves_posts_by_the_requester() {
+        fn retrieves_posts_by_the_requester() -> Result<()> {
             tokio_test(async {
                 let requester_id = 422;
                 let posts = post_with_author::all3();
@@ -529,21 +537,22 @@ mod tests {
                 let mut req = Request::builder()
                     .method(Method::GET)
                     .uri("/me")
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::OK);
 
-                let resp_body = deserialize_body::<Vec<PostResponse>>(resp).await;
+                let resp_body = deserialize_body::<Vec<PostResponse>>(resp).await?;
                 assert_eq!(posts.map_into::<Vec<PostResponse>>(), resp_body);
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn translates_errors() {
+        fn translates_errors() -> Result<()> {
             tokio_test(async {
                 let requester_id = 24;
 
@@ -563,18 +572,19 @@ mod tests {
                 let mut req = Request::builder()
                     .method(Method::GET)
                     .uri("/me")
-                    .body(Body::empty())
-                    .unwrap();
+                    .body(Body::empty())?;
 
                 req.extensions_mut().insert(requester_id);
 
-                let resp = app.oneshot(req).await.unwrap();
+                let resp = app.oneshot(req).await?;
                 assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 
-                let resp_body = deserialize_body::<ErrorResponse>(resp).await;
+                let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
                 let expected = ErrorResponse { error: String::from("Not found") };
                 assert_eq!(expected, resp_body);
-            });
+
+                Ok(())
+            })
         }
     }
 }

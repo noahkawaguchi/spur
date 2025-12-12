@@ -66,6 +66,7 @@ mod tests {
         models::user::User,
         test_utils::{fake_db::fake_pool, mock_repos::MockUserRepo, tokio_test},
     };
+    use anyhow::Result;
     use chrono::Utc;
     use mockall::predicate::eq;
 
@@ -93,7 +94,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn errors_for_existing_email() {
+        fn errors_for_existing_email() -> Result<()> {
             tokio_test(async {
                 let alice = alice_registration();
                 let alice_clone = alice.clone();
@@ -122,15 +123,17 @@ mod tests {
                     ..Default::default()
                 };
 
-                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+                let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, mock_provider);
                 let result = auth.signup(alice).await;
 
                 assert!(matches!(result, Err(AuthError::DuplicateEmail)));
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn errors_for_existing_username() {
+        fn errors_for_existing_username() -> Result<()> {
             tokio_test(async {
                 let alice = alice_registration();
                 let alice_clone = alice.clone();
@@ -159,15 +162,17 @@ mod tests {
                     ..Default::default()
                 };
 
-                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+                let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, mock_provider);
                 let result = auth.signup(alice).await;
 
                 assert!(matches!(result, Err(AuthError::DuplicateUsername)));
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn correctly_creates_new_user_from_request() {
+        fn correctly_creates_new_user_from_request() -> Result<()> {
             tokio_test(async {
                 let alice_reg = alice_registration();
                 let alice_reg_clone = alice_reg.clone();
@@ -200,11 +205,13 @@ mod tests {
                     ..Default::default()
                 };
 
-                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+                let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, mock_provider);
                 let result = auth.signup(alice_reg).await;
 
                 assert!(matches!(result, Ok(t) if t == token));
-            });
+
+                Ok(())
+            })
         }
     }
 
@@ -212,7 +219,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn handles_missing_account() {
+        fn handles_missing_account() -> Result<()> {
             tokio_test(async {
                 let (email, pw) = ("man@plan.ca", "#caMan-pl4n");
 
@@ -224,16 +231,18 @@ mod tests {
                     ..Default::default()
                 };
 
-                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, MockAuthProvider::new());
+                let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, MockAuthProvider::new());
                 assert!(matches!(
                     auth.login(email, pw).await,
                     Err(AuthError::NonexistentAccount)
                 ));
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn handles_incorrect_password() {
+        fn handles_incorrect_password() -> Result<()> {
             tokio_test(async {
                 let alice = alice_user();
                 let alice_clone = alice.clone();
@@ -254,16 +263,18 @@ mod tests {
                     .once()
                     .return_once(|_, _| Ok(false));
 
-                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+                let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, mock_provider);
                 assert!(matches!(
                     auth.login(&alice.email, invalid_pw).await,
                     Err(AuthError::InvalidPassword)
                 ));
-            });
+
+                Ok(())
+            })
         }
 
         #[test]
-        fn creates_token_for_valid_credentials() {
+        fn creates_token_for_valid_credentials() -> Result<()> {
             tokio_test(async {
                 let alice = alice_user();
                 let alice_clone = alice.clone();
@@ -290,12 +301,14 @@ mod tests {
                     .once()
                     .return_once(|_| Ok(token.to_string()));
 
-                let auth = AuthenticatorSvc::new(fake_pool(), mock_repo, mock_provider);
+                let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, mock_provider);
                 assert!(matches!(
                     auth.login(&alice.email, correct_pw).await,
                     Ok(t) if t == token
                 ));
-            });
+
+                Ok(())
+            })
         }
     }
 
