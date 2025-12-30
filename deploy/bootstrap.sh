@@ -8,17 +8,10 @@ set -euo pipefail
 #
 # Requires:    wget and docker
 #
-# Usage: ./bootstrap.sh COMMAND
-#
-# Commands:
-#   pull    Download the required files from the main Spur repo
-#   run     Run the Docker Compose stack
-#   reset   Destroy and remake the database
+# Usage:       See ./bootstrap.sh help
 ################################################################################
 
-set -e
-
-REPO_URL=https://raw.githubusercontent.com/noahkawaguchi/spur/main
+spur_img="ghcr.io/noahkawaguchi/spur:${SPUR_IMG_TAG:-latest}"
 
 # Provides the user with a prompt asking if they "want to $1" and exits with
 # status 1 if they respond with something other than "y" or "yes" (case
@@ -38,36 +31,42 @@ confirm() {
 
 # Downloads a file from the main Spur repo.
 #
-# Usage: pull_file <file_path> [other_args]
+# Usage: download_file <file_path> [other_args]
 #   file_path     The path to the file relative to the repository root.
 #   other_args    Any other args to pass to wget in addition to the URL.
-pull_file() {
-  file_path="$1"
+download_file() {
+  local file_path="$1"
   shift
-  wget "$REPO_URL/$file_path" "$@"
+  wget "https://raw.githubusercontent.com/noahkawaguchi/spur/main/$file_path" \
+    "$@"
 }
 
-# Starts the project's Docker Compose stack with the `init` profile.
-start_stack() { docker compose -p spur --profile init up -d; }
+# Pulls the Spur Docker image and starts the project's Docker Compose stack with
+# the `init` profile.
+pull_and_start() {
+  docker pull "$spur_img"
+  docker compose -p spur --profile init up -d
+}
 
 # Parse the command
 case "$1" in
-# Download only the required files
-pull)
-  pull_file docker-compose.yml
 
-  pull_file .env.example
+# Download only the required files
+files)
+  download_file docker-compose.yml
+
+  download_file .env.example
   if [ ! -e .env ]; then cp .env.example .env; fi
 
   mkdir -p caddy_conf
-  pull_file caddy_conf/Caddyfile -O caddy_conf/Caddyfile
+  download_file caddy_conf/Caddyfile -O caddy_conf/Caddyfile
 
   printf "\nNext fill out .env based on .env.example, then execute %s run\n\n" \
     "$0"
   ;;
 
 # Start the Compose stack
-run) start_stack ;;
+run) pull_and_start ;;
 
 # Destroy and remake the database
 reset)
@@ -75,7 +74,7 @@ reset)
   docker compose -p spur stop
   docker compose -p spur rm -sf db
   docker volume rm spur_pg_data
-  start_stack
+  pull_and_start
   ;;
 
 # Help message
@@ -83,11 +82,14 @@ reset)
   echo "Usage: $0 COMMAND
 
 Commands:
-  pull    Download the required files from the main Spur repo
-  run     Run the Docker Compose stack
+  files   Download the required files from the main Spur repo
+  run     Pull the Spur Docker image and run the Docker Compose stack
   reset   Destroy and remake the database
 
-Remember to fill out .env between pull and run
+Use the SPUR_IMG_TAG environment variable to specify a tag other than \"latest\"
+to use for the Spur Docker image.
+
+Remember to fill out .env between \`files\` and \`run\`.
 "
   ;;
 
