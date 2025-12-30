@@ -16,7 +16,30 @@ exec bash
 
 ## Step 1: Rootless Docker
 
-Install the Docker Engine using the Docker `apt` repository method as explained in the Docker docs [here](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository).
+Installing the Docker Engine via the Docker `apt` repository is explained in the Docker docs [here](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) and includes the following commands:
+
+```bash
+# Add Docker's official GPG key:
+sudo apt update
+sudo apt install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+sudo apt update
+
+# Install the latest versions of the Docker packages
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
 
 While it's easier to run Docker as root, it should really be run rootless for better security. Rootless Docker setup is explained in the Docker docs [here](https://docs.docker.com/engine/security/rootless/) and includes the following commands in this case:
 
@@ -24,7 +47,7 @@ While it's easier to run Docker as root, it should really be run rootless for be
 sudo apt install uidmap
 sudo systemctl disable --now docker.service docker.socket
 sudo rm /var/run/docker.sock
-dockerd-rootless-setuptool.sh install
+dockerd-rootless-setuptool.sh install # Must be run as non-root
 ```
 
 While this step is not strictly required, rootful Docker can be masked to make sure it never runs unless explicitly unmasked:
