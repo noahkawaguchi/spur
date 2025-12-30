@@ -16,24 +16,27 @@ exec bash
 
 ## Step 1: Rootless Docker
 
-While it's easier to run Docker as root, it should really be run rootless for better security. The [Docker docs](https://docs.docker.com/engine/security/rootless/) provide a fuller explanation, but the script to set this up can be downloaded and run with the following command:
+Install the Docker Engine using the Docker `apt` repository method as explained in the Docker docs [here](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository).
+
+While it's easier to run Docker as root, it should really be run rootless for better security. Rootless Docker setup is explained in the Docker docs [here](https://docs.docker.com/engine/security/rootless/) and includes the following commands in this case:
 
 ```bash
-curl -fsSL https://get.docker.com/rootless | sh
+sudo apt install uidmap
+sudo systemctl disable --now docker.service docker.socket
+sudo rm /var/run/docker.sock
+dockerd-rootless-setuptool.sh install
 ```
 
-There will likely be errors on the first few runs, but the error messages explain exactly what needs to be done before trying again. The executables will be installed to `~/bin`, which must be added to `$PATH`.
+While this step is not strictly required, rootful Docker can be masked to make sure it never runs unless explicitly unmasked:
 
 ```bash
-echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
-. ~/.bashrc
+sudo systemctl mask docker.service docker.socket
 ```
 
-Docker Compose requires a separate installation.
+User containers need to run even when the user is not logged in. The default username is `ubuntu`.
 
 ```bash
-sudo apt update
-sudo apt install docker-compose-v2
+sudo loginctl enable-linger ubuntu
 ```
 
 Caddy will need access to privileged ports 80 and 443. This part may need to be repeated after updating packages.
@@ -41,12 +44,6 @@ Caddy will need access to privileged ports 80 and 443. This part may need to be 
 ```bash
 sudo setcap cap_net_bind_service=ep "$(command -v rootlesskit)"
 systemctl --user restart docker
-```
-
-User containers need to run even when the user is not logged in. The default username is `ubuntu`.
-
-```bash
-sudo loginctl enable-linger ubuntu
 ```
 
 ## Step 2: Running the Spur stack
@@ -66,10 +63,10 @@ wget https://raw.githubusercontent.com/noahkawaguchi/spur/main/deploy/bootstrap.
 chmod +x bootstrap.sh
 ```
 
-This script provides three commands: `pull`, `run`, and `reset`. (Run it with anything else or nothing for a usage message.) `pull` downloads the other required files from the main Spur repo.
+This script provides three commands: `files`, `run`, and `reset`. (Run it with anything else or nothing for a usage message.) `files` downloads the other required files from the main Spur repo.
 
 ```bash
-./bootstrap.sh pull
+./bootstrap.sh files
 ```
 
 At this point, `.env` (which was created automatically if it didn't already exist) must be manually filled out with all the required environment variables as documented in the comments and `.env.example`.
