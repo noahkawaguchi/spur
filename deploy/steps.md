@@ -16,24 +16,50 @@ exec bash
 
 ## Step 1: Rootless Docker
 
-While it's easier to run Docker as root, it should really be run rootless for better security. The [Docker docs](https://docs.docker.com/engine/security/rootless/) provide a fuller explanation, but the script to set this up can be downloaded and run with the following command:
+Installing the Docker Engine via the Docker `apt` repository is explained in the Docker docs [here](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) and includes the following commands:
 
 ```bash
-curl -fsSL https://get.docker.com/rootless | sh
-```
-
-There will likely be errors on the first few runs, but the error messages explain exactly what needs to be done before trying again. The executables will be installed to `~/bin`, which must be added to `$PATH`.
-
-```bash
-echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
-. ~/.bashrc
-```
-
-Docker Compose requires a separate installation.
-
-```bash
+# Add Docker's official GPG key:
 sudo apt update
-sudo apt install docker-compose-v2
+sudo apt install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+sudo apt update
+
+# Install the latest versions of the Docker packages
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+While it's easier to run Docker as root, it should really be run rootless for better security. Rootless Docker setup is explained in the Docker docs [here](https://docs.docker.com/engine/security/rootless/) and includes the following commands in this case:
+
+```bash
+sudo apt install uidmap
+sudo systemctl disable --now docker.service docker.socket
+sudo rm /var/run/docker.sock
+dockerd-rootless-setuptool.sh install # Must be run as non-root
+```
+
+While this step is not strictly required, rootful Docker can be masked to make sure it never runs unless explicitly unmasked:
+
+```bash
+sudo systemctl mask docker.service docker.socket
+```
+
+User containers need to run even when the user is not logged in. The default username is `ubuntu`.
+
+```bash
+sudo loginctl enable-linger ubuntu
 ```
 
 Caddy will need access to privileged ports 80 and 443. This part may need to be repeated after updating packages.
@@ -41,12 +67,6 @@ Caddy will need access to privileged ports 80 and 443. This part may need to be 
 ```bash
 sudo setcap cap_net_bind_service=ep "$(command -v rootlesskit)"
 systemctl --user restart docker
-```
-
-User containers need to run even when the user is not logged in. The default username is `ubuntu`.
-
-```bash
-sudo loginctl enable-linger ubuntu
 ```
 
 ## Step 2: Running the Spur stack
@@ -66,10 +86,10 @@ wget https://raw.githubusercontent.com/noahkawaguchi/spur/main/deploy/bootstrap.
 chmod +x bootstrap.sh
 ```
 
-This script provides three commands: `pull`, `run`, and `reset`. (Run it with anything else or nothing for a usage message.) `pull` downloads the other required files from the main Spur repo.
+This script provides three commands: `files`, `run`, and `reset`. (Run it with anything else or nothing for a usage message.) `files` downloads the other required files from the main Spur repo.
 
 ```bash
-./bootstrap.sh pull
+./bootstrap.sh files
 ```
 
 At this point, `.env` (which was created automatically if it didn't already exist) must be manually filled out with all the required environment variables as documented in the comments and `.env.example`.
