@@ -1,4 +1,5 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+set -euo pipefail
 
 ################################################################################
 # Description: Minimal bootstrap script to set up and run the Docker Compose
