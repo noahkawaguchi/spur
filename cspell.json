@@ -24,7 +24,9 @@
     "utoipa",
     "buildx",
     "Swatinem",
-    "dtolnay"
+    "dtolnay",
+    "pipefail",
+    "uidmap"
   ],
   "useGitignore": true,
   "language": "en",
