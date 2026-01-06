@@ -1,3 +1,5 @@
+[English](README.md) | [日本語](README.ja.md)
+
 # Spur
 
 ### 🔗 Live link: [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com/)
@@ -13,7 +15,7 @@
 
 ## Concept
 
-Spur is a reply-based social platform. With no original posts, every post must instead be in reply to another post, creating a tree/DAG structure starting from the initial root post.
+Spur is a reply-based social platform. With no original posts, every post must instead be in reply to another post, creating a tree structure starting from the initial root post.
 
 ```
          [root post]         <-- Created artificially
@@ -76,7 +78,7 @@ Tests and other code quality checks run with each pull request and merge into ma
 ## Development and Deployment
 
 - The project's main language is Rust, which can be installed via `rustup` as documented [here](https://rust-lang.org/tools/install/).
-- `just` is a command runner that can be installed via one of the methods described [here](https://github.com/casey/just/blob/master/README.md#installation).
+- `just` is a command runner that can be installed via one of the methods described [here](https://github.com/casey/just#installation).
 - Common commands used in development and any additional tools they require are documented (and automated) via the `justfile`.
 - The `.env.example` file describes the necessary environment variable configurations.
 - The project's kanban board is on GitHub Projects [here](https://github.com/users/noahkawaguchi/projects/2).
