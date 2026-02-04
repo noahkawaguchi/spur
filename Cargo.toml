@@ -23,7 +23,7 @@ bcrypt = "0.17.0"
 chrono = "0.4.41"
 dotenvy = "0.15.7"
 env_logger = "0.11.8"
-jsonwebtoken = { version = "10.1.0", default-features = false, features = ["rust_crypto"] }
+jsonwebtoken = { version = "10.3.0", default-features = false, features = ["rust_crypto"] }
 lazy-regex = "3.4.1"
 log = "0.4.28"
 serde = { version = "1.0.219", features = ["derive"] }
