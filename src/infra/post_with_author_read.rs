@@ -30,7 +30,7 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
         .map_err(Into::into)
     }
 
-    async fn by_parent(&self, parent_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
+    async fn children_of(&self, parent_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
         sqlx::query_as!(
             PostWithAuthor,
             "
@@ -47,7 +47,7 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
         .map_err(Into::into)
     }
 
-    async fn by_author(&self, author_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
+    async fn written_by_id(&self, author_id: i32) -> Result<Vec<PostWithAuthor>, ReadError> {
         sqlx::query_as!(
             PostWithAuthor,
             "
@@ -64,7 +64,7 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
         .map_err(Into::into)
     }
 
-    async fn by_author_username(
+    async fn written_by_username(
         &self,
         author_username: &str,
     ) -> Result<Vec<PostWithAuthor>, ReadError> {
@@ -154,7 +154,7 @@ mod tests {
             .await?;
         // No children at first
         assert!(matches!(
-            read.by_parent(parent_id).await,
+            read.children_of(parent_id).await,
             Ok(v) if v.is_empty()
         ));
         // First child
@@ -165,7 +165,7 @@ mod tests {
             .await?;
         let first_child = read.by_post_id(4).await?;
         assert!(matches!(
-            read.by_parent(parent_id).await,
+            read.children_of(parent_id).await,
             Ok(v) if v.len() == 1 && v[0] == first_child
         ));
         // More children
@@ -178,7 +178,7 @@ mod tests {
         // Should be sorted in descending order of creation time
         let expected_children = vec![third_child, second_child, first_child];
         assert!(matches!(
-            read.by_parent(parent_id).await,
+            read.children_of(parent_id).await,
             Ok(v) if v == expected_children
         ));
 
@@ -208,11 +208,11 @@ mod tests {
 
         // Should be sorted by created_at in descending order
         let expected_posts = vec![expected2, expected1];
-        assert!(matches!(read.by_author(3).await, Ok(v) if v == expected_posts));
+        assert!(matches!(read.written_by_id(3).await, Ok(v) if v == expected_posts));
 
         // Searching by username should be the same result
         assert!(matches!(
-            read.by_author_username(&users[2].username).await,
+            read.written_by_username(&users[2].username).await,
             Ok(v) if v == expected_posts
         ));
 

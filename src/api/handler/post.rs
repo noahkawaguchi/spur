@@ -129,7 +129,12 @@ async fn child_posts(
 ) -> api_result!(Vec<PostResponse>) {
     Ok((
         StatusCode::OK,
-        Json(post_with_author_read.by_parent(parent_id).await?.map_into()),
+        Json(
+            post_with_author_read
+                .children_of(parent_id)
+                .await?
+                .map_into(),
+        ),
     ))
 }
 
@@ -153,7 +158,7 @@ async fn specific_user_posts(
         StatusCode::OK,
         Json(
             post_with_author_read
-                .by_author_username(&author_username)
+                .written_by_username(&author_username)
                 .await?
                 .map_into(),
         ),
@@ -180,7 +185,7 @@ async fn own_posts(
         StatusCode::OK,
         Json(
             post_with_author_read
-                .by_author(requester_id)
+                .written_by_id(requester_id)
                 .await?
                 .map_into(),
         ),
@@ -375,7 +380,7 @@ mod tests {
 
                 let mut mock_pwa_read = MockPostWithAuthorRead::new();
                 mock_pwa_read
-                    .expect_by_parent()
+                    .expect_children_of()
                     .with(eq(parent_id))
                     .once()
                     .return_once(move |_| Ok(posts_vec));
@@ -408,7 +413,7 @@ mod tests {
 
                 let mut mock_pwa_read = MockPostWithAuthorRead::new();
                 mock_pwa_read
-                    .expect_by_parent()
+                    .expect_children_of()
                     .with(eq(parent_id))
                     .once()
                     .return_once(move |_| {
@@ -450,7 +455,7 @@ mod tests {
 
                 let mut mock_pwa_read = MockPostWithAuthorRead::new();
                 mock_pwa_read
-                    .expect_by_author_username()
+                    .expect_written_by_username()
                     .with(eq(author_username.clone()))
                     .once()
                     .return_once(|_| Ok(posts_vec));
@@ -483,7 +488,7 @@ mod tests {
 
                 let mut mock_pwa_read = MockPostWithAuthorRead::new();
                 mock_pwa_read
-                    .expect_by_author_username()
+                    .expect_written_by_username()
                     .with(eq(username))
                     .once()
                     .return_once(|_| Err(ReadError::Technical(anyhow!("oh no!"))));
@@ -523,7 +528,7 @@ mod tests {
 
                 let mut mock_pwa_read = MockPostWithAuthorRead::new();
                 mock_pwa_read
-                    .expect_by_author()
+                    .expect_written_by_id()
                     .with(eq(requester_id))
                     .once()
                     .return_once(|_| Ok(posts_vec));
@@ -558,7 +563,7 @@ mod tests {
 
                 let mut mock_pwa_read = MockPostWithAuthorRead::new();
                 mock_pwa_read
-                    .expect_by_author()
+                    .expect_written_by_id()
                     .with(eq(requester_id))
                     .once()
                     .return_once(|_| Err(ReadError::NotFound));
