@@ -80,8 +80,9 @@ migration name:
 ####################################################################################################
 
 # Run tests using an ephemeral Postgres container
-test: temp-db-start
-    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo test --workspace --all-targets; \
+test *ARGS: temp-db-start
+    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true \
+    cargo test --workspace --all-targets {{ ARGS }}; \
     status=$?; \
     just temp-db-stop; \
     exit $status
