@@ -12,21 +12,41 @@ use super::{
     middleware::validate_jwt,
 };
 use crate::state::AppState;
-use axum::{Router, middleware, response::Redirect, routing::get};
+use anyhow::Result;
+use axum::{
+    Router,
+    http::{
+        Method,
+        header::{AUTHORIZATION, CONTENT_TYPE},
+    },
+    middleware,
+    response::Redirect,
+    routing::get,
+};
+use tower_http::cors::CorsLayer;
 use utoipa::{
     Modify, OpenApi,
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
 };
 use utoipa_swagger_ui::SwaggerUi;
 
-/// Sets up the API/web layer.
-pub fn build(state: AppState) -> Router {
-    Router::new()
+/// Creates the API/web layer and sets it up to accept requests from the provided origin.
+pub fn build(state: AppState, frontend_url: &str) -> Result<Router> {
+    let cors = CorsLayer::new()
+        .allow_origin([frontend_url.parse()?])
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers([CONTENT_TYPE, AUTHORIZATION])
+        .allow_credentials(true);
+
+    let app = Router::new()
         .route("/", get(|| async { Redirect::to("/docs") }))
         .route("/ping", get(pong))
         .nest("/auth", auth::routes().with_state(state.clone()))
         .merge(protected_routes(state))
         .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .layer(cors);
+
+    Ok(app)
 }
 
 fn protected_routes(state: AppState) -> Router {
@@ -138,12 +158,17 @@ mod tests {
             tokio_test,
         },
     };
-    use anyhow::Result;
+    use anyhow::Context;
     use axum::{
         body::Body,
         http::{
-            Method, Request, Response, StatusCode,
-            header::{AUTHORIZATION, CONTENT_TYPE},
+            HeaderMap, HeaderName, HeaderValue, Method, Request, Response, StatusCode,
+            header::{
+                ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_HEADERS,
+                ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN,
+                ACCESS_CONTROL_REQUEST_HEADERS, ACCESS_CONTROL_REQUEST_METHOD, AUTHORIZATION,
+                CONTENT_TYPE, ORIGIN,
+            },
         },
     };
     use mockall::predicate::eq;
@@ -166,7 +191,7 @@ mod tests {
                 req = req.header(AUTHORIZATION, format!("Bearer {tok}"));
             }
 
-            super::build(state)
+            super::build(state, "example.com")?
                 .oneshot(req.body(Body::empty())?)
                 .await
                 .map_err(Into::into)
@@ -253,7 +278,7 @@ mod tests {
                 req = req.header(CONTENT_TYPE, "application/json");
             }
 
-            super::build(state)
+            super::build(state, "example.com")?
                 .oneshot(req.body(body)?)
                 .await
                 .map_err(Into::into)
@@ -331,6 +356,110 @@ mod tests {
                 assert_eq!(StatusCode::OK, resp.status());
                 let resp_body = deserialize_body::<Vec<String>>(resp).await?;
                 assert_eq!(requester_usernames, resp_body);
+
+                Ok(())
+            })
+        }
+    }
+
+    mod cors {
+        use super::*;
+
+        async fn send_req(
+            allowed_origin: &'static str,
+            method: Method,
+            uri: &'static str,
+            req_headers: &[(HeaderName, &str)],
+        ) -> Result<Response<Body>> {
+            let mut req = Request::builder().uri(uri).method(method);
+            for &(ref k, v) in req_headers {
+                req = req.header(k, v);
+            }
+            super::build(AppState::default(), allowed_origin)?
+                .oneshot(req.body(Body::empty())?)
+                .await
+                .map_err(Into::into)
+        }
+
+        /// Tries to get the value in `headers` associated with `header_name`.
+        fn try_get_header<'a>(
+            headers: &'a HeaderMap,
+            header_name: &HeaderName,
+        ) -> Result<&'a HeaderValue> {
+            headers
+                .get(header_name)
+                .with_context(|| format!("failed to get header {header_name}"))
+        }
+
+        #[test]
+        fn does_not_send_allow_origin_header_if_origin_not_allowed() -> Result<()> {
+            tokio_test(async {
+                let resp = send_req(
+                    "https://frontend.example",
+                    Method::GET,
+                    "/ping",
+                    &[(ORIGIN, "https://not-allowed.example")],
+                )
+                .await?;
+
+                assert!(resp.headers().get(ACCESS_CONTROL_ALLOW_ORIGIN).is_none());
+
+                Ok(())
+            })
+        }
+
+        #[test]
+        fn sends_correct_cors_headers_for_allowed_origin() -> Result<()> {
+            tokio_test(async {
+                let origin = "https://frontend.example";
+                let resp = send_req(origin, Method::GET, "/ping", &[(ORIGIN, origin)]).await?;
+
+                let h = resp.headers();
+                assert_eq!(origin, try_get_header(h, &ACCESS_CONTROL_ALLOW_ORIGIN)?);
+                assert_eq!(
+                    "true",
+                    try_get_header(h, &ACCESS_CONTROL_ALLOW_CREDENTIALS)?
+                );
+
+                Ok(())
+            })
+        }
+
+        #[test]
+        fn sends_correct_cors_headers_for_preflight_from_allowed_origin() -> Result<()> {
+            tokio_test(async {
+                let origin = "https://frontend.example";
+
+                let resp = send_req(
+                    origin,
+                    Method::OPTIONS,
+                    "/friends",
+                    &[
+                        (ORIGIN, origin),
+                        (ACCESS_CONTROL_REQUEST_METHOD, "POST"),
+                        (ACCESS_CONTROL_REQUEST_HEADERS, "content-type,authorization"),
+                    ],
+                )
+                .await?;
+
+                let h = resp.headers();
+
+                assert_eq!(
+                    "https://frontend.example",
+                    try_get_header(h, &ACCESS_CONTROL_ALLOW_ORIGIN)?
+                );
+                assert_eq!(
+                    "GET,POST,OPTIONS",
+                    try_get_header(h, &ACCESS_CONTROL_ALLOW_METHODS)?
+                );
+                assert_eq!(
+                    "content-type,authorization",
+                    try_get_header(h, &ACCESS_CONTROL_ALLOW_HEADERS)?
+                );
+                assert_eq!(
+                    "true",
+                    try_get_header(h, &ACCESS_CONTROL_ALLOW_CREDENTIALS)?
+                );
 
                 Ok(())
             })
