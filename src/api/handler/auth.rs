@@ -1,3 +1,8 @@
+#![expect(
+    clippy::needless_for_each,
+    reason = "Inserted when deriving `utoipa::OpenAPI`"
+)]
+
 use super::api_result;
 use crate::{
     api::{
@@ -15,14 +20,9 @@ use anyhow::Result;
 use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use std::sync::Arc;
 
-#[allow(clippy::needless_for_each, clippy::wildcard_imports)]
-pub mod docs {
-    use super::*;
-
-    #[derive(utoipa::OpenApi)]
-    #[openapi(paths(signup, login))]
-    pub struct AuthDoc;
-}
+#[derive(utoipa::OpenApi)]
+#[openapi(paths(signup, login))]
+pub struct AuthDoc;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
