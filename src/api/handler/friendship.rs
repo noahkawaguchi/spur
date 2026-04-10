@@ -1,3 +1,8 @@
+#![expect(
+    clippy::needless_for_each,
+    reason = "Inserted when deriving `utoipa::OpenAPI`"
+)]
+
 use super::api_result;
 use crate::{
     api::{
@@ -20,14 +25,9 @@ use axum::{
 };
 use std::sync::Arc;
 
-#[allow(clippy::needless_for_each, clippy::wildcard_imports)]
-pub mod docs {
-    use super::*;
-
-    #[derive(utoipa::OpenApi)]
-    #[openapi(paths(add_friend, list_friends, list_requests, friend_posts))]
-    pub struct FriendsDoc;
-}
+#[derive(utoipa::OpenApi)]
+#[openapi(paths(add_friend, list_friends, list_requests, friend_posts))]
+pub struct FriendsDoc;
 
 pub fn routes() -> Router<AppState> {
     Router::new()

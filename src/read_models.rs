@@ -34,15 +34,15 @@ pub trait PostWithAuthorRead: Send + Sync {
 
     /// Retrieves all children of the post with the provided ID and the usernames of the authors of
     /// the posts in descending order of creation time (most recent first).
-    async fn by_parent(&self, parent_id: i32) -> Result<Vec<PostWithAuthor>, ReadError>;
+    async fn children_of(&self, parent_id: i32) -> Result<Vec<PostWithAuthor>, ReadError>;
 
     /// Retrieves all posts written by the user with the provided ID along with the user's username
     /// in descending order of creation time (most recent first).
-    async fn by_author(&self, author_id: i32) -> Result<Vec<PostWithAuthor>, ReadError>;
+    async fn written_by_id(&self, author_id: i32) -> Result<Vec<PostWithAuthor>, ReadError>;
 
     /// Retrieves all posts written by the user with the provided username in descending order of
     /// creation time (most recent first).
-    async fn by_author_username(
+    async fn written_by_username(
         &self,
         author_username: &str,
     ) -> Result<Vec<PostWithAuthor>, ReadError>;

@@ -1,8 +1,13 @@
+#![expect(
+    clippy::needless_for_each,
+    reason = "Inserted when deriving `utoipa::OpenAPI`"
+)]
+
 use super::{
     handler::{
-        auth::{self, docs::AuthDoc},
-        friendship::{self, docs::FriendsDoc},
-        post::{self, docs::PostsDoc},
+        auth::{self, AuthDoc},
+        friendship::{self, FriendsDoc},
+        post::{self, PostsDoc},
     },
     middleware::validate_jwt,
 };
@@ -21,7 +26,7 @@ pub fn build(state: AppState) -> Router {
         .route("/ping", get(pong))
         .nest("/auth", auth::routes().with_state(state.clone()))
         .merge(protected_routes(state))
-        .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", docs::ApiDoc::openapi()))
+        .merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", ApiDoc::openapi()))
 }
 
 fn protected_routes(state: AppState) -> Router {
@@ -62,24 +67,20 @@ async fn pong() -> &'static str { "pong!\n" }
 )]
 async fn token_check() -> &'static str { "Your token is valid\n" }
 
-#[allow(clippy::needless_for_each, clippy::wildcard_imports)]
-mod docs {
-    use super::*;
+#[derive(OpenApi)]
+#[openapi(
+    modifiers(&JwtAddon),
+    paths(pong, token_check),
+    info(description = API_DESC),
+    nest(
+        (path = "/auth", api = AuthDoc),
+        (path = "/friends", api = FriendsDoc),
+        (path = "/posts", api = PostsDoc),
+    ),
+)]
+struct ApiDoc;
 
-    #[derive(OpenApi)]
-    #[openapi(
-        modifiers(&JwtAddon),
-        paths(pong, token_check),
-        info(description = API_DESC),
-        nest(
-            (path = "/auth", api = AuthDoc),
-            (path = "/friends", api = FriendsDoc),
-            (path = "/posts", api = PostsDoc),
-        ),
-    )]
-    pub(super) struct ApiDoc;
-
-    const API_DESC: &str = "
+const API_DESC: &str = "
 Spur is a reply-based social platform. More information and the source code are available at \
 [github.com/noahkawaguchi/spur](https://github.com/noahkawaguchi/spur).
 
@@ -102,22 +103,21 @@ JSON Web Token. A token can be acquired via the login or signup endpoints and en
 Other errors specific to each endpoint are documented below.
 ";
 
-    struct JwtAddon;
+struct JwtAddon;
 
-    impl Modify for JwtAddon {
-        fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-            if let Some(components) = openapi.components.as_mut() {
-                components.add_security_scheme(
-                    "jwt",
-                    SecurityScheme::Http(
-                        HttpBuilder::new()
-                            .scheme(HttpAuthScheme::Bearer)
-                            .bearer_format("JWT")
-                            .description(Some("Enter the token created at signup or login"))
-                            .build(),
-                    ),
-                );
-            }
+impl Modify for JwtAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "jwt",
+                SecurityScheme::Http(
+                    HttpBuilder::new()
+                        .scheme(HttpAuthScheme::Bearer)
+                        .bearer_format("JWT")
+                        .description(Some("Enter the token created at signup or login"))
+                        .build(),
+                ),
+            );
         }
     }
 }

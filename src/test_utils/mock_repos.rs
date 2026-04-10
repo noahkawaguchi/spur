@@ -13,7 +13,7 @@ use crate::{
 use anyhow::Context;
 use sqlx::PgExecutor;
 
-#[allow(clippy::type_complexity)]
+#[expect(clippy::type_complexity, reason = "Hand-rolled mock")]
 #[derive(Default)]
 pub struct MockUserRepo {
     pub insert_new: Option<Box<dyn Fn(&NewUser) -> Result<User, RepoError> + Send + Sync>>,
@@ -67,7 +67,7 @@ impl UserRepo for MockUserRepo {
     }
 }
 
-#[allow(clippy::type_complexity)]
+#[expect(clippy::type_complexity, reason = "Hand-rolled mock")]
 #[derive(Default)]
 pub struct MockFriendshipRepo {
     pub new_request: Option<Box<dyn Fn(&UserIdPair, i32) -> Result<(), RepoError> + Send + Sync>>,
@@ -113,7 +113,7 @@ impl FriendshipRepo for MockFriendshipRepo {
     }
 }
 
-#[allow(clippy::type_complexity)]
+#[expect(clippy::type_complexity, reason = "Hand-rolled mock")]
 #[derive(Default)]
 pub struct MockPostRepo {
     pub insert_new: Option<Box<dyn Fn(i32, i32, &str) -> Result<(), RepoError> + Send + Sync>>,

@@ -80,7 +80,10 @@ fn shutdown_signal_handler() -> Result<impl Future<Output = ()>> {
 /// Creates a cross-platform signal handler that listens for Ctrl+C. Included for portability, but
 /// will likely never be used. Not actually tested on Windows. See the other function of the same
 /// name for the standard Unix behavior.
-#[allow(clippy::unnecessary_wraps)] // Wrapped in `Result` to match the Unix version
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "To match the Unix version of this function"
+)]
 #[cfg(not(unix))]
 fn shutdown_signal_handler() -> Result<impl Future<Output = ()>> {
     Ok(async {
