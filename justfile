@@ -1,7 +1,8 @@
 ####################################################################################################
 #
-# Using this justfile requires the command runner `just`, the Docker CLI, and a running Docker
-# daemon. Other dependencies are documented below with the recipes that need them.
+# Using this justfile requires `just` (https://github.com/casey/just#installation)
+# and Docker (https://docs.docker.com/get-started/get-docker/) with the Docker daemon running.
+# Other dependencies are documented below with the recipes that need them.
 #
 ####################################################################################################
 
@@ -52,6 +53,21 @@ sqlx-prep: temp-db-start && temp-db-stop
     cargo sqlx prepare -D {{temp-db-url}} -- --workspace --all-targets --all-features
 
 ####################################################################################################
+# API docs (OpenAPI/Swagger UI)
+####################################################################################################
+
+# Export and preview the docs
+docs: docs-export docs-preview
+
+# Export the API docs in JSON format and save to file
+docs-export:
+    cargo run --bin docs > docs/openapi.json
+
+# Run a server to preview the static docs locally (requires Python)
+docs-preview:
+    python3 -m http.server -d docs
+
+####################################################################################################
 # Migrations
 #
 # Requires the Atlas CLI (https://atlasgo.io/getting-started#installation).
@@ -80,8 +96,9 @@ migration name:
 ####################################################################################################
 
 # Run tests using an ephemeral Postgres container
-test: temp-db-start
-    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo test --workspace --all-targets; \
+test *ARGS: temp-db-start
+    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true \
+    cargo test --workspace --all-targets {{ ARGS }}; \
     status=$?; \
     just temp-db-stop; \
     exit $status

@@ -8,6 +8,7 @@ use std::{
 
 pub struct AppConfig {
     pub database_url: String,
+    pub frontend_url: String,
     pub bind_addr: String,
     pub jwt_secret: String,
     pub max_pool_connections: u32,
@@ -16,6 +17,10 @@ pub struct AppConfig {
 
 impl AppConfig {
     /// Attempts to load the required configuration data from environment variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the environment variables cannot be successfully read.
     pub fn load() -> Result<Self> {
         // Expect a .env file in development only
         #[cfg(debug_assertions)]
@@ -25,6 +30,7 @@ impl AppConfig {
             // Definitely different in dev and prod?
             // -> No defaults, must be set as environment variables
             database_url: Self::get_env("DATABASE_URL")?,
+            frontend_url: Self::get_env("FRONTEND_URL")?,
             jwt_secret: Self::get_env("JWT_SECRET")?,
 
             // Possibly the same in dev and prod?
