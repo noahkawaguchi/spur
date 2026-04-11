@@ -4,6 +4,9 @@
 
 ### 🔗 Live link: [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com/)
 
+> [!NOTE]
+> To save costs, the server at [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com) is not always running. However, the docs are always available at [spur-docs.noahkawaguchi.com](https://spur-docs.noahkawaguchi.com).
+
 ## Table of Contents
 
 1. [Concept](#concept)
@@ -55,6 +58,8 @@ domain services   app services   \
                PostgreSQL database
 ```
 
+The docs are also served on GitHub Pages so that they can be viewed even when the server is not running.
+
 ## Testing
 
 The project is tested with Rust's native test framework and Mockall in the Tokio runtime. Some tests use ephemeral PostgreSQL containers, so a running Docker daemon is required.
@@ -82,4 +87,6 @@ Tests and other code quality checks run with each pull request and merge into ma
 - Common commands used in development and any additional tools they require are documented (and automated) via the `justfile`.
 - The `.env.example` file describes the necessary environment variable configurations.
 - The project's kanban board is on GitHub Projects [here](https://github.com/users/noahkawaguchi/projects/2).
-- A new version of the container image is automatically published to GHCR with each successful CI/CD run that was triggered by a merge into main. The project is then deployed on AWS EC2 as described in [deploy/steps.md](deploy/steps.md).
+- A new version of the container image is automatically published to GHCR with each successful CI/CD run that was triggered by a merge into main.
+- Similarly, the docs are automatically deployed to GitHub Pages from the `/docs` subdirectory.
+- The server is deployed on AWS EC2 as described in [`deploy/steps.md`](deploy/steps.md).
