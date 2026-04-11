@@ -56,6 +56,9 @@ sqlx-prep: temp-db-start && temp-db-stop
 # API docs (OpenAPI/Swagger UI)
 ####################################################################################################
 
+# Export and preview the docs
+docs: docs-export docs-preview
+
 # Export the API docs in JSON format and save to file
 docs-export:
     cargo run --bin docs > docs/openapi.json
