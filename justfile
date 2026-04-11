@@ -13,8 +13,9 @@
 # Load a .env file if present
 set dotenv-load := true
 
-# The tag to use for the Postgres Docker image. Should match the one used in `docker-compose.yml`.
-pg-tag := "18.1-alpine3.23"
+# The tag to use for the Postgres Docker image.
+# Should match the one in `docker-compose.yml` and CI/CD.
+pg-tag := "18.3-alpine3.23"
 
 ####################################################################################################
 # Main Docker Compose stack

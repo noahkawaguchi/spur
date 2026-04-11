@@ -8,7 +8,7 @@ x-spur-image-shared: &spur_image
 
 services:
   db:
-    image: postgres:18.1-alpine3.23
+    image: postgres:18.3-alpine3.23 # Should match the version in the `justfile` and CI/CD
     restart: unless-stopped
     expose: ["5432"]
     env_file: .env

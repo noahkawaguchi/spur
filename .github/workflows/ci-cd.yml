@@ -38,7 +38,8 @@ jobs:
 
     services:
       postgres:
-        image: postgres:18.1-alpine3.23
+        # Should match the version in the `justfile` and `docker-compose.yml`
+        image: postgres:18.3-alpine3.23
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
