@@ -56,8 +56,12 @@ sqlx-prep: temp-db-start && temp-db-stop
 ####################################################################################################
 
 # Export the API docs in JSON format and save to file
-docs-json:
+docs-export:
     cargo run --bin docs > docs/openapi.json
+
+# Run a server to preview the static docs locally (requires Python)
+docs-preview:
+    python3 -m http.server -d docs
 
 ####################################################################################################
 # Migrations
