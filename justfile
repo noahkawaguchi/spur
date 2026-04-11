@@ -52,6 +52,14 @@ sqlx-prep: temp-db-start && temp-db-stop
     cargo sqlx prepare -D {{temp-db-url}} -- --workspace --all-targets --all-features
 
 ####################################################################################################
+# API docs (OpenAPI/Swagger UI)
+####################################################################################################
+
+# Export the API docs in JSON format and save to file
+docs-json:
+    cargo run --bin docs > docs/openapi.json
+
+####################################################################################################
 # Migrations
 #
 # Requires the Atlas CLI (https://atlasgo.io/getting-started#installation).
