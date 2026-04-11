@@ -93,6 +93,7 @@ async fn token_check() -> &'static str { "Your token is valid\n" }
 
 #[derive(OpenApi)]
 #[openapi(
+    servers((url = "https://spur.noahkawaguchi.com")),
     modifiers(&JwtAddon),
     paths(pong, token_check),
     info(description = API_DESC),
