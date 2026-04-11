@@ -31,6 +31,10 @@ use utoipa::{
 use utoipa_swagger_ui::SwaggerUi;
 
 /// Creates the API/web layer and sets it up to accept requests from the provided origin.
+///
+/// # Errors
+///
+/// Returns `Err` if `frontend_url` cannot be parsed.
 pub fn build(state: AppState, frontend_url: &str) -> Result<Router> {
     let cors = CorsLayer::new()
         .allow_origin([frontend_url.parse()?])
@@ -98,7 +102,7 @@ async fn token_check() -> &'static str { "Your token is valid\n" }
         (path = "/posts", api = PostsDoc),
     ),
 )]
-struct ApiDoc;
+pub struct ApiDoc;
 
 const API_DESC: &str = "
 Spur is a reply-based social platform. More information and the source code are available at \

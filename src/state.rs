@@ -28,8 +28,12 @@ pub struct AppState {
 
 impl AppState {
     /// Wires together concrete infrastructure implementations (including the database connection),
-    /// domain services, application services, and read models to be accessed as `State` in the
-    /// API layer.
+    /// domain services, application services, and read models to be accessed as `State` in the API
+    /// layer.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if connecting to the database fails or times out.
     pub async fn init(config: &AppConfig) -> Result<Self> {
         let pool = PgPoolOptions::new()
             .max_connections(config.max_pool_connections)

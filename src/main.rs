@@ -1,20 +1,4 @@
-mod api;
-mod app_services;
-mod config;
-mod domain;
-mod infra;
-mod map_into;
-mod models;
-mod read_models;
-mod state;
-
-#[cfg(test)]
-mod test_utils;
-
 use anyhow::Result;
-use api::router;
-use config::AppConfig;
-use state::AppState;
 use tokio::net::TcpListener;
 
 /// Sets up the async runtime, logger, config, state, and server, and then listens for requests
@@ -24,9 +8,9 @@ fn main() -> Result<()> {
         spur::logger::init_with_default(log::LevelFilter::Info);
         log::info!("Initializing app...");
 
-        let config = AppConfig::load()?;
-        let state = AppState::init(&config).await?;
-        let app = router::build(state, &config.frontend_url)?;
+        let config = spur::AppConfig::load()?;
+        let state = spur::AppState::init(&config).await?;
+        let app = spur::api::build(state, &config.frontend_url)?;
         let listener = TcpListener::bind(&config.bind_addr).await?;
 
         #[cfg(debug_assertions)]

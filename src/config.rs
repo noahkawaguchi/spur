@@ -17,6 +17,10 @@ pub struct AppConfig {
 
 impl AppConfig {
     /// Attempts to load the required configuration data from environment variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the environment variables cannot be successfully read.
     pub fn load() -> Result<Self> {
         // Expect a .env file in development only
         #[cfg(debug_assertions)]
