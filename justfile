@@ -1,7 +1,8 @@
 ####################################################################################################
 #
-# Using this justfile requires the command runner `just`, the Docker CLI, and a running Docker
-# daemon. Other dependencies are documented below with the recipes that need them.
+# Using this justfile requires `just` (https://github.com/casey/just#installation)
+# and Docker (https://docs.docker.com/get-started/get-docker/) with the Docker daemon running.
+# Other dependencies are documented below with the recipes that need them.
 #
 ####################################################################################################
 
