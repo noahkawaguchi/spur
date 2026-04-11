@@ -47,10 +47,9 @@ services:
       migrate: { condition: service_completed_successfully }
 
   caddy:
-    image: caddy:2.10.2-alpine
+    image: caddy:2.11.2-alpine
     restart: unless-stopped
     ports: [80:80, 443:443]
-    # ports: ["80:80", "443:443"]
     env_file: .env
     volumes:
       - ./caddy_conf:/etc/caddy:ro # Directory containing the Caddyfile
