@@ -82,13 +82,13 @@ mod tests {
                 name: String::from("Alice"),
                 email: String::from("alice@example.com"),
                 username: String::from("alice123"),
-                password_hash: String::from("Ga45392*&$asd$"),
+                password_hash: String::from("Ga45392*&$asD$"),
             },
             NewUser {
                 name: String::from("Bob"),
                 email: String::from("bob@email.com"),
                 username: String::from("bob456"),
-                password_hash: String::from("$$%%wub2"),
+                password_hash: String::from("$$%%wuB2"),
             },
             NewUser {
                 name: String::from("Carla"),
@@ -198,14 +198,14 @@ mod tests {
             name: String::from("Alice"),
             email: String::from("alice@example.com"),
             username: String::from("alice123"),
-            password_hash: String::from("Ga45392*&$asd$"),
+            password_hash: String::from("Ga45392*&$asD$"),
         };
 
         let fake_alice = NewUser {
             name: String::from("Alice Again"),
             email: String::from("alice@example.com"),
             username: String::from("alice999"),
-            password_hash: String::from("Ga45392*&$asd$"),
+            password_hash: String::from("Ga45392*&$asD$"),
         };
 
         repo.insert_new(&pool, &real_alice)
@@ -227,14 +227,14 @@ mod tests {
             name: String::from("Bob"),
             email: String::from("bob@email.com"),
             username: String::from("bob456"),
-            password_hash: String::from("$$%%wub2"),
+            password_hash: String::from("$$%%wuB2"),
         };
 
         let fake_bob = NewUser {
             name: String::from("I'm Bob"),
             email: String::from("bob_bob@bob.bob"),
             username: String::from("bob456"),
-            password_hash: String::from("$$%%wub2"),
+            password_hash: String::from("$$%%wuB2"),
         };
 
         repo.insert_new(&pool, &real_bob)
@@ -296,7 +296,7 @@ mod tests {
             "sam\rthe_man",
             "サム・ザ・マン",
             "donny😂😂😂dan",
-            "-–—ーdanielle〜~_",
+            "-–—〜danielle〜~_",
         ];
 
         for username in bad_usernames {

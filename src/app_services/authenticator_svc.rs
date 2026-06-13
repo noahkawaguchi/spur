@@ -98,7 +98,7 @@ mod tests {
             tokio_test(async {
                 let alice = alice_registration();
                 let alice_clone = alice.clone();
-                let pw_hash = "ab43$@baf$$CO";
+                let pw_hash = "ab43$@baF$$CO";
 
                 let mut mock_provider = MockAuthProvider::new();
                 mock_provider
@@ -137,7 +137,7 @@ mod tests {
             tokio_test(async {
                 let alice = alice_registration();
                 let alice_clone = alice.clone();
-                let pw_hash = "ab43$@baf$$CO";
+                let pw_hash = "ab43$@baF$$CO";
 
                 let mut mock_provider = MockAuthProvider::new();
                 mock_provider

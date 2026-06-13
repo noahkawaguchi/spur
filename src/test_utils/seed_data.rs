@@ -25,14 +25,14 @@ pub async fn seed_users(pool: &PgPool) -> Result<[NewUser; 4]> {
         name: String::from("Eunice Lee"),
         email: String::from("eunice@lee.eee"),
         username: String::from("you_n_15"),
-        password_hash: String::from("UNE$@$_b08088"),
+        password_hash: String::from("UNe$@$_b08088"),
     };
 
     let felipe = NewUser {
         name: String::from("Felipe Hall"),
         email: String::from("f.hall@mail-cloud.net"),
         username: String::from("fe_to_the_lip_to_the_e"),
-        password_hash: String::from("ppaPpA44245$$$$"),
+        password_hash: String::from("pPaPpA44245$$$$"),
     };
 
     let gillian = NewUser {

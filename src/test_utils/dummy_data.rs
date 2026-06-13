@@ -9,7 +9,7 @@ pub mod user {
             name: String::from("Friendly Good"),
             email: String::from("good@friend.co"),
             username: String::from("my_friend_5"),
-            password_hash: String::from("ab5iub$@1i&g"),
+            password_hash: String::from("ab5iUb$@1i&g"),
             created_at: Utc::now(),
         }
     }
@@ -20,7 +20,7 @@ pub mod user {
             name: String::from("Gillian Jill"),
             email: String::from("gillian@jill.org"),
             username: String::from("jill_plus_ian"),
-            password_hash: String::from("aab52i4n&$"),
+            password_hash: String::from("aAb52i4n&$"),
             created_at: Utc::now()
                 .checked_sub_days(Days::new(1))
                 .context("failed to subtract one day from now")?,
@@ -33,7 +33,7 @@ pub mod user {
             name: String::from("Harold Old"),
             email: String::from("harold@old.jp"),
             username: String::from("old_hare"),
-            password_hash: String::from("ljb42b50%&$@"),
+            password_hash: String::from("lJb42b50%&$@"),
             created_at: Utc::now()
                 .checked_sub_months(Months::new(1))
                 .context("failed to subtract one month from now")?,

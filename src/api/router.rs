@@ -194,8 +194,8 @@ mod tests {
         ) -> Result<Response<Body>> {
             let mut req = Request::builder().uri(uri).method(Method::GET);
 
-            if let Some(tok) = token {
-                req = req.header(AUTHORIZATION, format!("Bearer {tok}"));
+            if let Some(tk) = token {
+                req = req.header(AUTHORIZATION, format!("Bearer {tk}"));
             }
 
             super::build(state, "example.com")?
@@ -278,8 +278,8 @@ mod tests {
         ) -> Result<Response<Body>> {
             let mut req = Request::builder().uri(uri).method(&method);
 
-            if let Some(tok) = token {
-                req = req.header(AUTHORIZATION, format!("Bearer {tok}"));
+            if let Some(tk) = token {
+                req = req.header(AUTHORIZATION, format!("Bearer {tk}"));
             }
             if method == Method::POST {
                 req = req.header(CONTENT_TYPE, "application/json");

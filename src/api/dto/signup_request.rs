@@ -99,7 +99,7 @@ mod tests {
                     name: String::from("John"),
                     email: String::from("john@email.mail"),
                     username: username.to_string(),
-                    password: String::from("ok72PAss!yEAH()Pa55"),
+                    password: String::from("ok72PAss!yEaH()Pa55"),
                 }
                 .validate()
                 .is_ok()
@@ -110,7 +110,7 @@ mod tests {
     #[test]
     fn disallows_invalid_usernames() {
         for username in [
-            "ジョンだにょーん",
+            "ジョンだにょ〜ん",
             "my２s　７",
             "hello💄💄💄world",
             "",
@@ -123,7 +123,7 @@ mod tests {
                     name: String::from("John"),
                     email: String::from("john@email.mail"),
                     username: username.to_string(),
-                    password: String::from("ok72PAss!yEAH()Pa55"),
+                    password: String::from("ok72PAss!yEaH()Pa55"),
                 }
                 .validate()
                 .is_err_and(|e| e.to_string()
@@ -161,7 +161,7 @@ mod tests {
             ["  ", "be at least 10 characters"],
             ["aB4%", "be at least 10 characters"],
             [
-                "aaaaaaaaaaBBBBBBBBBB4444444444()()()()()UUUUUUUUUU-hhhhhhhhhhEEEEEEEEEE8888888888",
+                "aaaaaaaaaaBBBBBBBBBB4444444444()()()()()UuUuUuUuUU-hhHhHhHhHhEEeEEeEEeE8888888888",
                 "be at most 72 bytes (72 English letters/digits/symbols, \
                     fewer for other kinds of characters)",
             ],
@@ -170,10 +170,10 @@ mod tests {
                 "contain at least one lowercase letter",
             ],
             [
-                "abba--babb-bdbe-bo-gu-ugo-ao-bl",
+                "abba--ba-bb-bd-be-bo-gu-u-go-ao-bl",
                 "contain at least one uppercase letter",
             ],
-            ["abOU_ID_FG basicKFG", "contain at least one digit (0-9)"],
+            ["abOU_ID_FG basicKfG", "contain at least one digit (0-9)"],
             ["abc123ABC123abc9", "contain at least one special character"],
         ] {
             assert!(
