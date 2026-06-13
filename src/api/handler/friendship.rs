@@ -129,7 +129,7 @@ async fn list_friends(
         status = StatusCode::OK,
         body = Vec<String>,
         description = "a list of people who want to be friends with you",
-        example = json!(["Ako", "bruno", "c4554ndr4", "dan-o", "__EVELYN__"]),
+        example = json!(["Ak0", "bruno", "c4554nDr4", "dan-o", "__EVELYN__"]),
     )),
 )]
 async fn list_requests(

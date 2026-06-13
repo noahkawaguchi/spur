@@ -8,7 +8,7 @@ pub mod dummy_data {
 
     pub fn dummy_signup_request() -> SignupRequest {
         SignupRequest {
-            name: String::from("Christina Ani-Tsi RHC"),
+            name: String::from("Christina Ani-T-Sir-HC"),
             email: String::from("name@backwards.moc"),
             username: String::from("chris_and_tina"),
             password: String::from("2shh!5hh#H"),

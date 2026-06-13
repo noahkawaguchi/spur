@@ -108,9 +108,9 @@ test *ARGS: temp-db-start
 coverage: temp-db-start && temp-db-stop
     DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo llvm-cov --open --workspace --all-targets
 
-# Check spelling according to `cspell.json`. Requires `npm i -g cspell`.
+# Check spelling with Codebook (https://github.com/blopker/codebook)
 spell-check:
-    cspell .
+    git ls-files -z | xargs -0 codebook-lsp lint
 
 ####################################################################################################
 # Ephemeral Postgres container helper utilities
