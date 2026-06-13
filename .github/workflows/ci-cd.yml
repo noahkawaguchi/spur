@@ -1,5 +1,7 @@
 name: CI/CD
 
+permissions: { contents: read }
+
 on:
   push: { branches: [main] }
   pull_request: { branches: [main] }
@@ -78,8 +80,8 @@ jobs:
   # triggered by a push to main. Publishes both a commit hash tag and a latest tag.
   container-image:
     runs-on: ubuntu-24.04-arm
-    needs: [format-check, lint, spell-check, test]
     permissions: { packages: write }
+    needs: [format-check, lint, spell-check, test]
 
     steps:
       - uses: docker/setup-buildx-action@v3 # Necessary for caching in build-push-action
