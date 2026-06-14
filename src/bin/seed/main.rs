@@ -3,7 +3,7 @@ mod post;
 mod time_utils;
 mod user;
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use sqlx::{PgPool, postgres::PgPoolOptions};
 
 /// Connects to the database specified in the environment variable `DATABASE_URL` and inserts seed

@@ -8,7 +8,7 @@ use crate::{
         validated_json::ValidatedJson,
     },
     app_services::MutateFriendshipByUsername,
-    map_into::MapInto,
+    map_into::MapInto as _,
     read_models::SocialRead,
     state::AppState,
 };
@@ -179,7 +179,7 @@ mod tests {
         http::{Method, Request, header::CONTENT_TYPE},
     };
     use mockall::predicate::eq;
-    use tower::ServiceExt;
+    use tower::ServiceExt as _;
 
     mod add_friend {
         use super::*;
@@ -201,7 +201,7 @@ mod tests {
                     mutate_friendship_by_username: Arc::new(mock_svc),
                     ..Default::default()
                 };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let req_body = serialize_body(&AddFriendRequest {
                     recipient_username: String::from(recipient_username),
@@ -245,7 +245,7 @@ mod tests {
                     mutate_friendship_by_username: Arc::new(mock_svc),
                     ..Default::default()
                 };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let req_body = serialize_body(&AddFriendRequest {
                     recipient_username: String::from(recipient_username),
@@ -289,7 +289,7 @@ mod tests {
                     mutate_friendship_by_username: Arc::new(mock_svc),
                     ..Default::default()
                 };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let req_body = serialize_body(&AddFriendRequest {
                     recipient_username: String::from(recipient_username),
@@ -340,7 +340,7 @@ mod tests {
 
                 let state =
                     AppState { social_read: Arc::new(mock_social_read), ..Default::default() };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let mut req = Request::builder()
                     .method(Method::GET)
@@ -373,7 +373,7 @@ mod tests {
 
                 let state =
                     AppState { social_read: Arc::new(mock_social_read), ..Default::default() };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let mut req = Request::builder()
                     .method(Method::GET)
@@ -417,7 +417,7 @@ mod tests {
 
                 let state =
                     AppState { social_read: Arc::new(mock_social_read), ..Default::default() };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let mut req = Request::builder()
                     .method(Method::GET)
@@ -450,7 +450,7 @@ mod tests {
 
                 let state =
                     AppState { social_read: Arc::new(mock_social_read), ..Default::default() };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let mut req = Request::builder()
                     .method(Method::GET)
@@ -490,7 +490,7 @@ mod tests {
 
                 let state =
                     AppState { social_read: Arc::new(mock_social_read), ..Default::default() };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let mut req = Request::builder()
                     .method(Method::GET)
@@ -523,7 +523,7 @@ mod tests {
 
                 let state =
                     AppState { social_read: Arc::new(mock_social_read), ..Default::default() };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let mut req = Request::builder()
                     .method(Method::GET)

@@ -43,12 +43,11 @@ mod tests {
         Extension, Json, Router,
         body::Body,
         http::{Method, Request, StatusCode, header::AUTHORIZATION},
-        middleware,
         routing::get,
     };
     use mockall::predicate::eq;
     use serde::{Deserialize, Serialize};
-    use tower::ServiceExt;
+    use tower::ServiceExt as _;
 
     const ID_ROUTE: &str = "/my-id";
 

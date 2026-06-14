@@ -43,7 +43,7 @@ impl PostRepo for PgPostRepo {
 mod tests {
     use super::*;
     use crate::test_utils::{seed_data::seed_users_and_root_post, time::within_five_seconds};
-    use anyhow::{Context, Result};
+    use anyhow::{Context as _, Result};
     use chrono::Utc;
     use sqlx::PgPool;
     use std::assert_matches;
@@ -115,7 +115,7 @@ mod tests {
     async fn allows_post_bodies_with_non_whitespace_characters(pool: PgPool) -> Result<()> {
         seed_users_and_root_post(&pool).await?;
 
-        for (i, non_empty_body) in [
+        for (non_empty_body, parent_id) in [
             "hello",
             "   hello   ",
             " h e l l o ",
@@ -125,12 +125,12 @@ mod tests {
             "　　　　世界",
         ]
         .into_iter()
-        .enumerate()
+        .zip(1..)
         {
-            // Increment the parent ID with each insertion to avoid duplicate reply errors
+            // Use a different parent ID for each insertion to avoid duplicate reply errors
             assert_matches!(
                 PgPostRepo
-                    .insert_new(&pool, 4, (i + 1).try_into()?, non_empty_body)
+                    .insert_new(&pool, 4, parent_id, non_empty_body)
                     .await,
                 Ok(())
             );

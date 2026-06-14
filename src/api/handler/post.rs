@@ -8,7 +8,7 @@ use crate::{
         validated_json::ValidatedJson,
     },
     domain::post::PostSvc,
-    map_into::MapInto,
+    map_into::MapInto as _,
     read_models::PostWithAuthorRead,
     state::AppState,
 };
@@ -206,7 +206,7 @@ mod tests {
         http::{Method, Request, header::CONTENT_TYPE},
     };
     use mockall::predicate::eq;
-    use tower::ServiceExt;
+    use tower::ServiceExt as _;
 
     mod create_new {
         use super::*;
@@ -232,7 +232,7 @@ mod tests {
                     .return_once(|_, _, _| Ok(()));
 
                 let state = AppState { post_svc: Arc::new(mock_post_svc), ..Default::default() };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let mut req = Request::builder()
                     .method(Method::POST)
@@ -268,7 +268,7 @@ mod tests {
                     .return_once(|_, _, _| Err(PostError::DeletedParent));
 
                 let state = AppState { post_svc: Arc::new(mock_post_svc), ..Default::default() };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let mut req = Request::builder()
                     .method(Method::POST)
@@ -311,7 +311,7 @@ mod tests {
                     post_with_author_read: Arc::new(mock_pwa_read),
                     ..Default::default()
                 };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let req = Request::builder()
                     .method(Method::GET)
@@ -344,7 +344,7 @@ mod tests {
                     post_with_author_read: Arc::new(mock_pwa_read),
                     ..Default::default()
                 };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let req = Request::builder()
                     .method(Method::GET)
@@ -384,7 +384,7 @@ mod tests {
                     post_with_author_read: Arc::new(mock_pwa_read),
                     ..Default::default()
                 };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let req = Request::builder()
                     .method(Method::GET)
@@ -419,7 +419,7 @@ mod tests {
                     post_with_author_read: Arc::new(mock_pwa_read),
                     ..Default::default()
                 };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let req = Request::builder()
                     .method(Method::GET)
@@ -459,7 +459,7 @@ mod tests {
                     post_with_author_read: Arc::new(mock_pwa_read),
                     ..Default::default()
                 };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let req = Request::builder()
                     .method(Method::GET)
@@ -492,7 +492,7 @@ mod tests {
                     post_with_author_read: Arc::new(mock_pwa_read),
                     ..Default::default()
                 };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let req = Request::builder()
                     .method(Method::GET)
@@ -532,7 +532,7 @@ mod tests {
                     post_with_author_read: Arc::new(mock_pwa_read),
                     ..Default::default()
                 };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let mut req = Request::builder()
                     .method(Method::GET)
@@ -567,7 +567,7 @@ mod tests {
                     post_with_author_read: Arc::new(mock_pwa_read),
                     ..Default::default()
                 };
-                let app = super::routes().with_state(state);
+                let app = routes().with_state(state);
 
                 let mut req = Request::builder()
                     .method(Method::GET)

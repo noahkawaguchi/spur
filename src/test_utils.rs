@@ -5,7 +5,7 @@ pub mod mock_repos;
 pub mod seed_data;
 pub mod time;
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 
 /// Replaces `#[tokio::test]`, not inserting `#[allow(clippy::expect_used)]`.
 ///

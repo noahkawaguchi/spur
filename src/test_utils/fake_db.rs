@@ -2,7 +2,7 @@ use crate::{
     app_services::uow::{Tx, UnitOfWork},
     domain::RepoError,
 };
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use sqlx::{PgExecutor, PgPool, postgres::PgPoolOptions};
 use std::{
     sync::{

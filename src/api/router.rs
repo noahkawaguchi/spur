@@ -1,12 +1,10 @@
-use super::{
-    handler::{
-        auth::{self, AuthDoc},
-        friendship::{self, FriendsDoc},
-        post::{self, PostsDoc},
+use crate::{
+    api::{
+        handler::{auth, auth::AuthDoc, friendship, friendship::FriendsDoc, post, post::PostsDoc},
+        middleware::validate_jwt,
     },
-    middleware::validate_jwt,
+    state::AppState,
 };
-use crate::state::AppState;
 use anyhow::Result;
 use axum::{
     Router,
@@ -20,7 +18,7 @@ use axum::{
 };
 use tower_http::cors::CorsLayer;
 use utoipa::{
-    Modify, OpenApi,
+    OpenApi as _,
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
 };
 use utoipa_swagger_ui::SwaggerUi;
@@ -38,7 +36,7 @@ pub fn build(state: AppState, frontend_url: &str) -> Result<Router> {
         .allow_credentials(true);
 
     let app = Router::new()
-        .route("/", get(|| async { Redirect::to("/docs") }))
+        .route("/", get(async || Redirect::to("/docs")))
         .route("/ping", get(pong))
         .nest("/auth", auth::routes().with_state(state.clone()))
         .merge(protected_routes(state))
@@ -86,7 +84,7 @@ async fn pong() -> &'static str { "pong!\n" }
 )]
 async fn token_check() -> &'static str { "Your token is valid\n" }
 
-#[derive(OpenApi)]
+#[derive(utoipa::OpenApi)]
 #[openapi(
     servers((url = "https://spur.noahkawaguchi.com")),
     modifiers(&JwtAddon),
@@ -127,7 +125,7 @@ Other errors specific to each endpoint are documented below.
 
 struct JwtAddon;
 
-impl Modify for JwtAddon {
+impl utoipa::Modify for JwtAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
         if let Some(components) = openapi.components.as_mut() {
             components.add_security_scheme(
@@ -160,7 +158,7 @@ mod tests {
             tokio_test,
         },
     };
-    use anyhow::Context;
+    use anyhow::Context as _;
     use axum::{
         body::Body,
         http::{
@@ -175,7 +173,7 @@ mod tests {
     };
     use mockall::predicate::eq;
     use std::sync::Arc;
-    use tower::ServiceExt;
+    use tower::ServiceExt as _;
 
     const TEST_TOKEN: &str = "bear-the-bearer";
 
@@ -193,7 +191,7 @@ mod tests {
                 req = req.header(AUTHORIZATION, format!("Bearer {tk}"));
             }
 
-            super::build(state, "example.com")?
+            build(state, "example.com")?
                 .oneshot(req.body(Body::empty())?)
                 .await
                 .map_err(Into::into)
@@ -280,7 +278,7 @@ mod tests {
                 req = req.header(CONTENT_TYPE, "application/json");
             }
 
-            super::build(state, "example.com")?
+            build(state, "example.com")?
                 .oneshot(req.body(body)?)
                 .await
                 .map_err(Into::into)
@@ -377,7 +375,7 @@ mod tests {
             for &(ref k, v) in req_headers {
                 req = req.header(k, v);
             }
-            super::build(AppState::default(), allowed_origin)?
+            build(AppState::default(), allowed_origin)?
                 .oneshot(req.body(Body::empty())?)
                 .await
                 .map_err(Into::into)

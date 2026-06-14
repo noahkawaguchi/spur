@@ -89,7 +89,7 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
 mod tests {
     use super::*;
     use crate::{
-        domain::post::PostRepo, infra::post_repo::PgPostRepo,
+        domain::post::PostRepo as _, infra::post_repo::PgPostRepo,
         test_utils::seed_data::seed_users_and_root_post,
     };
     use anyhow::Result;
@@ -164,7 +164,7 @@ mod tests {
         let first_child = read.by_post_id(4).await?;
         assert_matches!(
             read.children_of(parent_id).await,
-            Ok(v) if v.len() == 1 && v[0] == first_child
+            Ok(v) if v.len() == 1 && v.first() == Some(&first_child)
         );
         // More children
         repo.insert_new(&pool, 2, parent_id, "Second child here") // ID 6

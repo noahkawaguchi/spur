@@ -72,7 +72,7 @@ impl UserRepo for PgUserRepo {
 mod tests {
     use super::*;
     use crate::test_utils::time::within_five_seconds;
-    use anyhow::{Context, Result};
+    use anyhow::{Context as _, Result};
     use chrono::Utc;
     use sqlx::PgPool;
     use std::assert_matches;
@@ -113,15 +113,12 @@ mod tests {
         }
 
         // Get by ID (should automatically increment starting from 1)
-        for (i, user) in test_users.iter().enumerate() {
+        for (user, id) in test_users.iter().zip(1..) {
             let got_by_id = repo
-                .get_by_id(
-                    &pool,
-                    i32::try_from(i + 1).context("failed to convert usize to i32")?,
-                )
+                .get_by_id(&pool, id)
                 .await
                 .context("failed to get user by ID")?
-                .context("failed to get user by ID")?;
+                .context("unexpected None user")?;
 
             assert_eq!(got_by_id, user);
         }
@@ -172,19 +169,14 @@ mod tests {
     async fn sets_auto_generated_id_and_created_at(pool: PgPool) -> Result<()> {
         let repo = PgUserRepo;
 
-        for (i, user) in make_test_users().into_iter().enumerate() {
+        // ID should increment starting from 1
+        for (user, expected_id) in make_test_users().into_iter().zip(1..) {
             let created_user = repo
                 .insert_new(&pool, &user)
                 .await
                 .context("failed to insert user")?;
 
             assert!(within_five_seconds(created_user.created_at, Utc::now()));
-
-            // id should increment starting from 1
-            let expected_id: i32 = (i + 1)
-                .try_into()
-                .context("failed to cast usize into i32")?;
-
             assert_eq!(created_user.id, expected_id);
         }
 
