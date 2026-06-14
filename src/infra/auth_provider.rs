@@ -52,10 +52,12 @@ impl Claims {
     fn new(payload: i32) -> Result<Self> {
         let now = Utc::now();
 
-        let exp = (now + Duration::hours(24))
+        let exp = now
+            .checked_add_signed(Duration::hours(24))
+            .with_context(|| format!("Overflowed adding 24 hours to now: {now}"))?
             .timestamp()
             .try_into()
-            .with_context(|| format!("pre-1970 system time: {now}"))?;
+            .with_context(|| format!("Pre-1970 system time: {now}"))?;
 
         Ok(Self { sub: payload.to_string(), exp })
     }
