@@ -122,16 +122,16 @@ mod tests {
         let ids2 = UserIdPair::new(2, 3)?;
 
         // No requests, no friends
-        let requests = read
+        let requests1 = read
             .pending_requests(3)
             .await
             .context("failed to get empty requests")?;
-        assert!(requests.is_empty());
-        let friends = read
+        assert!(requests1.is_empty());
+        let friends1 = read
             .friend_usernames(3)
             .await
             .context("failed to get empty friends")?;
-        assert!(friends.is_empty());
+        assert!(friends1.is_empty());
 
         // Two requests, no friends
         repo.new_request(&pool, &ids1, 1)
@@ -140,48 +140,48 @@ mod tests {
         repo.new_request(&pool, &ids2, 2)
             .await
             .context("failed to create new request")?;
-        let requests = read
+        let requests2 = read
             .pending_requests(3)
             .await
             .context("failed to get requests")?;
         // Most recently requested should be first
-        assert_eq!(requests, vec![u2.username.clone(), u1.username.clone()]);
-        let friends = read
+        assert_eq!(requests2, vec![u2.username.clone(), u1.username.clone()]);
+        let friends2 = read
             .friend_usernames(3)
             .await
             .context("failed to get empty friends")?;
-        assert!(friends.is_empty());
+        assert!(friends2.is_empty());
 
         // One request, one friend
         repo.accept_request(&pool, &ids1)
             .await
             .context("failed to accept request")?;
-        let requests = read
+        let requests3 = read
             .pending_requests(3)
             .await
             .context("failed to get single request")?;
-        assert_eq!(requests, vec![u2.username.clone()]);
-        let friends = read
+        assert_eq!(requests3, vec![u2.username.clone()]);
+        let friends3 = read
             .friend_usernames(3)
             .await
             .context("failed to get single friend")?;
-        assert_eq!(friends, vec![u1.username.clone()]);
+        assert_eq!(friends3, vec![u1.username.clone()]);
 
         // No requests, two friends
         repo.accept_request(&pool, &ids2)
             .await
             .context("failed to accept request")?;
-        let requests = read
+        let requests4 = read
             .pending_requests(3)
             .await
             .context("failed to get empty requests")?;
-        assert!(requests.is_empty());
-        let friends = read
+        assert!(requests4.is_empty());
+        let friends4 = read
             .friend_usernames(3)
             .await
             .context("failed to get friends")?;
         // Most recently accepted should be first
-        assert_eq!(friends, vec![u2.username, u1.username]);
+        assert_eq!(friends4, vec![u2.username, u1.username]);
 
         Ok(())
     }

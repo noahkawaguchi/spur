@@ -43,7 +43,7 @@ impl From<RepoError> for AuthError {
             RepoError::CheckViolation(v) => {
                 Self::Internal(anyhow!("Unexpected check violation: {v}"))
             }
-            RepoError::Technical(e) => Self::Internal(e),
+            RepoError::Technical(err) => Self::Internal(err),
         }
     }
 }

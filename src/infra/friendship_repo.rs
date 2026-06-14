@@ -161,38 +161,38 @@ mod tests {
         let ids1 = UserIdPair::new(1, 3)?;
         let ids2 = UserIdPair::new(2, 3)?;
 
-        let status = repo
+        let status1 = repo
             .get_status(&pool, &ids2)
             .await
             .context("failed to get status")?;
-        assert_eq!(status, FriendshipStatus::Nil);
+        assert_eq!(status1, FriendshipStatus::Nil);
 
         repo.new_request(&pool, &ids2, 3)
             .await
             .context("failed to create new request")?;
-        let status = repo
+        let status2 = repo
             .get_status(&pool, &ids2)
             .await
             .context("failed to get status")?;
-        assert_eq!(status, FriendshipStatus::PendingFrom(3));
+        assert_eq!(status2, FriendshipStatus::PendingFrom(3));
 
         repo.new_request(&pool, &ids1, 1)
             .await
             .context("failed to create new request")?;
-        let status = repo
+        let status3 = repo
             .get_status(&pool, &ids1)
             .await
             .context("failed to get status")?;
-        assert_eq!(status, FriendshipStatus::PendingFrom(1));
+        assert_eq!(status3, FriendshipStatus::PendingFrom(1));
 
         repo.accept_request(&pool, &ids2)
             .await
             .context("failed to accept request")?;
-        let status = repo
+        let status4 = repo
             .get_status(&pool, &ids2)
             .await
             .context("failed to get status")?;
-        assert_eq!(status, FriendshipStatus::Friends);
+        assert_eq!(status4, FriendshipStatus::Friends);
 
         Ok(())
     }
