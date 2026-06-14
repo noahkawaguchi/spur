@@ -1,43 +1,44 @@
 [package]
-name = "spur"
-version = "0.2.0"
-edition = "2024"
+name        = "spur"
+version     = "0.2.0"
+edition     = "2024"
 default-run = "spur"
+
+[dependencies]
+anyhow            = "1.0.98"
+async-trait       = "0.1.88"
+axum              = { version = "0.8.4", features = ["macros"] }
+axum-extra        = { version = "0.12.0", features = ["typed-header"] }
+bcrypt            = "0.19.0"
+chrono            = "0.4.41"
+dotenvy           = "0.15.7"
+env_logger        = "0.11.8"
+jsonwebtoken      = { version = "10.3.0", default-features = false, features = ["rust_crypto"] }
+lazy-regex        = "3.4.1"
+log               = "0.4.28"
+serde             = { version = "1.0.219", features = ["derive"] }
+sqlx              = { version = "0.9.0", features = ["chrono", "postgres", "runtime-tokio"] }
+thiserror         = "2.0.12"
+tokio             = { version = "1.45.0", features = ["rt-multi-thread", "signal"] }
+tower-http        = { version = "0.6.8", features = ["cors"] }
+utoipa            = { version = "5.4.0", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+validator         = { version = "0.20.0", features = ["derive"] }
+
+[dev-dependencies]
+mockall    = "0.14.0"
+serde_json = "1.0.143"
+tower      = { version = "0.5.2", features = ["util"] }
+
+[lints.clippy]
+all      = { level = "warn", priority = -1 }
+nursery  = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+allow_attributes                = "forbid"
+allow_attributes_without_reason = "forbid"
+expect_used                     = "forbid"
+unwrap_used                     = "forbid"
 
 [lints.rust]
 unsafe_code = "forbid"
-
-[lints.clippy]
-all = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
-unwrap_used = "forbid"
-expect_used = "forbid"
-allow_attributes = "forbid"
-allow_attributes_without_reason = "forbid"
-
-[dependencies]
-anyhow = "1.0.98"
-async-trait = "0.1.88"
-axum = { version = "0.8.4", features = ["macros"] }
-axum-extra = { version = "0.12.0", features = ["typed-header"] }
-bcrypt = "0.19.0"
-chrono = "0.4.41"
-dotenvy = "0.15.7"
-env_logger = "0.11.8"
-jsonwebtoken = { version = "10.3.0", default-features = false, features = ["rust_crypto"] }
-lazy-regex = "3.4.1"
-log = "0.4.28"
-serde = { version = "1.0.219", features = ["derive"] }
-sqlx = { version = "0.9.0", features = ["runtime-tokio", "postgres", "chrono"] }
-thiserror = "2.0.12"
-tokio = { version = "1.45.0", features = ["rt-multi-thread", "signal"] }
-tower-http = { version = "0.6.8", features = ["cors"] }
-utoipa = { version = "5.4.0", features = ["axum_extras"] }
-utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
-validator = { version = "0.20.0", features = ["derive"] }
-
-[dev-dependencies]
-mockall = "0.14.0"
-serde_json = "1.0.143"
-tower = { version = "0.5.2", features = ["util"] }
