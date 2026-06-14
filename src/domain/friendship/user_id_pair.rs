@@ -84,9 +84,12 @@ mod tests {
         let ids = UserIdPair::new(24, 99_991)?;
         let result = ids.is_lesser(25);
 
-        assert!(result.is_err_and(|e| e.to_string()
-            == "Internal logic error: UserIdPair `is_lesser` \
-                was erroneously passed an irrelevant ID"));
+        assert_matches!(
+            result,
+            Err(e) if e.to_string()
+                == "Internal logic error: UserIdPair `is_lesser` \
+                    was erroneously passed an irrelevant ID"
+        );
 
         Ok(())
     }
