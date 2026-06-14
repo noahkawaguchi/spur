@@ -1,5 +1,4 @@
-use crate::models::post::PostWithAuthor;
-use thiserror::Error;
+use {crate::models::post::PostWithAuthor, thiserror::Error};
 
 #[derive(Debug, Error)]
 pub enum ReadError {

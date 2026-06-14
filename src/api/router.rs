@@ -1,27 +1,34 @@
-use crate::{
-    api::{
-        handler::{auth, auth::AuthDoc, friendship, friendship::FriendsDoc, post, post::PostsDoc},
-        middleware::validate_jwt,
+use {
+    crate::{
+        api::{
+            handler::{
+                auth,
+                auth::AuthDoc,
+                friendship::{self, FriendsDoc},
+                post::{self, PostsDoc},
+            },
+            middleware::validate_jwt,
+        },
+        state::AppState,
     },
-    state::AppState,
-};
-use anyhow::Result;
-use axum::{
-    Router,
-    http::{
-        Method,
-        header::{AUTHORIZATION, CONTENT_TYPE},
+    anyhow::Result,
+    axum::{
+        Router,
+        http::{
+            Method,
+            header::{AUTHORIZATION, CONTENT_TYPE},
+        },
+        middleware,
+        response::Redirect,
+        routing::get,
     },
-    middleware,
-    response::Redirect,
-    routing::get,
+    tower_http::cors::CorsLayer,
+    utoipa::{
+        OpenApi as _,
+        openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
+    },
+    utoipa_swagger_ui::SwaggerUi,
 };
-use tower_http::cors::CorsLayer;
-use utoipa::{
-    OpenApi as _,
-    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
-};
-use utoipa_swagger_ui::SwaggerUi;
 
 /// Creates the API/web layer and sets it up to accept requests from the provided origin.
 ///
@@ -120,7 +127,9 @@ JSON Web Token. A token can be acquired via the login or signup endpoints and en
 
 Other errors specific to each endpoint are documented below.
 
-### NOTE: To save costs, the server at [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com) is not always running. However, the docs are always available at [spur-docs.noahkawaguchi.com](https://spur-docs.noahkawaguchi.com).
+### NOTE: To save costs, the server at [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com) \
+is not always running. However, the docs are always available at \
+[spur-docs.noahkawaguchi.com](https://spur-docs.noahkawaguchi.com).
 ";
 
 struct JwtAddon;
@@ -144,36 +153,38 @@ impl utoipa::Modify for JwtAddon {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        api::dto::{
-            dummy_data::dummy_login_request,
-            responses::{ErrorResponse, TokenResponse},
-        },
-        app_services::MockAuthenticator,
-        domain::auth::AuthError,
-        read_models::MockSocialRead,
-        test_utils::{
-            http_bodies::{deserialize_body, resp_into_body_text, serialize_body},
-            tokio_test,
-        },
-    };
-    use anyhow::Context as _;
-    use axum::{
-        body::Body,
-        http::{
-            HeaderMap, HeaderName, HeaderValue, Method, Request, Response, StatusCode,
-            header::{
-                ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_HEADERS,
-                ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN,
-                ACCESS_CONTROL_REQUEST_HEADERS, ACCESS_CONTROL_REQUEST_METHOD, AUTHORIZATION,
-                CONTENT_TYPE, ORIGIN,
+    use {
+        super::*,
+        crate::{
+            api::dto::{
+                dummy_data::dummy_login_request,
+                responses::{ErrorResponse, TokenResponse},
+            },
+            app_services::MockAuthenticator,
+            domain::auth::AuthError,
+            read_models::MockSocialRead,
+            test_utils::{
+                http_bodies::{deserialize_body, resp_into_body_text, serialize_body},
+                tokio_test,
             },
         },
+        anyhow::Context as _,
+        axum::{
+            body::Body,
+            http::{
+                HeaderMap, HeaderName, HeaderValue, Method, Request, Response, StatusCode,
+                header::{
+                    ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_HEADERS,
+                    ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN,
+                    ACCESS_CONTROL_REQUEST_HEADERS, ACCESS_CONTROL_REQUEST_METHOD, AUTHORIZATION,
+                    CONTENT_TYPE, ORIGIN,
+                },
+            },
+        },
+        mockall::predicate::eq,
+        std::sync::Arc,
+        tower::ServiceExt as _,
     };
-    use mockall::predicate::eq;
-    use std::sync::Arc;
-    use tower::ServiceExt as _;
 
     const TEST_TOKEN: &str = "bear-the-bearer";
 
@@ -416,10 +427,7 @@ mod tests {
 
                 let h = resp.headers();
                 assert_eq!(origin, try_get_header(h, &ACCESS_CONTROL_ALLOW_ORIGIN)?);
-                assert_eq!(
-                    "true",
-                    try_get_header(h, &ACCESS_CONTROL_ALLOW_CREDENTIALS)?
-                );
+                assert_eq!("true", try_get_header(h, &ACCESS_CONTROL_ALLOW_CREDENTIALS)?);
 
                 Ok(())
             })
@@ -448,18 +456,12 @@ mod tests {
                     "https://frontend.example",
                     try_get_header(h, &ACCESS_CONTROL_ALLOW_ORIGIN)?
                 );
-                assert_eq!(
-                    "GET,POST,OPTIONS",
-                    try_get_header(h, &ACCESS_CONTROL_ALLOW_METHODS)?
-                );
+                assert_eq!("GET,POST,OPTIONS", try_get_header(h, &ACCESS_CONTROL_ALLOW_METHODS)?);
                 assert_eq!(
                     "content-type,authorization",
                     try_get_header(h, &ACCESS_CONTROL_ALLOW_HEADERS)?
                 );
-                assert_eq!(
-                    "true",
-                    try_get_header(h, &ACCESS_CONTROL_ALLOW_CREDENTIALS)?
-                );
+                assert_eq!("true", try_get_header(h, &ACCESS_CONTROL_ALLOW_CREDENTIALS)?);
 
                 Ok(())
             })

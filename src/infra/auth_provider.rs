@@ -1,8 +1,10 @@
-use crate::domain::auth::AuthProvider;
-use anyhow::{Context as _, Result};
-use chrono::{Duration, Utc};
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
-use serde::{Deserialize, Serialize};
+use {
+    crate::domain::auth::AuthProvider,
+    anyhow::{Context as _, Result},
+    chrono::{Duration, Utc},
+    jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation},
+    serde::{Deserialize, Serialize},
+};
 
 pub struct BcryptJwtAuthProvider {
     jwt_secret: String,
@@ -67,10 +69,12 @@ impl Claims {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::test_utils::time::within_five_seconds;
-    use chrono::{DateTime, Days, Utc};
-    use std::assert_matches;
+    use {
+        super::*,
+        crate::test_utils::time::within_five_seconds,
+        chrono::{DateTime, Days, Utc},
+        std::assert_matches,
+    };
 
     const TEST_JWT_SECRET: &str = "super_secret_testing_only";
 

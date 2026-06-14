@@ -1,13 +1,15 @@
-use crate::{
-    domain::{
-        friendship::{FriendshipRepo as _, user_id_pair::UserIdPair},
-        user::UserRepo as _,
+use {
+    crate::{
+        domain::{
+            friendship::{FriendshipRepo as _, user_id_pair::UserIdPair},
+            user::UserRepo as _,
+        },
+        infra::{friendship_repo::PgFriendshipRepo, user_repo::PgUserRepo},
+        models::user::NewUser,
     },
-    infra::{friendship_repo::PgFriendshipRepo, user_repo::PgUserRepo},
-    models::user::NewUser,
+    anyhow::{Context as _, Result},
+    sqlx::PgPool,
 };
-use anyhow::{Context as _, Result};
-use sqlx::PgPool;
 
 /// Inserts four new users into the test database and returns them as they were inserted.
 /// They will automatically be given IDs 1, 2, 3, and 4 if there are no other existing users.

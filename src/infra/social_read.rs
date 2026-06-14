@@ -1,8 +1,10 @@
-use crate::{
-    models::post::PostWithAuthor,
-    read_models::{ReadError, SocialRead},
+use {
+    crate::{
+        models::post::PostWithAuthor,
+        read_models::{ReadError, SocialRead},
+    },
+    sqlx::PgPool,
 };
-use sqlx::PgPool;
 
 pub struct PgSocialRead {
     pool: PgPool,
@@ -97,20 +99,22 @@ impl SocialRead for PgSocialRead {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        domain::{
-            friendship::{FriendshipRepo as _, user_id_pair::UserIdPair},
-            post::PostRepo as _,
+    use {
+        super::*,
+        crate::{
+            domain::{
+                friendship::{FriendshipRepo as _, user_id_pair::UserIdPair},
+                post::PostRepo as _,
+            },
+            infra::{
+                friendship_repo::PgFriendshipRepo, post_repo::PgPostRepo,
+                post_with_author_read::PgPostWithAuthorRead,
+            },
+            read_models::PostWithAuthorRead as _,
+            test_utils::seed_data::{seed_friends, seed_root_post, seed_users},
         },
-        infra::{
-            friendship_repo::PgFriendshipRepo, post_repo::PgPostRepo,
-            post_with_author_read::PgPostWithAuthorRead,
-        },
-        read_models::PostWithAuthorRead as _,
-        test_utils::seed_data::{seed_friends, seed_root_post, seed_users},
+        anyhow::{Context as _, Result},
     };
-    use anyhow::{Context as _, Result};
 
     #[sqlx::test]
     async fn gets_all_requests_and_friends(pool: PgPool) -> Result<()> {

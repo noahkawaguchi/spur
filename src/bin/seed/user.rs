@@ -1,8 +1,10 @@
-use crate::time_utils::anchor_offset;
-use anyhow::Result;
-use chrono::{DateTime, Utc};
-use sqlx::PgPool;
-use std::env;
+use {
+    crate::time_utils::anchor_offset,
+    anyhow::Result,
+    chrono::{DateTime, Utc},
+    sqlx::PgPool,
+    std::env,
+};
 
 struct SeedUser {
     name: &'static str,

@@ -1,9 +1,11 @@
-use anyhow::{Context as _, Result, anyhow};
-use std::{
-    any::type_name,
-    env::{self, VarError},
-    fmt::Display,
-    str::FromStr,
+use {
+    anyhow::{Context as _, Result, anyhow},
+    std::{
+        any::type_name,
+        env::{self, VarError},
+        fmt::Display,
+        str::FromStr,
+    },
 };
 
 pub struct AppConfig {
@@ -64,9 +66,11 @@ impl AppConfig {
                 log::warn!("Environment variable {key} not found, using {default}");
                 Ok(default)
             }
-            Err(VarError::NotUnicode(_)) => Err(anyhow!(
-                "environment variable {key} present but not valid Unicode"
-            )),
+
+            Err(VarError::NotUnicode(_)) => {
+                Err(anyhow!("environment variable {key} present but not valid Unicode"))
+            }
+
             Ok(val) => val.parse().with_context(|| {
                 format!(
                     "environment variable {key} present but could not be parsed as {}",

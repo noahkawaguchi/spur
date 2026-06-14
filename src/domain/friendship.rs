@@ -1,6 +1,4 @@
-use crate::domain::RepoError;
-use sqlx::PgExecutor;
-use user_id_pair::UserIdPair;
+use {crate::domain::RepoError, sqlx::PgExecutor, user_id_pair::UserIdPair};
 
 pub mod error;
 pub mod user_id_pair;

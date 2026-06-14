@@ -1,12 +1,14 @@
-use super::error::ApiError;
-use axum::{
-    Json,
-    extract::{FromRequest, Request},
-    response::{IntoResponse, Response},
+use {
+    super::error::ApiError,
+    axum::{
+        Json,
+        extract::{FromRequest, Request},
+        response::{IntoResponse, Response},
+    },
+    serde::de::DeserializeOwned,
+    std::ops::Deref,
+    validator::Validate,
 };
-use serde::de::DeserializeOwned;
-use std::ops::Deref;
-use validator::Validate;
 
 /// Custom extractor that validates the request fields using `validator::Validate`.
 #[cfg_attr(test, derive(Debug))]
@@ -40,17 +42,19 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        api::dto::{responses::ErrorResponse, signup_request::SignupRequest},
-        test_utils::{
-            http_bodies::{deserialize_body, serialize_body},
-            tokio_test,
+    use {
+        super::*,
+        crate::{
+            api::dto::{responses::ErrorResponse, signup_request::SignupRequest},
+            test_utils::{
+                http_bodies::{deserialize_body, serialize_body},
+                tokio_test,
+            },
         },
+        anyhow::{Result, anyhow},
+        axum::http::{Method, Request, header::CONTENT_TYPE},
+        std::assert_matches,
     };
-    use anyhow::{Result, anyhow};
-    use axum::http::{Method, Request, header::CONTENT_TYPE};
-    use std::assert_matches;
 
     #[test]
     fn allows_valid_json_values() -> Result<()> {
@@ -80,7 +84,7 @@ mod tests {
             let payload = SignupRequest {
                 name: String::from("Sam Snead"),
                 email: String::from("sam@snead.nz"),
-                username: String::from("ユーザーネーム"), // Not allowed!
+                username: String::from("ユーザーネーム"), // Not allowed
                 password: String::from("#5tr0ngP455W0RD!"),
             };
 
@@ -97,8 +101,8 @@ mod tests {
             let resp_body = deserialize_body::<ErrorResponse>(resp).await?;
             let expected = ErrorResponse {
                 error: String::from(
-                    "username: username may only contain English letters, \
-                    digits, underscores, and hyphens",
+                    "username: username may only contain English letters, digits, underscores, \
+                     and hyphens",
                 ),
             };
 

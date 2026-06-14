@@ -1,14 +1,16 @@
-use crate::{api::error::ApiError, app_services::Authenticator};
-use axum::{
-    extract::{Request, State},
-    middleware,
-    response::Response,
+use {
+    crate::{api::error::ApiError, app_services::Authenticator},
+    axum::{
+        extract::{Request, State},
+        middleware,
+        response::Response,
+    },
+    axum_extra::{
+        TypedHeader,
+        headers::{Authorization, authorization::Bearer},
+    },
+    std::sync::Arc,
 };
-use axum_extra::{
-    TypedHeader,
-    headers::{Authorization, authorization::Bearer},
-};
-use std::sync::Arc;
 
 /// Middleware that confirms JWT validity and passes the requester's user ID to the handler via a
 /// request extension.
@@ -27,27 +29,29 @@ pub async fn validate_jwt(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        api::dto::responses::ErrorResponse,
-        app_services::MockAuthenticator,
-        domain::auth::AuthError,
-        state::AppState,
-        test_utils::{
-            http_bodies::{deserialize_body, resp_into_body_text},
-            tokio_test,
+    use {
+        super::*,
+        crate::{
+            api::dto::responses::ErrorResponse,
+            app_services::MockAuthenticator,
+            domain::auth::AuthError,
+            state::AppState,
+            test_utils::{
+                http_bodies::{deserialize_body, resp_into_body_text},
+                tokio_test,
+            },
         },
+        anyhow::Result,
+        axum::{
+            Extension, Json, Router,
+            body::Body,
+            http::{Method, Request, StatusCode, header::AUTHORIZATION},
+            routing::get,
+        },
+        mockall::predicate::eq,
+        serde::{Deserialize, Serialize},
+        tower::ServiceExt as _,
     };
-    use anyhow::Result;
-    use axum::{
-        Extension, Json, Router,
-        body::Body,
-        http::{Method, Request, StatusCode, header::AUTHORIZATION},
-        routing::get,
-    };
-    use mockall::predicate::eq;
-    use serde::{Deserialize, Serialize};
-    use tower::ServiceExt as _;
 
     const ID_ROUTE: &str = "/my-id";
 

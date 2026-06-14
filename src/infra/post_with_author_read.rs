@@ -1,8 +1,10 @@
-use crate::{
-    models::post::PostWithAuthor,
-    read_models::{PostWithAuthorRead, ReadError},
+use {
+    crate::{
+        models::post::PostWithAuthor,
+        read_models::{PostWithAuthorRead, ReadError},
+    },
+    sqlx::PgPool,
 };
-use sqlx::PgPool;
 
 pub struct PgPostWithAuthorRead {
     pool: PgPool,
@@ -87,14 +89,16 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        domain::post::PostRepo as _, infra::post_repo::PgPostRepo,
-        test_utils::seed_data::seed_users_and_root_post,
+    use {
+        super::*,
+        crate::{
+            domain::post::PostRepo as _, infra::post_repo::PgPostRepo,
+            test_utils::seed_data::seed_users_and_root_post,
+        },
+        anyhow::Result,
+        chrono::Utc,
+        std::assert_matches,
     };
-    use anyhow::Result;
-    use chrono::Utc;
-    use std::assert_matches;
 
     #[sqlx::test]
     async fn gets_an_existing_post(pool: PgPool) -> Result<()> {

@@ -1,5 +1,7 @@
-use env_logger::{DEFAULT_FILTER_ENV, Env};
-use log::{Level, LevelFilter, log_enabled};
+use {
+    env_logger::{DEFAULT_FILTER_ENV, Env},
+    log::{Level, LevelFilter, log_enabled},
+};
 
 /// Initializes the logger with the provided default if not set from the environment, checks whether
 /// logging has likely been accidentally disabled, and reports the max log level using the INFO log

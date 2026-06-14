@@ -1,24 +1,26 @@
-use super::api_result;
-use crate::{
-    api::{
-        dto::{
-            requests::AddFriendRequest,
-            responses::{ErrorResponse, PostResponse, SuccessResponse},
+use {
+    super::api_result,
+    crate::{
+        api::{
+            dto::{
+                requests::AddFriendRequest,
+                responses::{ErrorResponse, PostResponse, SuccessResponse},
+            },
+            validated_json::ValidatedJson,
         },
-        validated_json::ValidatedJson,
+        app_services::MutateFriendshipByUsername,
+        map_into::MapInto as _,
+        read_models::SocialRead,
+        state::AppState,
     },
-    app_services::MutateFriendshipByUsername,
-    map_into::MapInto as _,
-    read_models::SocialRead,
-    state::AppState,
+    axum::{
+        Extension, Json, Router,
+        extract::State,
+        http::StatusCode,
+        routing::{get, post},
+    },
+    std::sync::Arc,
 };
-use axum::{
-    Extension, Json, Router,
-    extract::State,
-    http::StatusCode,
-    routing::{get, post},
-};
-use std::sync::Arc;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(add_friend, list_friends, list_requests, friend_posts))]
@@ -77,15 +79,9 @@ async fn add_friend(
         .await?;
 
     let (status_code, message) = if became_friends {
-        (
-            StatusCode::OK,
-            format!("You are now friends with {}", payload.recipient_username),
-        )
+        (StatusCode::OK, format!("You are now friends with {}", payload.recipient_username))
     } else {
-        (
-            StatusCode::CREATED,
-            format!("Created a friend request to {}", payload.recipient_username),
-        )
+        (StatusCode::CREATED, format!("Created a friend request to {}", payload.recipient_username))
     };
 
     Ok((status_code, Json(SuccessResponse { message })))
@@ -108,10 +104,7 @@ async fn list_friends(
     social_read: State<Arc<dyn SocialRead>>,
     Extension(requester_id): Extension<i32>,
 ) -> api_result!(Vec<String>) {
-    Ok((
-        StatusCode::OK,
-        Json(social_read.friend_usernames(requester_id).await?),
-    ))
+    Ok((StatusCode::OK, Json(social_read.friend_usernames(requester_id).await?)))
 }
 
 /// Retrieves the usernames of users who have pending friend requests to the requester.
@@ -131,10 +124,7 @@ async fn list_requests(
     social_read: State<Arc<dyn SocialRead>>,
     Extension(requester_id): Extension<i32>,
 ) -> api_result!(Vec<String>) {
-    Ok((
-        StatusCode::OK,
-        Json(social_read.pending_requests(requester_id).await?),
-    ))
+    Ok((StatusCode::OK, Json(social_read.pending_requests(requester_id).await?)))
 }
 
 /// Retrieves all posts written by the requester's friends.
@@ -153,33 +143,32 @@ async fn friend_posts(
     social_read: State<Arc<dyn SocialRead>>,
     Extension(requester_id): Extension<i32>,
 ) -> api_result!(Vec<PostResponse>) {
-    Ok((
-        StatusCode::OK,
-        Json(social_read.friend_posts(requester_id).await?.map_into()),
-    ))
+    Ok((StatusCode::OK, Json(social_read.friend_posts(requester_id).await?.map_into())))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        api::dto::responses::ErrorResponse,
-        app_services::MockMutateFriendshipByUsername,
-        domain::friendship::error::FriendshipError,
-        read_models::{MockSocialRead, ReadError},
-        test_utils::{
-            dummy_data::post_with_author,
-            http_bodies::{deserialize_body, serialize_body},
-            tokio_test,
+    use {
+        super::*,
+        crate::{
+            api::dto::responses::ErrorResponse,
+            app_services::MockMutateFriendshipByUsername,
+            domain::friendship::error::FriendshipError,
+            read_models::{MockSocialRead, ReadError},
+            test_utils::{
+                dummy_data::post_with_author,
+                http_bodies::{deserialize_body, serialize_body},
+                tokio_test,
+            },
         },
+        anyhow::{Result, anyhow},
+        axum::{
+            body::Body,
+            http::{Method, Request, header::CONTENT_TYPE},
+        },
+        mockall::predicate::eq,
+        tower::ServiceExt as _,
     };
-    use anyhow::{Result, anyhow};
-    use axum::{
-        body::Body,
-        http::{Method, Request, header::CONTENT_TYPE},
-    };
-    use mockall::predicate::eq;
-    use tower::ServiceExt as _;
 
     mod add_friend {
         use super::*;
@@ -324,11 +313,8 @@ mod tests {
         fn lists_retrieved_usernames() -> Result<()> {
             tokio_test(async {
                 let requester_id = 44;
-                let friends = vec![
-                    String::from("Alice"),
-                    String::from("Bob"),
-                    String::from("Callahan"),
-                ];
+                let friends =
+                    vec![String::from("Alice"), String::from("Bob"), String::from("Callahan")];
                 let friends_clone = friends.clone();
 
                 let mut mock_social_read = MockSocialRead::new();
@@ -401,11 +387,8 @@ mod tests {
         fn lists_retrieved_usernames() -> Result<()> {
             tokio_test(async {
                 let requester_id = 5;
-                let requesters = vec![
-                    String::from("Dirk"),
-                    String::from("Elaine"),
-                    String::from("Francesca"),
-                ];
+                let requesters =
+                    vec![String::from("Dirk"), String::from("Elaine"), String::from("Francesca")];
                 let requesters_clone = requesters.clone();
 
                 let mut mock_social_read = MockSocialRead::new();

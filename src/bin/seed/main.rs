@@ -3,8 +3,10 @@ mod post;
 mod time_utils;
 mod user;
 
-use anyhow::{Context as _, Result};
-use sqlx::{PgPool, postgres::PgPoolOptions};
+use {
+    anyhow::{Context as _, Result},
+    sqlx::{PgPool, postgres::PgPoolOptions},
+};
 
 /// Connects to the database specified in the environment variable `DATABASE_URL` and inserts seed
 /// data if the tables are empty. Assumes that migrations have already been applied.

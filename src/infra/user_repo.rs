@@ -1,8 +1,10 @@
-use crate::{
-    domain::{RepoError, user::UserRepo},
-    models::user::{NewUser, User},
+use {
+    crate::{
+        domain::{RepoError, user::UserRepo},
+        models::user::{NewUser, User},
+    },
+    sqlx::PgExecutor,
 };
-use sqlx::PgExecutor;
 
 pub struct PgUserRepo;
 
@@ -57,25 +59,23 @@ impl UserRepo for PgUserRepo {
         exec: impl PgExecutor<'_>,
         username: &str,
     ) -> Result<Option<User>, RepoError> {
-        sqlx::query_as!(
-            User,
-            "SELECT * FROM users WHERE username = $1 FOR UPDATE",
-            username
-        )
-        .fetch_optional(exec)
-        .await
-        .map_err(Into::into)
+        sqlx::query_as!(User, "SELECT * FROM users WHERE username = $1 FOR UPDATE", username)
+            .fetch_optional(exec)
+            .await
+            .map_err(Into::into)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::test_utils::time::within_five_seconds;
-    use anyhow::{Context as _, Result};
-    use chrono::Utc;
-    use sqlx::PgPool;
-    use std::assert_matches;
+    use {
+        super::*,
+        crate::test_utils::time::within_five_seconds,
+        anyhow::{Context as _, Result},
+        chrono::Utc,
+        sqlx::PgPool,
+        std::assert_matches,
+    };
 
     fn make_test_users() -> Vec<NewUser> {
         vec![

@@ -1,5 +1,7 @@
-use crate::domain::RepoError;
-use sqlx::{PgConnection, PgExecutor, PgPool, PgTransaction};
+use {
+    crate::domain::RepoError,
+    sqlx::{PgConnection, PgExecutor, PgPool, PgTransaction},
+};
 
 #[async_trait::async_trait]
 pub trait Tx: Send {

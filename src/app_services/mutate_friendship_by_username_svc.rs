@@ -76,15 +76,17 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::test_utils::{
-        dummy_data,
-        fake_db::FakeUow,
-        mock_repos::{MockFriendshipRepo, MockUserRepo},
-        tokio_test,
+    use {
+        super::*,
+        crate::test_utils::{
+            dummy_data,
+            fake_db::FakeUow,
+            mock_repos::{MockFriendshipRepo, MockUserRepo},
+            tokio_test,
+        },
+        anyhow::Result,
+        std::assert_matches,
     };
-    use anyhow::Result;
-    use std::assert_matches;
 
     mod add_friend {
         use super::*;

@@ -1,5 +1,7 @@
-use anyhow::Result;
-use sqlx::{migrate::Migrator, postgres::PgPoolOptions};
+use {
+    anyhow::Result,
+    sqlx::{migrate::Migrator, postgres::PgPoolOptions},
+};
 
 /// Database migrator that embeds migrations into the binary at compile time.
 static MIGRATOR: Migrator = sqlx::migrate!();

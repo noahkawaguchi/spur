@@ -1,9 +1,11 @@
-use crate::models::user::UserRegistration;
-use lazy_regex::{Regex, lazy_regex};
-use serde::{Deserialize, Serialize};
-use std::sync::LazyLock;
-use utoipa::ToSchema;
-use validator::{Validate, ValidationError};
+use {
+    crate::models::user::UserRegistration,
+    lazy_regex::{Regex, lazy_regex},
+    serde::{Deserialize, Serialize},
+    std::sync::LazyLock,
+    utoipa::ToSchema,
+    validator::{Validate, ValidationError},
+};
 
 static USERNAME_RE: LazyLock<Regex> = LazyLock::new(|| lazy_regex!("^[A-Za-z0-9_-]+$").clone());
 const LENGTH_CODE: &str = "length";
@@ -51,8 +53,8 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
     // Because 72 bytes is the max length for bcrypt
     if password.len() > 72 {
         return Err(ValidationError::new(LENGTH_CODE).with_message(
-            "password must be at most 72 bytes \
-                (72 English letters/digits/symbols, fewer for other kinds of characters)"
+            "password must be at most 72 bytes (72 English letters/digits/symbols, fewer for \
+             other kinds of characters)"
                 .into(),
         ));
     }
@@ -82,19 +84,13 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::assert_matches;
+    use {super::*, std::assert_matches};
 
     #[test]
     fn allows_valid_usernames() {
-        for username in [
-            "John",
-            "ri_cha_ko",
-            "Heavenly-Sounds",
-            "27trombones",
-            "yeah-_-oh",
-            "ZOOM500",
-        ] {
+        for username in
+            ["John", "ri_cha_ko", "Heavenly-Sounds", "27trombones", "yeah-_-oh", "ZOOM500"]
+        {
             assert_eq!(
                 SignupRequest {
                     name: String::from("John"),
@@ -163,17 +159,11 @@ mod tests {
             ["aB4%", "be at least 10 characters"],
             [
                 "aaaaaaaaaaBBBBBBBBBB4444444444()()()()()UuUuUuUuUU-hhHhHhHhHhEEeEEeEEeE8888888888",
-                "be at most 72 bytes (72 English letters/digits/symbols, \
-                    fewer for other kinds of characters)",
+                "be at most 72 bytes (72 English letters/digits/symbols, fewer for other kinds of \
+                 characters)",
             ],
-            [
-                "                           ",
-                "contain at least one lowercase letter",
-            ],
-            [
-                "abba--ba-bb-bd-be-bo-gu-u-go-ao-bl",
-                "contain at least one uppercase letter",
-            ],
+            ["                           ", "contain at least one lowercase letter"],
+            ["abba--ba-bb-bd-be-bo-gu-u-go-ao-bl", "contain at least one uppercase letter"],
             ["abOU_ID_FG basicKfG", "contain at least one digit (0-9)"],
             ["abc123ABC123abc9", "contain at least one special character"],
         ] {

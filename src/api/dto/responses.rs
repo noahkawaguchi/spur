@@ -1,6 +1,8 @@
-use crate::models::post::PostWithAuthor;
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use {
+    crate::models::post::PostWithAuthor,
+    serde::{Deserialize, Serialize},
+    utoipa::ToSchema,
+};
 
 /// A general-purpose error response.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
