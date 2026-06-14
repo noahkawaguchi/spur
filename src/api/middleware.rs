@@ -43,7 +43,6 @@ mod tests {
         Extension, Json, Router,
         body::Body,
         http::{Method, Request, StatusCode, header::AUTHORIZATION},
-        middleware,
         routing::get,
     };
     use mockall::predicate::eq;
