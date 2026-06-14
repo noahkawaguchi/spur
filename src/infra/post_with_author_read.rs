@@ -94,6 +94,7 @@ mod tests {
     };
     use anyhow::Result;
     use chrono::Utc;
+    use std::assert_matches;
 
     #[sqlx::test]
     async fn gets_an_existing_post(pool: PgPool) -> Result<()> {
@@ -117,7 +118,7 @@ mod tests {
             author_username: Some(users[1].username.clone()),
         };
 
-        assert!(matches!(actual, Ok(p) if p == expected));
+        assert_matches!(actual, Ok(p) if p == expected);
 
         Ok(())
     }
@@ -132,7 +133,7 @@ mod tests {
         repo.insert_new(&pool, 2, 1, "This post exists!").await?;
 
         let actual = read.by_post_id(3).await; // Only posts 1 and 2 exist
-        assert!(matches!(actual, Err(ReadError::NotFound)));
+        assert_matches!(actual, Err(ReadError::NotFound));
 
         Ok(())
     }
@@ -153,10 +154,7 @@ mod tests {
         repo.insert_new(&pool, 3, 1, "I'm your sibling, not your child") // ID 3
             .await?;
         // No children at first
-        assert!(matches!(
-            read.children_of(parent_id).await,
-            Ok(v) if v.is_empty()
-        ));
+        assert_matches!(read.children_of(parent_id).await, Ok(v) if v.is_empty());
         // First child
         repo.insert_new(&pool, 1, parent_id, "I'm your first child") // ID 4
             .await?;
@@ -164,10 +162,10 @@ mod tests {
         repo.insert_new(&pool, 2, 4, "I'm your grandchild, not your child") // ID 5
             .await?;
         let first_child = read.by_post_id(4).await?;
-        assert!(matches!(
+        assert_matches!(
             read.children_of(parent_id).await,
             Ok(v) if v.len() == 1 && v[0] == first_child
-        ));
+        );
         // More children
         repo.insert_new(&pool, 2, parent_id, "Second child here") // ID 6
             .await?;
@@ -177,10 +175,7 @@ mod tests {
         let third_child = read.by_post_id(7).await?;
         // Should be sorted in descending order of creation time
         let expected_children = vec![third_child, second_child, first_child];
-        assert!(matches!(
-            read.children_of(parent_id).await,
-            Ok(v) if v == expected_children
-        ));
+        assert_matches!(read.children_of(parent_id).await, Ok(v) if v == expected_children);
 
         Ok(())
     }
@@ -208,13 +203,13 @@ mod tests {
 
         // Should be sorted by created_at in descending order
         let expected_posts = vec![expected2, expected1];
-        assert!(matches!(read.written_by_id(3).await, Ok(v) if v == expected_posts));
+        assert_matches!(read.written_by_id(3).await, Ok(v) if v == expected_posts);
 
         // Searching by username should be the same result
-        assert!(matches!(
+        assert_matches!(
             read.written_by_username(&users[2].username).await,
             Ok(v) if v == expected_posts
-        ));
+        );
 
         Ok(())
     }

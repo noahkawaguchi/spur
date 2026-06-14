@@ -46,6 +46,7 @@ mod tests {
     use anyhow::{Context, Result};
     use chrono::Utc;
     use sqlx::PgPool;
+    use std::assert_matches;
 
     #[sqlx::test]
     async fn rejects_multiple_replies_to_the_same_post_by_the_same_user(
@@ -58,13 +59,13 @@ mod tests {
         repo.insert_new(&pool, 2, 1, "My first reply").await?;
 
         // Second reply to the same post by the same user is invalid
-        assert!(matches!(
+        assert_matches!(
             repo.insert_new(&pool, 2, 1, "Oh no, replying again").await,
             Err(RepoError::UniqueViolation(v)) if v == "post_author_parent_unique"
-        ));
+        );
 
         // The violating post should not have been created
-        assert!(matches!(repo.get_by_id_exclusive(&pool, 3).await, Ok(None)));
+        assert_matches!(repo.get_by_id_exclusive(&pool, 3).await, Ok(None));
 
         Ok(())
     }
@@ -101,10 +102,10 @@ mod tests {
         // Some of the following strings include the full-width space character '　' (different
         // from the ASCII space character).
         for empty_body in ["", " ", "   ", "　", "　　　", "\t", "\n\n", " \r\t \n"] {
-            assert!(matches!(
+            assert_matches!(
                 PgPostRepo.insert_new(&pool, 4, 1, empty_body).await,
                 Err(RepoError::CheckViolation(v)) if v == "text_non_empty"
-            ));
+            );
         }
 
         Ok(())
@@ -127,12 +128,12 @@ mod tests {
         .enumerate()
         {
             // Increment the parent ID with each insertion to avoid duplicate reply errors
-            assert!(matches!(
+            assert_matches!(
                 PgPostRepo
                     .insert_new(&pool, 4, (i + 1).try_into()?, non_empty_body)
                     .await,
                 Ok(())
-            ));
+            );
         }
 
         Ok(())
@@ -143,10 +144,7 @@ mod tests {
         seed_users_and_root_post(&pool).await?;
 
         // Only post ID 1 exists, not 2
-        assert!(matches!(
-            PgPostRepo.get_by_id_exclusive(&pool, 2).await,
-            Ok(None)
-        ));
+        assert_matches!(PgPostRepo.get_by_id_exclusive(&pool, 2).await, Ok(None));
 
         Ok(())
     }

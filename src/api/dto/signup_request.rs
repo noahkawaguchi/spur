@@ -83,6 +83,7 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::assert_matches;
 
     #[test]
     fn allows_valid_usernames() {
@@ -94,15 +95,15 @@ mod tests {
             "yeah-_-oh",
             "ZOOM500",
         ] {
-            assert!(
+            assert_eq!(
                 SignupRequest {
                     name: String::from("John"),
                     email: String::from("john@email.mail"),
                     username: username.to_string(),
                     password: String::from("ok72PAss!yEaH()Pa55"),
                 }
-                .validate()
-                .is_ok()
+                .validate(),
+                Ok(())
             );
         }
     }
@@ -118,17 +119,17 @@ mod tests {
             "cool+person",
             "free(p); free(p);",
         ] {
-            assert!(
+            assert_matches!(
                 SignupRequest {
                     name: String::from("John"),
                     email: String::from("john@email.mail"),
                     username: username.to_string(),
                     password: String::from("ok72PAss!yEaH()Pa55"),
                 }
-                .validate()
-                .is_err_and(|e| e.to_string()
+                .validate(),
+                Err(e) if e.to_string()
                     == "username: username may only contain \
-                    English letters, digits, underscores, and hyphens")
+                    English letters, digits, underscores, and hyphens"
             );
         }
     }
@@ -141,15 +142,15 @@ mod tests {
             "Three*Men && 4_cars",
             "C0rr3ct H0r$3 B4tt3ry 5t5p13",
         ] {
-            assert!(
+            assert_eq!(
                 SignupRequest {
                     name: String::from("John"),
                     email: String::from("john@email.mail"),
                     username: String::from("john-is-cool"),
                     password: password.to_string(),
                 }
-                .validate()
-                .is_ok()
+                .validate(),
+                Ok(())
             );
         }
     }
@@ -176,15 +177,15 @@ mod tests {
             ["abOU_ID_FG basicKfG", "contain at least one digit (0-9)"],
             ["abc123ABC123abc9", "contain at least one special character"],
         ] {
-            assert!(
+            assert_matches!(
                 SignupRequest {
                     name: String::from("John"),
                     email: String::from("john@email.mail"),
                     username: String::from("john-is-cool"),
                     password: password.to_string(),
                 }
-                .validate()
-                .is_err_and(|e| e.to_string() == format!("password: password must {msg}")),
+                .validate(),
+                Err(e) if e.to_string() == format!("password: password must {msg}"),
             );
         }
     }

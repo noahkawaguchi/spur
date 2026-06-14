@@ -84,6 +84,7 @@ mod tests {
         tokio_test,
     };
     use anyhow::Result;
+    use std::assert_matches;
 
     mod add_friend {
         use super::*;
@@ -124,7 +125,7 @@ mod tests {
                     .add_friend_by_username(my_id, &my_friend.username)
                     .await;
 
-                assert!(matches!(result, Err(FriendshipError::AlreadyFriends)));
+                assert_matches!(result, Err(FriendshipError::AlreadyFriends));
                 assert!(probe.commit_called());
 
                 Ok(())
@@ -167,7 +168,7 @@ mod tests {
                     .add_friend_by_username(my_id, &desired_friend.username)
                     .await;
 
-                assert!(matches!(result, Err(FriendshipError::AlreadyRequested)));
+                assert_matches!(result, Err(FriendshipError::AlreadyRequested));
                 assert!(probe.commit_called());
 
                 Ok(())
@@ -214,7 +215,7 @@ mod tests {
                     .add_friend_by_username(my_id, &added_me.username)
                     .await;
 
-                assert!(matches!(result, Ok(true)));
+                assert_matches!(result, Ok(true));
                 assert!(probe.commit_called());
 
                 Ok(())
@@ -262,7 +263,7 @@ mod tests {
                     .add_friend_by_username(my_id, &does_not_know_me.username)
                     .await;
 
-                assert!(matches!(result, Ok(false)));
+                assert_matches!(result, Ok(false));
                 assert!(probe.commit_called());
 
                 Ok(())

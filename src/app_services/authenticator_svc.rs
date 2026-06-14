@@ -69,6 +69,7 @@ mod tests {
     use anyhow::Result;
     use chrono::Utc;
     use mockall::predicate::eq;
+    use std::assert_matches;
 
     fn alice_user() -> User {
         User {
@@ -126,7 +127,7 @@ mod tests {
                 let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, mock_provider);
                 let result = auth.signup(alice).await;
 
-                assert!(matches!(result, Err(AuthError::DuplicateEmail)));
+                assert_matches!(result, Err(AuthError::DuplicateEmail));
 
                 Ok(())
             })
@@ -165,7 +166,7 @@ mod tests {
                 let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, mock_provider);
                 let result = auth.signup(alice).await;
 
-                assert!(matches!(result, Err(AuthError::DuplicateUsername)));
+                assert_matches!(result, Err(AuthError::DuplicateUsername));
 
                 Ok(())
             })
@@ -208,7 +209,7 @@ mod tests {
                 let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, mock_provider);
                 let result = auth.signup(alice_reg).await;
 
-                assert!(matches!(result, Ok(t) if t == token));
+                assert_matches!(result, Ok(t) if t == token);
 
                 Ok(())
             })
@@ -232,10 +233,10 @@ mod tests {
                 };
 
                 let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, MockAuthProvider::new());
-                assert!(matches!(
+                assert_matches!(
                     auth.login(email, pw).await,
                     Err(AuthError::NonexistentAccount)
-                ));
+                );
 
                 Ok(())
             })
@@ -264,10 +265,10 @@ mod tests {
                     .return_once(|_, _| Ok(false));
 
                 let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, mock_provider);
-                assert!(matches!(
+                assert_matches!(
                     auth.login(&alice.email, invalid_pw).await,
                     Err(AuthError::InvalidPassword)
-                ));
+                );
 
                 Ok(())
             })
@@ -302,10 +303,10 @@ mod tests {
                     .return_once(|_| Ok(token.to_string()));
 
                 let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, mock_provider);
-                assert!(matches!(
+                assert_matches!(
                     auth.login(&alice.email, correct_pw).await,
                     Ok(t) if t == token
-                ));
+                );
 
                 Ok(())
             })

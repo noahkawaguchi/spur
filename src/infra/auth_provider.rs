@@ -68,6 +68,7 @@ mod tests {
     use super::*;
     use crate::test_utils::time::within_five_seconds;
     use chrono::{DateTime, Days, Utc};
+    use std::assert_matches;
 
     const TEST_JWT_SECRET: &str = "super_secret_testing_only";
 
@@ -118,7 +119,7 @@ mod tests {
         fn identifies_invalid_token() -> Result<()> {
             let auth = BcryptJwtAuthProvider::new(TEST_JWT_SECRET.to_string());
             let _correct_token = auth.create_token(5432)?;
-            assert!(auth.validate_token("not correct").is_err());
+            assert_matches!(auth.validate_token("not correct"), Err(_));
             Ok(())
         }
 
