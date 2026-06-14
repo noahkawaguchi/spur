@@ -1,8 +1,10 @@
-use crate::{
-    domain::{RepoError, post::PostRepo},
-    models::post::Post,
+use {
+    crate::{
+        domain::{RepoError, post::PostRepo},
+        models::post::Post,
+    },
+    sqlx::PgExecutor,
 };
-use sqlx::PgExecutor;
 
 pub struct PgPostRepo;
 
@@ -41,12 +43,14 @@ impl PostRepo for PgPostRepo {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::test_utils::{seed_data::seed_users_and_root_post, time::within_five_seconds};
-    use anyhow::{Context as _, Result};
-    use chrono::Utc;
-    use sqlx::PgPool;
-    use std::assert_matches;
+    use {
+        super::*,
+        crate::test_utils::{seed_data::seed_users_and_root_post, time::within_five_seconds},
+        anyhow::{Context as _, Result},
+        chrono::Utc,
+        sqlx::PgPool,
+        std::assert_matches,
+    };
 
     #[sqlx::test]
     async fn rejects_multiple_replies_to_the_same_post_by_the_same_user(
@@ -115,17 +119,10 @@ mod tests {
     async fn allows_post_bodies_with_non_whitespace_characters(pool: PgPool) -> Result<()> {
         seed_users_and_root_post(&pool).await?;
 
-        for (non_empty_body, parent_id) in [
-            "hello",
-            "   hello   ",
-            " h e l l o ",
-            "!    ",
-            "世界",
-            "　世　界　",
-            "　　　　世界",
-        ]
-        .into_iter()
-        .zip(1..)
+        for (non_empty_body, parent_id) in
+            ["hello", "   hello   ", " h e l l o ", "!    ", "世界", "　世　界　", "　　　　世界"]
+                .into_iter()
+                .zip(1..)
         {
             // Use a different parent ID for each insertion to avoid duplicate reply errors
             assert_matches!(
@@ -156,12 +153,10 @@ mod tests {
         let repo = PgPostRepo;
 
         // The root post has ID 1, so start from 2
-        let post_body_2 = "Hello everyone and welcome to my post.\n\
-                               This is a test post where I just write\n\
-                               something that makes sense for testing.";
-        let post_body_3 = "Some posts might have \n\
-                               some \t strange spacing in       them \t\
-                               \nbut everything should still work\n \n\nfine   \n";
+        let post_body_2 = "Hello everyone and welcome to my post.\nThis is a test post where I \
+                           just write\nsomething that makes sense for testing.";
+        let post_body_3 = "Some posts might have \nsome \t strange spacing in       them \t\nbut \
+                           everything should still work\n \n\nfine   \n";
         let post_body_4 = "日本語の文字も使えるはずなので確認しておきましょう！";
 
         // All three posts should be successfully inserted

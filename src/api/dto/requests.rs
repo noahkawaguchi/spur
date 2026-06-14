@@ -1,6 +1,8 @@
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-use validator::Validate;
+use {
+    serde::{Deserialize, Serialize},
+    utoipa::ToSchema,
+    validator::Validate,
+};
 
 /// A request for logging in to an existing account.
 #[derive(Serialize, Deserialize, Validate, ToSchema)]

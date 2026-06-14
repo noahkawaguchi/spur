@@ -1,8 +1,7 @@
 pub mod api;
 pub mod logger;
 
-pub use config::AppConfig;
-pub use state::AppState;
+pub use {config::AppConfig, state::AppState};
 
 mod app_services;
 mod config;

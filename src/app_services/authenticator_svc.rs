@@ -60,16 +60,18 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        domain::{RepoError, auth::MockAuthProvider},
-        models::user::User,
-        test_utils::{fake_db::fake_pool, mock_repos::MockUserRepo, tokio_test},
+    use {
+        super::*,
+        crate::{
+            domain::{RepoError, auth::MockAuthProvider},
+            models::user::User,
+            test_utils::{fake_db::fake_pool, mock_repos::MockUserRepo, tokio_test},
+        },
+        anyhow::Result,
+        chrono::Utc,
+        mockall::predicate::eq,
+        std::assert_matches,
     };
-    use anyhow::Result;
-    use chrono::Utc;
-    use mockall::predicate::eq;
-    use std::assert_matches;
 
     fn alice_user() -> User {
         User {
@@ -117,9 +119,7 @@ mod tests {
                                 && alice_clone.username == u.username
                                 && pw_hash == u.password_hash
                         );
-                        Err(RepoError::UniqueViolation(String::from(
-                            "users_email_unique",
-                        )))
+                        Err(RepoError::UniqueViolation(String::from("users_email_unique")))
                     })),
                     ..Default::default()
                 };
@@ -156,9 +156,7 @@ mod tests {
                                 && alice_clone.username == u.username
                                 && pw_hash == u.password_hash
                         );
-                        Err(RepoError::UniqueViolation(String::from(
-                            "users_username_unique",
-                        )))
+                        Err(RepoError::UniqueViolation(String::from("users_username_unique")))
                     })),
                     ..Default::default()
                 };
@@ -233,10 +231,7 @@ mod tests {
                 };
 
                 let auth = AuthenticatorSvc::new(fake_pool()?, mock_repo, MockAuthProvider::new());
-                assert_matches!(
-                    auth.login(email, pw).await,
-                    Err(AuthError::NonexistentAccount)
-                );
+                assert_matches!(auth.login(email, pw).await, Err(AuthError::NonexistentAccount));
 
                 Ok(())
             })

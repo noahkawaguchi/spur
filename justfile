@@ -27,17 +27,17 @@ dc-project := "docker compose -p spur -f docker-compose.yml -f docker-compose.de
 
 # Build/start the Compose stack with migrations and seed data if necessary (the default recipe)
 dc-up:
-    docker build -t ghcr.io/noahkawaguchi/spur:{{spur-img-tag}} .
-    {{dc-project}} up -d
+    docker build -t ghcr.io/noahkawaguchi/spur:{{ spur-img-tag }} .
+    {{ dc-project }} up -d
 
 # Stop the project's running containers
 dc-stop:
-    {{dc-project}} stop
+    {{ dc-project }} stop
 
 # Remove the project's containers and volumes
 [confirm("Are you sure you want to remove the containers and dev data?")]
 dc-down:
-    {{dc-project}} down --volumes
+    {{ dc-project }} down --volumes
 
 ####################################################################################################
 # Pre-compilation step for compile time checked SQL queries without a live DB connection (needed for
@@ -50,8 +50,8 @@ dc-down:
 
 # Update the `.sqlx` directory using an ephemeral Postgres container (after any query modifications)
 sqlx-prep: temp-db-start && temp-db-stop
-    sqlx migrate run -D {{temp-db-url}}
-    cargo sqlx prepare -D {{temp-db-url}} -- --workspace --all-targets --all-features
+    sqlx migrate run -D {{ temp-db-url }}
+    cargo sqlx prepare -D {{ temp-db-url }} -- --workspace --all-targets --all-features
 
 ####################################################################################################
 # API docs (OpenAPI/Swagger UI)
@@ -86,11 +86,11 @@ mg-hash:
 
 # Validate all migrations
 mg-validate:
-    atlas migrate validate --dev-url {{ephemeral-pg}}
+    atlas migrate validate --dev-url {{ ephemeral-pg }}
 
 # Generate a new migration file by diffing the schema
 migration name:
-    atlas migrate diff {{name}} --to {{schema-file}} --dev-url {{ephemeral-pg}}
+    atlas migrate diff {{ name }} --to {{ schema-file }} --dev-url {{ ephemeral-pg }}
 
 ####################################################################################################
 # Testing and code quality
@@ -127,13 +127,13 @@ temp-db-url := "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:" \
 # Start an ephemeral Postgres container and wait until it's ready
 [private]
 temp-db-start:
-    if docker inspect {{temp-db-name}} >/dev/null 2>&1; then \
-        docker rm -f {{temp-db-name}}; sleep 3; fi
-    docker run --rm --name {{temp-db-name}} --env-file .env -p {{temp-db-port}}:5432 -d \
-        postgres:{{pg-tag}}
-    until docker exec {{temp-db-name}} pg_isready > /dev/null 2>&1; do sleep 1; done
+    if docker inspect {{ temp-db-name }} >/dev/null 2>&1; then \
+        docker rm -f {{ temp-db-name }}; sleep 3; fi
+    docker run --rm --name {{ temp-db-name }} --env-file .env -p {{ temp-db-port }}:5432 -d \
+        postgres:{{ pg-tag }}
+    until docker exec {{ temp-db-name }} pg_isready > /dev/null 2>&1; do sleep 1; done
 
 # Stop the ephemeral Postgres container (also removing it)
 [private]
 temp-db-stop:
-    docker stop {{temp-db-name}}
+    docker stop {{ temp-db-name }}

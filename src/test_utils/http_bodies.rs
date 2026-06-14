@@ -1,9 +1,11 @@
-use anyhow::Result;
-use axum::{
-    body::{Body, to_bytes},
-    response::Response,
+use {
+    anyhow::Result,
+    axum::{
+        body::{Body, to_bytes},
+        response::Response,
+    },
+    serde::{Deserialize, Serialize},
 };
-use serde::{Deserialize, Serialize};
 
 pub fn serialize_body(body: &impl Serialize) -> Result<Body> {
     Ok(Body::from(serde_json::to_vec(body)?))

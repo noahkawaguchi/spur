@@ -1,19 +1,21 @@
-use super::api_result;
-use crate::{
-    api::{
-        dto::{
-            requests::LoginRequest,
-            responses::{ErrorResponse, TokenResponse},
-            signup_request::SignupRequest,
+use {
+    super::api_result,
+    crate::{
+        api::{
+            dto::{
+                requests::LoginRequest,
+                responses::{ErrorResponse, TokenResponse},
+                signup_request::SignupRequest,
+            },
+            validated_json::ValidatedJson,
         },
-        validated_json::ValidatedJson,
+        app_services::Authenticator,
+        state::AppState,
     },
-    app_services::Authenticator,
-    state::AppState,
+    anyhow::Result,
+    axum::{Json, Router, extract::State, http::StatusCode, routing::post},
+    std::sync::Arc,
 };
-use anyhow::Result;
-use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
-use std::sync::Arc;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(signup, login))]
@@ -48,10 +50,7 @@ async fn signup(
     auth: State<Arc<dyn Authenticator>>,
     ValidatedJson(payload): ValidatedJson<SignupRequest>,
 ) -> api_result!(TokenResponse) {
-    Ok((
-        StatusCode::CREATED,
-        Json(TokenResponse { token: auth.signup(payload.into()).await? }),
-    ))
+    Ok((StatusCode::CREATED, Json(TokenResponse { token: auth.signup(payload.into()).await? })))
 }
 
 /// Verifies existing account information and issues a JSON Web Token.
@@ -90,27 +89,29 @@ async fn login(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        api::dto::{
-            dummy_data::{dummy_login_request, dummy_signup_request},
-            responses::ErrorResponse,
+    use {
+        super::*,
+        crate::{
+            api::dto::{
+                dummy_data::{dummy_login_request, dummy_signup_request},
+                responses::ErrorResponse,
+            },
+            app_services::MockAuthenticator,
+            domain::auth::AuthError,
+            models::user::UserRegistration,
+            test_utils::{
+                http_bodies::{deserialize_body, serialize_body},
+                tokio_test,
+            },
         },
-        app_services::MockAuthenticator,
-        domain::auth::AuthError,
-        models::user::UserRegistration,
-        test_utils::{
-            http_bodies::{deserialize_body, serialize_body},
-            tokio_test,
+        axum::{
+            body::Body,
+            http::{Method, Request, Response, header::CONTENT_TYPE},
         },
+        mockall::predicate::eq,
+        serde::Serialize,
+        tower::ServiceExt as _,
     };
-    use axum::{
-        body::Body,
-        http::{Method, Request, Response, header::CONTENT_TYPE},
-    };
-    use mockall::predicate::eq;
-    use serde::Serialize;
-    use tower::ServiceExt as _;
 
     async fn send_req(
         mock_auth: impl Authenticator + 'static,

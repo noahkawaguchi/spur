@@ -1,17 +1,19 @@
-use crate::{
-    domain::{
-        RepoError,
-        friendship::{FriendshipRepo, FriendshipStatus, user_id_pair::UserIdPair},
-        post::PostRepo,
-        user::UserRepo,
+use {
+    crate::{
+        domain::{
+            RepoError,
+            friendship::{FriendshipRepo, FriendshipStatus, user_id_pair::UserIdPair},
+            post::PostRepo,
+            user::UserRepo,
+        },
+        models::{
+            post::Post,
+            user::{NewUser, User},
+        },
     },
-    models::{
-        post::Post,
-        user::{NewUser, User},
-    },
+    anyhow::Context as _,
+    sqlx::PgExecutor,
 };
-use anyhow::Context as _;
-use sqlx::PgExecutor;
 
 #[expect(clippy::type_complexity, reason = "Hand-rolled mock")]
 #[derive(Default)]

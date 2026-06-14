@@ -1,7 +1,9 @@
-use crate::time_utils::anchor_offset;
-use anyhow::Result;
-use chrono::{DateTime, Utc};
-use sqlx::PgPool;
+use {
+    crate::time_utils::anchor_offset,
+    anyhow::Result,
+    chrono::{DateTime, Utc},
+    sqlx::PgPool,
+};
 
 struct SeedFriendship {
     lesser_id: i32,

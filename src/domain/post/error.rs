@@ -1,6 +1,4 @@
-use crate::domain::RepoError;
-use anyhow::anyhow;
-use thiserror::Error;
+use {crate::domain::RepoError, anyhow::anyhow, thiserror::Error};
 
 #[derive(Debug, Error)]
 pub enum PostError {

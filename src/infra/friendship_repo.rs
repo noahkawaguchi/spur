@@ -1,8 +1,10 @@
-use crate::domain::{
-    RepoError,
-    friendship::{FriendshipRepo, FriendshipStatus, user_id_pair::UserIdPair},
+use {
+    crate::domain::{
+        RepoError,
+        friendship::{FriendshipRepo, FriendshipStatus, user_id_pair::UserIdPair},
+    },
+    sqlx::PgExecutor,
 };
-use sqlx::PgExecutor;
 
 pub struct PgFriendshipRepo;
 
@@ -77,11 +79,13 @@ impl FriendshipRepo for PgFriendshipRepo {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::test_utils::{seed_data::seed_users, time::within_five_seconds};
-    use anyhow::{Context as _, Result};
-    use chrono::{DateTime, Utc};
-    use sqlx::PgPool;
+    use {
+        super::*,
+        crate::test_utils::{seed_data::seed_users, time::within_five_seconds},
+        anyhow::{Context as _, Result},
+        chrono::{DateTime, Utc},
+        sqlx::PgPool,
+    };
 
     struct Friendship {
         lesser_id: i32,

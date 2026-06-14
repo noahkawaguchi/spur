@@ -1,15 +1,17 @@
-use crate::{
-    app_services::uow::{Tx, UnitOfWork},
-    domain::RepoError,
-};
-use anyhow::{Context as _, Result};
-use sqlx::{PgExecutor, PgPool, postgres::PgPoolOptions};
-use std::{
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering::SeqCst},
+use {
+    crate::{
+        app_services::uow::{Tx, UnitOfWork},
+        domain::RepoError,
     },
-    time::Duration,
+    anyhow::{Context as _, Result},
+    sqlx::{PgExecutor, PgPool, postgres::PgPoolOptions},
+    std::{
+        sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering::SeqCst},
+        },
+        time::Duration,
+    },
 };
 
 /// Creates a fake `PgPool` for tests in which one is required but never used. Simpler than mocking

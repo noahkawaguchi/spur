@@ -1,14 +1,16 @@
-use crate::{
-    api::dto::responses::ErrorResponse,
-    domain::{auth::AuthError, friendship::error::FriendshipError, post::error::PostError},
-    read_models::ReadError,
+use {
+    crate::{
+        api::dto::responses::ErrorResponse,
+        domain::{auth::AuthError, friendship::error::FriendshipError, post::error::PostError},
+        read_models::ReadError,
+    },
+    axum::{
+        Json,
+        http::StatusCode,
+        response::{IntoResponse, Response},
+    },
+    thiserror::Error,
 };
-use axum::{
-    Json,
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
-use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ApiError {

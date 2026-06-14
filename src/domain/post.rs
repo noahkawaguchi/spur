@@ -1,11 +1,13 @@
-use crate::{
-    domain::{RepoError, post::error::PostError},
-    models::post::Post,
-};
-use sqlx::PgExecutor;
-
 pub mod error;
 pub mod service;
+
+use {
+    crate::{
+        domain::{RepoError, post::error::PostError},
+        models::post::Post,
+    },
+    sqlx::PgExecutor,
+};
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]

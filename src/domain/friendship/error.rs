@@ -1,5 +1,4 @@
-use crate::domain::RepoError;
-use thiserror::Error;
+use {crate::domain::RepoError, thiserror::Error};
 
 #[derive(Debug, Error)]
 pub enum FriendshipError {

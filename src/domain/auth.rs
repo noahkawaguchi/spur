@@ -1,5 +1,7 @@
-use crate::domain::RepoError;
-use anyhow::{Result, anyhow};
+use {
+    crate::domain::RepoError,
+    anyhow::{Result, anyhow},
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
@@ -34,9 +36,9 @@ impl From<RepoError> for AuthError {
             RepoError::UniqueViolation(v) => {
                 Self::Internal(anyhow!("Unexpected unique violation: {v}"))
             }
-            RepoError::CheckViolation(v) if v == "users_username_chars" => Self::Internal(anyhow!(
-                "Invalid username made it past request validation: {v}"
-            )),
+            RepoError::CheckViolation(v) if v == "users_username_chars" => {
+                Self::Internal(anyhow!("Invalid username made it past request validation: {v}"))
+            }
             RepoError::CheckViolation(v) if v == "text_non_empty" => {
                 Self::Internal(anyhow!("Empty field made it past request validation: {v}"))
             }
@@ -52,10 +54,13 @@ impl From<RepoError> for AuthError {
 pub trait AuthProvider: Send + Sync {
     /// Converts a plaintext password into a hashed version.
     fn hash_pw(&self, pw: &str) -> Result<String>;
+
     /// Checks whether the password and hash are a valid match.
     fn is_valid_pw(&self, pw: &str, hash: &str) -> Result<bool>;
+
     /// Creates a new token with the provided payload.
     fn create_token(&self, payload: i32) -> Result<String>;
+
     /// Validates the token, returning the contained payload if valid.
     fn validate_token(&self, token: &str) -> Result<i32>;
 }

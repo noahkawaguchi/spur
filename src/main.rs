@@ -1,5 +1,4 @@
-use anyhow::Result;
-use tokio::net::TcpListener;
+use {anyhow::Result, tokio::net::TcpListener};
 
 /// Sets up the async runtime, logger, config, state, and server, and then listens for requests
 /// until receiving a shutdown signal.
@@ -14,10 +13,7 @@ fn main() -> Result<()> {
         let listener = TcpListener::bind(&config.bind_addr).await?;
 
         #[cfg(debug_assertions)]
-        log::info!(
-            "Development server listening on http://{}",
-            &config.bind_addr
-        );
+        log::info!("Development server listening on http://{}", &config.bind_addr);
 
         #[cfg(not(debug_assertions))]
         log::info!("Listening on {}", &config.bind_addr);
@@ -64,10 +60,7 @@ fn shutdown_signal_handler() -> Result<impl Future<Output = ()>> {
 /// Creates a cross-platform signal handler that listens for Ctrl+C. Included for portability, but
 /// will likely never be used. Not actually tested on Windows. See the other function of the same
 /// name for the standard Unix behavior.
-#[expect(
-    clippy::unnecessary_wraps,
-    reason = "To match the Unix version of this function"
-)]
+#[expect(clippy::unnecessary_wraps, reason = "To match the Unix version of this function")]
 #[cfg(not(unix))]
 fn shutdown_signal_handler() -> Result<impl Future<Output = ()>> {
     Ok(async {

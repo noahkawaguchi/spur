@@ -59,15 +59,17 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        domain::RepoError,
-        models::post::Post,
-        test_utils::{dummy_data, fake_db::FakeUow, mock_repos::MockPostRepo, tokio_test},
+    use {
+        super::*,
+        crate::{
+            domain::RepoError,
+            models::post::Post,
+            test_utils::{dummy_data, fake_db::FakeUow, mock_repos::MockPostRepo, tokio_test},
+        },
+        anyhow::{Context as _, Result, anyhow},
+        chrono::Utc,
+        std::assert_matches,
     };
-    use anyhow::{Context as _, Result, anyhow};
-    use chrono::Utc;
-    use std::assert_matches;
 
     async fn run_unacceptable_parent_test(
         author_id: i32,

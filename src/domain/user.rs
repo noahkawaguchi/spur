@@ -1,8 +1,10 @@
-use crate::{
-    domain::RepoError,
-    models::user::{NewUser, User},
+use {
+    crate::{
+        domain::RepoError,
+        models::user::{NewUser, User},
+    },
+    sqlx::PgExecutor,
 };
-use sqlx::PgExecutor;
 
 #[async_trait::async_trait]
 pub trait UserRepo: Send + Sync {

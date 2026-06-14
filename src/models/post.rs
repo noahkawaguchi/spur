@@ -37,8 +37,10 @@ pub struct PostWithAuthor {
 
 #[cfg(test)]
 mod post_info_test_impl {
-    use super::*;
-    use crate::test_utils::time::{both_none_or_within_five_seconds, within_five_seconds};
+    use {
+        super::*,
+        crate::test_utils::time::{both_none_or_within_five_seconds, within_five_seconds},
+    };
 
     impl From<PostWithAuthor> for Post {
         fn from(pwa: PostWithAuthor) -> Self {

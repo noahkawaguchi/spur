@@ -1,24 +1,26 @@
-use super::api_result;
-use crate::{
-    api::{
-        dto::{
-            requests::CreatePostRequest,
-            responses::{ErrorResponse, PostResponse},
+use {
+    super::api_result,
+    crate::{
+        api::{
+            dto::{
+                requests::CreatePostRequest,
+                responses::{ErrorResponse, PostResponse},
+            },
+            validated_json::ValidatedJson,
         },
-        validated_json::ValidatedJson,
+        domain::post::PostSvc,
+        map_into::MapInto as _,
+        read_models::PostWithAuthorRead,
+        state::AppState,
     },
-    domain::post::PostSvc,
-    map_into::MapInto as _,
-    read_models::PostWithAuthorRead,
-    state::AppState,
+    axum::{
+        Extension, Json, Router,
+        extract::{Path, State},
+        http::StatusCode,
+        routing::{get, post},
+    },
+    std::sync::Arc,
 };
-use axum::{
-    Extension, Json, Router,
-    extract::{Path, State},
-    http::StatusCode,
-    routing::{get, post},
-};
-use std::sync::Arc;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_new, by_post_id, child_posts, specific_user_posts, own_posts))]
@@ -75,6 +77,7 @@ async fn create_new(
     post_svc
         .create_new(requester_id, payload.parent_id, &payload.body)
         .await?;
+
     Ok(StatusCode::CREATED)
 }
 
@@ -100,10 +103,7 @@ async fn by_post_id(
     post_with_author_read: State<Arc<dyn PostWithAuthorRead>>,
     Path(post_id): Path<i32>,
 ) -> api_result!(PostResponse) {
-    Ok((
-        StatusCode::OK,
-        Json(post_with_author_read.by_post_id(post_id).await?.into()),
-    ))
+    Ok((StatusCode::OK, Json(post_with_author_read.by_post_id(post_id).await?.into())))
 }
 
 /// Retrieves the children of the post with the provided ID.
@@ -189,24 +189,26 @@ async fn own_posts(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        api::dto::responses::ErrorResponse,
-        domain::post::{MockPostSvc, error::PostError},
-        read_models::{MockPostWithAuthorRead, ReadError},
-        test_utils::{
-            dummy_data::post_with_author,
-            http_bodies::{deserialize_body, serialize_body},
-            tokio_test,
+    use {
+        super::*,
+        crate::{
+            api::dto::responses::ErrorResponse,
+            domain::post::{MockPostSvc, error::PostError},
+            read_models::{MockPostWithAuthorRead, ReadError},
+            test_utils::{
+                dummy_data::post_with_author,
+                http_bodies::{deserialize_body, serialize_body},
+                tokio_test,
+            },
         },
+        anyhow::{Result, anyhow},
+        axum::{
+            body::Body,
+            http::{Method, Request, header::CONTENT_TYPE},
+        },
+        mockall::predicate::eq,
+        tower::ServiceExt as _,
     };
-    use anyhow::{Result, anyhow};
-    use axum::{
-        body::Body,
-        http::{Method, Request, header::CONTENT_TYPE},
-    };
-    use mockall::predicate::eq;
-    use tower::ServiceExt as _;
 
     mod create_new {
         use super::*;
@@ -223,11 +225,7 @@ mod tests {
                 let mut mock_post_svc = MockPostSvc::new();
                 mock_post_svc
                     .expect_create_new()
-                    .with(
-                        eq(requester_id),
-                        eq(payload.parent_id),
-                        eq(payload.body.clone()),
-                    )
+                    .with(eq(requester_id), eq(payload.parent_id), eq(payload.body.clone()))
                     .once()
                     .return_once(|_, _, _| Ok(()));
 
@@ -259,11 +257,7 @@ mod tests {
                 let mut mock_post_svc = MockPostSvc::new();
                 mock_post_svc
                     .expect_create_new()
-                    .with(
-                        eq(requester_id),
-                        eq(payload.parent_id),
-                        eq(payload.body.clone()),
-                    )
+                    .with(eq(requester_id), eq(payload.parent_id), eq(payload.body.clone()))
                     .once()
                     .return_once(|_, _, _| Err(PostError::DeletedParent));
 
