@@ -184,47 +184,68 @@ mod tests {
 
     #[test]
     fn translates_repo_errors() -> Result<()> {
-        tokio_test(async {
-            let author_ids = [1, 2, 3, 4, 5];
-            let parent_ids = [10, 20, 30, 40, 50];
-            let post_bodies = ["super", "cool", "post", "bodies", "here"];
+        struct TestCase {
+            author_id: i32,
+            parent_id: i32,
+            post_body: &'static str,
+            repo_error: RepoError,
+            post_error: PostError,
+        }
 
-            for (i, (repo_error, post_error)) in [
-                (
-                    RepoError::UniqueViolation(String::from("post_author_parent_unique")),
-                    PostError::DuplicateReply,
-                ),
-                (
-                    RepoError::UniqueViolation(String::from(
+        tokio_test(async {
+            for (i, case) in [
+                TestCase {
+                    author_id: 1,
+                    parent_id: 10,
+                    post_body: "super",
+                    repo_error: RepoError::UniqueViolation(String::from(
+                        "post_author_parent_unique",
+                    )),
+                    post_error: PostError::DuplicateReply,
+                },
+                TestCase {
+                    author_id: 2,
+                    parent_id: 20,
+                    post_body: "cool",
+                    repo_error: RepoError::UniqueViolation(String::from(
                         "some unique constraint violation here",
                     )),
-                    PostError::Internal(anyhow!(
+                    post_error: PostError::Internal(anyhow!(
                         "Unexpected unique violation: some unique constraint violation here"
                     )),
-                ),
-                (
-                    RepoError::CheckViolation(String::from("text_non_empty")),
-                    PostError::Internal(anyhow!(
+                },
+                TestCase {
+                    author_id: 3,
+                    parent_id: 30,
+                    post_body: "awesome",
+                    repo_error: RepoError::CheckViolation(String::from("text_non_empty")),
+                    post_error: PostError::Internal(anyhow!(
                         "Empty field made it past request validation: text_non_empty",
                     )),
-                ),
-                (
-                    RepoError::CheckViolation(String::from("some check violation")),
-                    PostError::Internal(anyhow!(
+                },
+                TestCase {
+                    author_id: 4,
+                    parent_id: 40,
+                    post_body: "great",
+                    repo_error: RepoError::CheckViolation(String::from("some check violation")),
+                    post_error: PostError::Internal(anyhow!(
                         "Unexpected check violation: some check violation"
                     )),
-                ),
-                (
-                    RepoError::Technical(anyhow!("something went wrong!")),
-                    PostError::Internal(anyhow!("something went wrong!")),
-                ),
+                },
+                TestCase {
+                    author_id: 5,
+                    parent_id: 50,
+                    post_body: "amazing",
+                    repo_error: RepoError::Technical(anyhow!("something went wrong!")),
+                    post_error: PostError::Internal(anyhow!("something went wrong!")),
+                },
             ]
             .into_iter()
             .enumerate()
             {
                 let mock_post_repo = MockPostRepo {
                     get_by_id_exclusive: Some(Box::new(move |passed_id| {
-                        assert_eq!(parent_ids[i], passed_id);
+                        assert_eq!(case.parent_id, passed_id);
                         // Alternating between the first and second dummy posts because the third is
                         // marked as deleted, which correctly causes a different error
                         Ok(Some(if i & 1 == 1 {
@@ -235,20 +256,20 @@ mod tests {
                     })),
                     insert_new: Some(Box::new(
                         move |passed_author_id, passed_parent_id, passed_post_body| {
-                            assert_eq!(author_ids[i], passed_author_id);
-                            assert_eq!(parent_ids[i], passed_parent_id);
-                            assert_eq!(post_bodies[i], passed_post_body);
-                            Err(repo_error.clone())
+                            assert_eq!(case.author_id, passed_author_id);
+                            assert_eq!(case.parent_id, passed_parent_id);
+                            assert_eq!(case.post_body, passed_post_body);
+                            Err(case.repo_error.clone())
                         },
                     )),
                 };
 
                 let (fake_uow, probe) = FakeUow::with_probe()?;
                 let result = PostDomainSvc::new(fake_uow, mock_post_repo)
-                    .create_new(author_ids[i], parent_ids[i], post_bodies[i])
+                    .create_new(case.author_id, case.parent_id, case.post_body)
                     .await;
 
-                assert_matches!(result, Err(e) if e == post_error);
+                assert_matches!(result, Err(e) if e == case.post_error);
                 assert!(!probe.commit_called());
             }
 
