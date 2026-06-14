@@ -1,6 +1,6 @@
 pub mod user {
     use crate::models::user::User;
-    use anyhow::{Context, Result};
+    use anyhow::{Context as _, Result};
     use chrono::{Days, Months, Utc};
 
     pub fn number1() -> User {
@@ -64,8 +64,8 @@ pub mod post {
 
 pub mod post_with_author {
     use crate::models::post::PostWithAuthor;
-    use anyhow::{Context, Result};
-    use chrono::{TimeZone, Utc};
+    use anyhow::{Context as _, Result};
+    use chrono::{TimeZone as _, Utc};
 
     pub fn number1() -> Result<PostWithAuthor> {
         Ok(PostWithAuthor {

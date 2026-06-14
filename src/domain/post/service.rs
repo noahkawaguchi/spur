@@ -1,5 +1,5 @@
 use crate::{
-    app_services::uow::{Tx, UnitOfWork},
+    app_services::uow::{Tx as _, UnitOfWork},
     domain::post::{PostError, PostRepo, PostSvc},
 };
 
@@ -65,7 +65,7 @@ mod tests {
         models::post::Post,
         test_utils::{dummy_data, fake_db::FakeUow, mock_repos::MockPostRepo, tokio_test},
     };
-    use anyhow::{Context, Result, anyhow};
+    use anyhow::{Context as _, Result, anyhow};
     use chrono::Utc;
     use std::assert_matches;
 

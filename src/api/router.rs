@@ -158,7 +158,7 @@ mod tests {
             tokio_test,
         },
     };
-    use anyhow::Context;
+    use anyhow::Context as _;
     use axum::{
         body::Body,
         http::{
@@ -173,7 +173,7 @@ mod tests {
     };
     use mockall::predicate::eq;
     use std::sync::Arc;
-    use tower::ServiceExt;
+    use tower::ServiceExt as _;
 
     const TEST_TOKEN: &str = "bear-the-bearer";
 

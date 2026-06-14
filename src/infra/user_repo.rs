@@ -72,7 +72,7 @@ impl UserRepo for PgUserRepo {
 mod tests {
     use super::*;
     use crate::test_utils::time::within_five_seconds;
-    use anyhow::{Context, Result};
+    use anyhow::{Context as _, Result};
     use chrono::Utc;
     use sqlx::PgPool;
     use std::assert_matches;

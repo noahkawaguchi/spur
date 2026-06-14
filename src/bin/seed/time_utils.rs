@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use chrono::{DateTime, FixedOffset, NaiveDate, TimeDelta, Utc};
 
 /// Adds the provided days, hours, and minutes to the anchor `DateTime`, 2019-04-30 15:00:00 UTC

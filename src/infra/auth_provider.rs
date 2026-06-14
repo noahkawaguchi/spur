@@ -1,5 +1,5 @@
 use crate::domain::auth::AuthProvider;
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};

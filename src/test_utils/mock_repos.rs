@@ -10,7 +10,7 @@ use crate::{
         user::{NewUser, User},
     },
 };
-use anyhow::Context;
+use anyhow::Context as _;
 use sqlx::PgExecutor;
 
 #[expect(clippy::type_complexity, reason = "Hand-rolled mock")]

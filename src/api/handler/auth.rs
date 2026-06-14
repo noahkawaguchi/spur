@@ -110,7 +110,7 @@ mod tests {
     };
     use mockall::predicate::eq;
     use serde::Serialize;
-    use tower::ServiceExt;
+    use tower::ServiceExt as _;
 
     async fn send_req(
         mock_auth: impl Authenticator + 'static,

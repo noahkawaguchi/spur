@@ -1,12 +1,12 @@
 use crate::{
     domain::{
-        friendship::{FriendshipRepo, user_id_pair::UserIdPair},
-        user::UserRepo,
+        friendship::{FriendshipRepo as _, user_id_pair::UserIdPair},
+        user::UserRepo as _,
     },
     infra::{friendship_repo::PgFriendshipRepo, user_repo::PgUserRepo},
     models::user::NewUser,
 };
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use sqlx::PgPool;
 
 /// Inserts four new users into the test database and returns them as they were inserted.

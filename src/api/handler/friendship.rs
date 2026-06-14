@@ -8,7 +8,7 @@ use crate::{
         validated_json::ValidatedJson,
     },
     app_services::MutateFriendshipByUsername,
-    map_into::MapInto,
+    map_into::MapInto as _,
     read_models::SocialRead,
     state::AppState,
 };
@@ -179,7 +179,7 @@ mod tests {
         http::{Method, Request, header::CONTENT_TYPE},
     };
     use mockall::predicate::eq;
-    use tower::ServiceExt;
+    use tower::ServiceExt as _;
 
     mod add_friend {
         use super::*;

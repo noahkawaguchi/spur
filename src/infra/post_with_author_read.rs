@@ -89,7 +89,7 @@ impl PostWithAuthorRead for PgPostWithAuthorRead {
 mod tests {
     use super::*;
     use crate::{
-        domain::post::PostRepo, infra::post_repo::PgPostRepo,
+        domain::post::PostRepo as _, infra::post_repo::PgPostRepo,
         test_utils::seed_data::seed_users_and_root_post,
     };
     use anyhow::Result;

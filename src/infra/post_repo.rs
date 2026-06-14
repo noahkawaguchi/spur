@@ -43,7 +43,7 @@ impl PostRepo for PgPostRepo {
 mod tests {
     use super::*;
     use crate::test_utils::{seed_data::seed_users_and_root_post, time::within_five_seconds};
-    use anyhow::{Context, Result};
+    use anyhow::{Context as _, Result};
     use chrono::Utc;
     use sqlx::PgPool;
     use std::assert_matches;

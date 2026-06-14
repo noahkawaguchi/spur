@@ -47,7 +47,7 @@ mod tests {
     };
     use mockall::predicate::eq;
     use serde::{Deserialize, Serialize};
-    use tower::ServiceExt;
+    use tower::ServiceExt as _;
 
     const ID_ROUTE: &str = "/my-id";
 

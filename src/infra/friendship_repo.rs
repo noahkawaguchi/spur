@@ -79,7 +79,7 @@ impl FriendshipRepo for PgFriendshipRepo {
 mod tests {
     use super::*;
     use crate::test_utils::{seed_data::seed_users, time::within_five_seconds};
-    use anyhow::{Context, Result};
+    use anyhow::{Context as _, Result};
     use chrono::{DateTime, Utc};
     use sqlx::PgPool;
 

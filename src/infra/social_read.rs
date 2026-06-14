@@ -100,17 +100,17 @@ mod tests {
     use super::*;
     use crate::{
         domain::{
-            friendship::{FriendshipRepo, user_id_pair::UserIdPair},
-            post::PostRepo,
+            friendship::{FriendshipRepo as _, user_id_pair::UserIdPair},
+            post::PostRepo as _,
         },
         infra::{
             friendship_repo::PgFriendshipRepo, post_repo::PgPostRepo,
             post_with_author_read::PgPostWithAuthorRead,
         },
-        read_models::PostWithAuthorRead,
+        read_models::PostWithAuthorRead as _,
         test_utils::seed_data::{seed_friends, seed_root_post, seed_users},
     };
-    use anyhow::{Context, Result};
+    use anyhow::{Context as _, Result};
 
     #[sqlx::test]
     async fn gets_all_requests_and_friends(pool: PgPool) -> Result<()> {

@@ -1,7 +1,7 @@
 use crate::{
     app_services::{
         MutateFriendshipByUsername,
-        uow::{Tx, UnitOfWork},
+        uow::{Tx as _, UnitOfWork},
     },
     domain::{
         friendship::{
