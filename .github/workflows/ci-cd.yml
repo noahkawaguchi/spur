@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with: { persist-credentials: false }
-      - uses: dtolnay/rust-toolchain@1.94.1
+      - uses: dtolnay/rust-toolchain@1.96.0
         with: { components: clippy }
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --workspace --all-targets -- --deny warnings
@@ -54,7 +54,7 @@ jobs:
     services:
       postgres:
         # Should match the version in the `justfile` and `docker-compose.yml`
-        image: postgres:18.3-alpine3.23
+        image: postgres:18.4-alpine3.23
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
@@ -69,7 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with: { persist-credentials: false }
-      - uses: dtolnay/rust-toolchain@1.94.1
+      - uses: dtolnay/rust-toolchain@1.96.0
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace --all-targets
         env:

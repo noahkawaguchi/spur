@@ -1,8 +1,3 @@
-#![expect(
-    clippy::needless_for_each,
-    reason = "Inserted when deriving `utoipa::OpenAPI`"
-)]
-
 use super::api_result;
 use crate::{
     api::{
