@@ -1,12 +1,10 @@
-use super::{
-    handler::{
-        auth::{self, AuthDoc},
-        friendship::{self, FriendsDoc},
-        post::{self, PostsDoc},
+use crate::{
+    api::{
+        handler::{auth, auth::AuthDoc, friendship, friendship::FriendsDoc, post, post::PostsDoc},
+        middleware::validate_jwt,
     },
-    middleware::validate_jwt,
+    state::AppState,
 };
-use crate::state::AppState;
 use anyhow::Result;
 use axum::{
     Router,
