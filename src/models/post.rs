@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 
 /// The post entity as it exists in the database.
-#[cfg_attr(test, derive(Clone))]
+#[cfg_attr(test, derive(Debug, Clone))]
 #[cfg_attr(
     not(test),
     expect(

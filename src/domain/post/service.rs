@@ -67,6 +67,7 @@ mod tests {
     };
     use anyhow::{Context, Result, anyhow};
     use chrono::Utc;
+    use std::assert_matches;
 
     async fn run_unacceptable_parent_test(
         author_id: i32,
@@ -88,7 +89,7 @@ mod tests {
             .create_new(author_id, parent_post_id, "My parent is unacceptable")
             .await;
 
-        assert!(matches!(result, Err(e) if e == expected_post_error));
+        assert_matches!(result, Err(e) if e == expected_post_error);
         assert!(!probe.commit_called());
 
         Ok(())
@@ -174,7 +175,7 @@ mod tests {
                 .create_new(new_post_author_id, parent_post_id, new_post_body)
                 .await;
 
-            assert!(matches!(result, Ok(())));
+            assert_matches!(result, Ok(()));
             assert!(probe.commit_called());
 
             Ok(())
@@ -247,7 +248,7 @@ mod tests {
                     .create_new(author_ids[i], parent_ids[i], post_bodies[i])
                     .await;
 
-                assert!(matches!(result, Err(e) if e == post_error));
+                assert_matches!(result, Err(e) if e == post_error);
                 assert!(!probe.commit_called());
             }
 

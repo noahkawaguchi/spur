@@ -50,6 +50,7 @@ mod tests {
     };
     use anyhow::{Result, anyhow};
     use axum::http::{Method, Request, header::CONTENT_TYPE};
+    use std::assert_matches;
 
     #[test]
     fn allows_valid_json_values() -> Result<()> {
@@ -68,7 +69,7 @@ mod tests {
                 .body(serialize_body(&payload)?)?;
 
             let result = ValidatedJson::<SignupRequest>::from_request(req, &()).await;
-            assert!(matches!(result, Ok(ValidatedJson(validated)) if validated == payload));
+            assert_matches!(result, Ok(ValidatedJson(validated)) if validated == payload);
             Ok(())
         })
     }

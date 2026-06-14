@@ -75,6 +75,7 @@ mod tests {
     use anyhow::{Context, Result};
     use chrono::Utc;
     use sqlx::PgPool;
+    use std::assert_matches;
 
     fn make_test_users() -> Vec<NewUser> {
         vec![
@@ -160,9 +161,9 @@ mod tests {
             .await;
         let from_nonsense_id = repo.get_by_id(&pool, 642).await;
 
-        assert!(matches!(from_nonsense_email, Ok(None)));
-        assert!(matches!(from_nonsense_username, Ok(None)));
-        assert!(matches!(from_nonsense_id, Ok(None)));
+        assert_matches!(from_nonsense_email, Ok(None));
+        assert_matches!(from_nonsense_username, Ok(None));
+        assert_matches!(from_nonsense_id, Ok(None));
 
         Ok(())
     }
@@ -214,7 +215,7 @@ mod tests {
 
         let result = repo.insert_new(&pool, &fake_alice).await;
 
-        assert!(matches!(result, Err(RepoError::UniqueViolation(v)) if v == "users_email_unique"));
+        assert_matches!(result, Err(RepoError::UniqueViolation(v)) if v == "users_email_unique");
 
         Ok(())
     }
@@ -243,8 +244,9 @@ mod tests {
 
         let result = repo.insert_new(&pool, &fake_bob).await;
 
-        assert!(
-            matches!(result, Err(RepoError::UniqueViolation(v)) if v == "users_username_unique")
+        assert_matches!(
+            result,
+            Err(RepoError::UniqueViolation(v)) if v == "users_username_unique"
         );
 
         Ok(())
@@ -273,10 +275,10 @@ mod tests {
         ];
 
         for user in incomplete_users {
-            assert!(matches!(
+            assert_matches!(
                 repo.insert_new(&pool, &user).await,
                 Err(RepoError::CheckViolation(v)) if v == "text_non_empty"
-            ));
+            );
         }
 
         Ok(())
@@ -307,10 +309,10 @@ mod tests {
                 password_hash: String::from("%$$aabbb1234"),
             };
 
-            assert!(matches!(
+            assert_matches!(
                 repo.insert_new(&pool, &sam).await,
                 Err(RepoError::CheckViolation(v)) if v == "users_username_chars"
-            ));
+            );
         }
 
         Ok(())
