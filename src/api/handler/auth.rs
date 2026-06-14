@@ -118,7 +118,7 @@ mod tests {
         payload: &(impl Serialize + Sync),
     ) -> Result<Response<Body>> {
         let state = AppState { auth: Arc::new(mock_auth), ..Default::default() };
-        let app = super::routes().with_state(state);
+        let app = routes().with_state(state);
 
         let req = Request::builder()
             .method(Method::POST)

@@ -107,7 +107,7 @@ pub async fn seed_friends(pool: &PgPool) -> Result<()> {
 /// inserted in the normal fashion where a non-NULL parent post ID is required.
 ///
 /// *Assumes a user with ID 1 already exists,* who will be the author of this post.
-pub async fn seed_root_post(pool: &sqlx::PgPool) -> Result<()> {
+pub async fn seed_root_post(pool: &PgPool) -> Result<()> {
     sqlx::query!("INSERT INTO post (author_id, parent_id, body) VALUES (1, NULL, 'root post')")
         .execute(pool)
         .await

@@ -20,7 +20,7 @@ use axum::{
 };
 use tower_http::cors::CorsLayer;
 use utoipa::{
-    Modify, OpenApi,
+    OpenApi as _,
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
 };
 use utoipa_swagger_ui::SwaggerUi;
@@ -86,7 +86,7 @@ async fn pong() -> &'static str { "pong!\n" }
 )]
 async fn token_check() -> &'static str { "Your token is valid\n" }
 
-#[derive(OpenApi)]
+#[derive(utoipa::OpenApi)]
 #[openapi(
     servers((url = "https://spur.noahkawaguchi.com")),
     modifiers(&JwtAddon),
@@ -127,7 +127,7 @@ Other errors specific to each endpoint are documented below.
 
 struct JwtAddon;
 
-impl Modify for JwtAddon {
+impl utoipa::Modify for JwtAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
         if let Some(components) = openapi.components.as_mut() {
             components.add_security_scheme(
@@ -193,7 +193,7 @@ mod tests {
                 req = req.header(AUTHORIZATION, format!("Bearer {tk}"));
             }
 
-            super::build(state, "example.com")?
+            build(state, "example.com")?
                 .oneshot(req.body(Body::empty())?)
                 .await
                 .map_err(Into::into)
@@ -280,7 +280,7 @@ mod tests {
                 req = req.header(CONTENT_TYPE, "application/json");
             }
 
-            super::build(state, "example.com")?
+            build(state, "example.com")?
                 .oneshot(req.body(body)?)
                 .await
                 .map_err(Into::into)
@@ -377,7 +377,7 @@ mod tests {
             for &(ref k, v) in req_headers {
                 req = req.header(k, v);
             }
-            super::build(AppState::default(), allowed_origin)?
+            build(AppState::default(), allowed_origin)?
                 .oneshot(req.body(Body::empty())?)
                 .await
                 .map_err(Into::into)
