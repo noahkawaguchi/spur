@@ -95,15 +95,15 @@ mod tests {
             "yeah-_-oh",
             "ZOOM500",
         ] {
-            assert!(
+            assert_eq!(
                 SignupRequest {
                     name: String::from("John"),
                     email: String::from("john@email.mail"),
                     username: username.to_string(),
                     password: String::from("ok72PAss!yEaH()Pa55"),
                 }
-                .validate()
-                .is_ok()
+                .validate(),
+                Ok(())
             );
         }
     }
@@ -142,15 +142,15 @@ mod tests {
             "Three*Men && 4_cars",
             "C0rr3ct H0r$3 B4tt3ry 5t5p13",
         ] {
-            assert!(
+            assert_eq!(
                 SignupRequest {
                     name: String::from("John"),
                     email: String::from("john@email.mail"),
                     username: String::from("john-is-cool"),
                     password: password.to_string(),
                 }
-                .validate()
-                .is_ok()
+                .validate(),
+                Ok(())
             );
         }
     }
