@@ -11,7 +11,10 @@ FROM rust:1.96.0-alpine3.24 AS builder
 # utoipa-swagger-ui
 RUN apk add --no-cache musl-dev curl
 
-WORKDIR /app
+# Switch to non-root
+RUN adduser --disabled-password builder
+USER builder
+WORKDIR /home/builder/app
 
 # Pre-build dependencies so they're cached even if the app code changes
 COPY Cargo.toml Cargo.lock ./
@@ -32,10 +35,10 @@ RUN cargo build --release --frozen --bins
 FROM scratch
 
 # Copy the main app and three helper binaries from the builder stage
-COPY --from=builder /app/target/release/spur /spur
-COPY --from=builder /app/target/release/migrate /migrate
-COPY --from=builder /app/target/release/seed /seed
-COPY --from=builder /app/target/release/healthcheck /healthcheck
+COPY --from=builder /home/builder/app/target/release/spur /spur
+COPY --from=builder /home/builder/app/target/release/migrate /migrate
+COPY --from=builder /home/builder/app/target/release/seed /seed
+COPY --from=builder /home/builder/app/target/release/healthcheck /healthcheck
 
 # Use the tiny healthcheck binary for checking if the server is running
 HEALTHCHECK --interval=15s --timeout=1s --start-period=5s --retries=3 CMD ["/healthcheck"]

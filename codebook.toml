@@ -12,6 +12,7 @@ words = [
     "TLS",
     "Twemoji",
     "Utc",
+    "adduser",
     "caddy",
     "clippy",
     "cov",
