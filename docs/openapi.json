@@ -11,6 +11,9 @@
   "servers": [
     {
       "url": "https://spur.noahkawaguchi.com"
+    },
+    {
+      "url": "/"
     }
   ],
   "paths": {
