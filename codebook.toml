@@ -17,14 +17,20 @@ words = [
     "clippy",
     "cov",
     "crypto",
+    "direnv",
     "dotenv",
     "dtolnay",
+    "envrc",
     "gha",
     "healthcheck",
     "isready",
     "justfile",
     "mkdir",
+    "nixos",
+    "nixpkgs",
     "noahkawaguchi",
+    "oxalica",
+    "pkgs",
     "pwa",
     "requester's",
     "requesters",
@@ -40,6 +46,7 @@ words = [
 ]
 ignore_paths = [
     "Cargo.lock",
+    "flake.lock",
     ".sqlx/**/*",
 ]
 ignore_patterns = ['\b[a-fA-F0-9]{64}\b']
