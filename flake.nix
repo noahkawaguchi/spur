@@ -27,6 +27,7 @@
                   "rust-src"
                   "rust-analyzer"
                   "clippy"
+                  "llvm-tools-preview"
                 ];
               })
 
