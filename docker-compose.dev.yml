@@ -1,5 +1,11 @@
-# Expose the DB on localhost in dev for access from outside the Docker network
 services:
+  # Expose the DB on localhost in dev for access from outside the Docker network
   db:
     ports:
       - 127.0.0.1:5432:5432
+
+  # Use unprivileged ports in dev
+  caddy:
+    ports: !override
+      - 8080:80
+      - 4433:443

@@ -93,7 +93,10 @@ async fn token_check() -> &'static str { "Your token is valid\n" }
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
-    servers((url = "https://spur.noahkawaguchi.com")),
+    servers(
+        (url = "https://spur.noahkawaguchi.com"),
+        (url = "/"),
+    ),
     modifiers(&JwtAddon),
     paths(pong, token_check),
     info(description = API_DESC),
@@ -110,9 +113,11 @@ Spur is a reply-based social platform. More information and the source code are 
 [github.com/noahkawaguchi/spur](https://github.com/noahkawaguchi/spur).
 
 The docs below detail the various endpoints, and the \"Try it out\" functionality uses the real \
-deployed server. Protected endpoints (the ones with a lock symbol) require authentication using a \
-JSON Web Token. A token can be acquired via the login or signup endpoints and entered using the \
-\"Authorize\" button.
+deployed server. If running the server locally, select \"/\" from the \"Servers\" list (for each \
+request).
+
+Protected endpoints (the ones with a lock symbol) require authentication using a JSON Web Token. A \
+token can be acquired via the login or signup endpoints and entered using the \"Authorize\" button.
 
 ### Common error responses
 
