@@ -1,5 +1,3 @@
-[English](README.md) | [日本語](README.ja.md)
-
 # Spur
 
 ### 🔗 Live link: [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com/)
