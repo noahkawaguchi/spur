@@ -21,6 +21,7 @@ words = [
     "dotenv",
     "dtolnay",
     "envrc",
+    "f'docker",
     "gha",
     "healthcheck",
     "isready",
