@@ -27,6 +27,8 @@ words = [
     "isready",
     "justfile",
     "mkdir",
+    "nicknovitski",
+    "nixbuild",
     "nixos",
     "nixpkgs",
     "noahkawaguchi",
