@@ -97,7 +97,7 @@ migration name:
 ####################################################################################################
 
 # Run tests, lints, format checking, and spell checking to match CI
-ci-checks: test lint fmt-check spell-check
+ci-checks: (test '--quiet') lint fmt-check spell-check
 
 # Run tests using an ephemeral Postgres container
 test *ARGS: temp-db-start
