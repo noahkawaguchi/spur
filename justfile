@@ -102,10 +102,15 @@ ci-checks: test lint fmt-check spell-check
 # Run tests using an ephemeral Postgres container
 test *ARGS: temp-db-start
     DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true \
-    cargo test --workspace --all-targets {{ ARGS }}; \
+    just test-only {{ ARGS }}; \
     status=$?; \
     just temp-db-stop; \
     exit $status
+
+# Inner test helper with no setup/teardown (factored out for CI)
+[private]
+test-only *ARGS:
+    cargo test --workspace --all-targets {{ ARGS }}
 
 # Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
 coverage: temp-db-start && temp-db-stop

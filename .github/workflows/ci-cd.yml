@@ -57,7 +57,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Run tests
-        run: cargo test --workspace --all-targets
+        run: just test-only
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
           SQLX_OFFLINE: true
