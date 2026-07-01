@@ -63,7 +63,13 @@ jobs:
           SQLX_OFFLINE: true
 
   lint:
-    runs-on: ubuntu-24.04-arm
+    # Run this job on all three systems that the flake declares so linting doubles as verification
+    # that the devShell builds and its toolchain works on each one
+    strategy:
+      fail-fast: false
+      matrix: { os: [ubuntu-24.04-arm, ubuntu-24.04, macos-26] }
+    runs-on: ${{ matrix.os }}
+
     steps:
       - *checkout
       - *nix-install
