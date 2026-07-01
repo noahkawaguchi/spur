@@ -96,6 +96,9 @@ migration name:
 # Testing and code quality
 ####################################################################################################
 
+# Run tests, lints, format checking, and spell checking to match CI
+ci-checks: test lint fmt-check spell-check
+
 # Run tests using an ephemeral Postgres container
 test *ARGS: temp-db-start
     DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true \
@@ -107,6 +110,14 @@ test *ARGS: temp-db-start
 # Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
 coverage: temp-db-start && temp-db-stop
     DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo llvm-cov --open --workspace --all-targets
+
+# Lint with Clippy
+lint:
+    cargo clippy --workspace --all-targets -- --deny warnings
+
+# Check formatting
+fmt-check:
+    cargo fmt --all --check && echo 'Formatting check passed'
 
 # Check spelling with Codebook (https://github.com/blopker/codebook)
 spell-check:
