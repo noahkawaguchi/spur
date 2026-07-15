@@ -13,7 +13,7 @@ fn main() -> Result<()> {
         let listener = TcpListener::bind(&config.bind_addr).await?;
 
         #[cfg(debug_assertions)]
-        log::info!("Development server listening on http://{}", &config.bind_addr);
+        log::info!("Development server listening on http://{}", config.bind_addr);
 
         #[cfg(not(debug_assertions))]
         log::info!("Listening on {}", &config.bind_addr);

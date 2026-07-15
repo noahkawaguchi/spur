@@ -1,5 +1,3 @@
-[English](README.md) | [日本語](README.ja.md)
-
 # Spur
 
 ### 🔗 Live link: [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com/)
@@ -82,11 +80,23 @@ Tests and other code quality checks run with each pull request and merge into ma
 
 ## Development and Deployment
 
-- The project's main language is Rust, which can be installed via `rustup` as documented [here](https://rust-lang.org/tools/install/).
-- `just` is a command runner that can be installed via one of the methods described [here](https://github.com/casey/just#installation).
-- Common commands used in development and any additional tools they require are documented (and automated) via the `justfile`.
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-started/get-docker) with the Docker daemon running
+- For [Nix](https://github.com/NixOS/nix) users, the rest of the project's toolchain is included as a flake.
+- Otherwise:
+  - The project's main language is Rust, which can be installed via `rustup` as documented [here](https://rust-lang.org/tools/install).
+  - `just` is a command runner that can be installed via one of the methods described [here](https://github.com/casey/just#installation).
+  - Other tools are only used for specific tasks and can be installed as needed as documented in the [`justfile`](justfile).
+
+### Development
+
+- Common commands used in development are documented and automated via the [`justfile`](justfile).
 - The `.env.example` file describes the necessary environment variable configurations.
 - The project's kanban board is on GitHub Projects [here](https://github.com/users/noahkawaguchi/projects/2).
+
+### Deployment
+
 - A new version of the container image is automatically published to GHCR with each successful CI/CD run that was triggered by a merge into main.
 - Similarly, the docs are automatically deployed to GitHub Pages from the `/docs` subdirectory.
 - The server is deployed on AWS EC2 as described in [`deploy/steps.md`](deploy/steps.md).
