@@ -116,7 +116,7 @@ test-only *ARGS:
 coverage: temp-db-start && temp-db-stop
     DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo llvm-cov --open --workspace --all-targets
 
-# Lint with Clippy
+# Lint with Clippy, denying warnings
 lint:
     cargo clippy --workspace --all-targets -- --deny warnings
 
