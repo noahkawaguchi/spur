@@ -5,10 +5,10 @@
 # This base image's default target triple for Rust, {architecture here}-unknown-linux-musl, is
 # already the one desired in the runtime stage, so there's no need to specify a different target
 # when compiling
-FROM rust:1.96.0-alpine3.24 AS builder
+FROM rust:1.97.0-alpine3.24 AS builder
 
-# Install C headers and static libraries needed by dependencies in the builder stage and curl for
-# utoipa-swagger-ui
+# Install musl-dev for C headers and static libraries needed by dependencies in the builder stage
+# and curl because utoipa-swagger-ui uses it
 RUN apk add --no-cache musl-dev curl
 
 # Switch to non-root
