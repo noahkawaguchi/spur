@@ -94,7 +94,7 @@ async fn token_check() -> &'static str { "Your token is valid\n" }
 #[derive(utoipa::OpenApi)]
 #[openapi(
     servers(
-        (url = "https://spur.noahkawaguchi.com"),
+        (url = "https://spur-api.noahkawaguchi.com"),
         (url = "/"),
     ),
     modifiers(&JwtAddon),
@@ -132,9 +132,9 @@ token can be acquired via the login or signup endpoints and entered using the \"
 
 Other errors specific to each endpoint are documented below.
 
-### NOTE: To save costs, the server at [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com) \
-is not always running. However, the docs are always available at \
-[spur-docs.noahkawaguchi.com](https://spur-docs.noahkawaguchi.com).
+### NOTE: To save costs, the server at \
+[spur-api.noahkawaguchi.com](https://spur-api.noahkawaguchi.com) is not always running. However, \
+the docs are always available at [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com).
 ";
 
 struct JwtAddon;

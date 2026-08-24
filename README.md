@@ -3,7 +3,7 @@
 ### 🔗 Live link: [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com/)
 
 > [!NOTE]
-> To save costs, the server at [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com) is not always running. However, the docs are always available at [spur-docs.noahkawaguchi.com](https://spur-docs.noahkawaguchi.com).
+> To save costs, the server at [spur-api.noahkawaguchi.com](https://spur-api.noahkawaguchi.com) is not always running. However, the docs are always available at [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com).
 
 ## Table of Contents
 
