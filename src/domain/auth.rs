@@ -51,7 +51,7 @@ impl From<RepoError> for AuthError {
 }
 
 #[cfg_attr(test, mockall::automock)]
-pub trait AuthProvider: Send + Sync {
+pub(crate) trait AuthProvider: Send + Sync {
     /// Converts a plaintext password into a hashed version.
     fn hash_pw(&self, pw: &str) -> Result<String>;
 

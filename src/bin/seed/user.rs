@@ -19,7 +19,7 @@ struct SeedUser {
 ///
 /// The following six environment variables must be set to the passwords to use for the dummy users:
 /// `SPURT_PW`, `ALICE_PW`, `BOB_PW`, `CHAR_PW`, `DIEGO_PW`, `EMI_PW`.
-pub async fn seed(pool: &PgPool) -> Result<()> {
+pub(crate) async fn seed(pool: &PgPool) -> Result<()> {
     let users = [
         SeedUser {
             name: "Spurt",

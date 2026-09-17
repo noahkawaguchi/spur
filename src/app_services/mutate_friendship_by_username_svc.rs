@@ -11,14 +11,14 @@ use crate::{
     },
 };
 
-pub struct MutateFriendshipByUsernameSvc<Uo, Us, F> {
+pub(crate) struct MutateFriendshipByUsernameSvc<Uo, Us, F> {
     uow: Uo,
     user_repo: Us,
     friendship_repo: F,
 }
 
 impl<Uo, Us, F> MutateFriendshipByUsernameSvc<Uo, Us, F> {
-    pub const fn new(uow: Uo, user_repo: Us, friendship_repo: F) -> Self {
+    pub(crate) const fn new(uow: Uo, user_repo: Us, friendship_repo: F) -> Self {
         Self { uow, user_repo, friendship_repo }
     }
 }

@@ -1,9 +1,9 @@
-pub mod dummy_data;
-pub mod fake_db;
-pub mod http_bodies;
-pub mod mock_repos;
-pub mod seed_data;
-pub mod time;
+pub(crate) mod dummy_data;
+pub(crate) mod fake_db;
+pub(crate) mod http_bodies;
+pub(crate) mod mock_repos;
+pub(crate) mod seed_data;
+pub(crate) mod time;
 
 use anyhow::{Context as _, Result};
 
@@ -11,7 +11,7 @@ use anyhow::{Context as _, Result};
 ///
 /// Based on the "equivalent code" listed in the docs at
 /// <https://docs.rs/tokio/latest/tokio/attr.test.html#using-current-thread-runtime>
-pub fn tokio_test<F: Future<Output = Result<()>>>(f: F) -> Result<()> {
+pub(crate) fn tokio_test<F: Future<Output = Result<()>>>(f: F) -> Result<()> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

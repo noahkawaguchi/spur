@@ -1,6 +1,6 @@
 /// A trait for concisely converting an iterable collection into a collection of `T` so that
 /// `.map_into()` can be called in the same manner as `.into()`.
-pub trait MapInto<T>: IntoIterator
+pub(crate) trait MapInto<T>: IntoIterator
 where
     Self::Item: Into<T>,
 {

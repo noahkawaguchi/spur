@@ -12,7 +12,7 @@ use {
 
 /// Custom extractor that validates the request fields using `validator::Validate`.
 #[cfg_attr(test, derive(Debug))]
-pub struct ValidatedJson<T>(pub T);
+pub(super) struct ValidatedJson<T>(pub T);
 
 impl<T> Deref for ValidatedJson<T> {
     type Target = T;

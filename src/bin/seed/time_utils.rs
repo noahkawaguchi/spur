@@ -5,7 +5,7 @@ use {
 
 /// Adds the provided days, hours, and minutes to the anchor `DateTime`, 2019-04-30 15:00:00 UTC
 /// (the beginning of the Reiwa era, somewhat arbitrarily chosen for a recent "time 0").
-pub fn anchor_offset(days: u32, hours: u32, minutes: u32) -> Result<DateTime<Utc>> {
+pub(crate) fn anchor_offset(days: u32, hours: u32, minutes: u32) -> Result<DateTime<Utc>> {
     let reiwa = reiwa_start_utc().context("Failed to create anchor date")?;
 
     let offset = TimeDelta::try_days(days.into())

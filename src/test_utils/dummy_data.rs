@@ -1,11 +1,11 @@
-pub mod user {
+pub(crate) mod user {
     use {
         crate::models::user::User,
         anyhow::{Context as _, Result},
         chrono::{Days, Months, Utc},
     };
 
-    pub fn number1() -> User {
+    pub(crate) fn number1() -> User {
         User {
             id: 41,
             name: String::from("Friendly Good"),
@@ -16,7 +16,7 @@ pub mod user {
         }
     }
 
-    pub fn number2() -> Result<User> {
+    pub(crate) fn number2() -> Result<User> {
         Ok(User {
             id: 42,
             name: String::from("Gillian Jill"),
@@ -29,7 +29,7 @@ pub mod user {
         })
     }
 
-    pub fn number3() -> Result<User> {
+    pub(crate) fn number3() -> Result<User> {
         Ok(User {
             id: 43,
             name: String::from("Harold Old"),
@@ -42,7 +42,7 @@ pub mod user {
         })
     }
 
-    pub fn number4() -> Result<User> {
+    pub(crate) fn number4() -> Result<User> {
         Ok(User {
             id: 44,
             name: String::from("Greg Egg"),
@@ -56,24 +56,24 @@ pub mod user {
     }
 }
 
-pub mod post {
+pub(crate) mod post {
     use {
         crate::{models::post::Post, test_utils::dummy_data::post_with_author},
         anyhow::Result,
     };
 
-    pub fn number1() -> Result<Post> { Ok(post_with_author::number1()?.into()) }
-    pub fn number2() -> Result<Post> { Ok(post_with_author::number2()?.into()) }
+    pub(crate) fn number1() -> Result<Post> { Ok(post_with_author::number1()?.into()) }
+    pub(crate) fn number2() -> Result<Post> { Ok(post_with_author::number2()?.into()) }
 }
 
-pub mod post_with_author {
+pub(crate) mod post_with_author {
     use {
         crate::models::post::PostWithAuthor,
         anyhow::{Context as _, Result},
         chrono::{TimeZone as _, Utc},
     };
 
-    pub fn number1() -> Result<PostWithAuthor> {
+    pub(crate) fn number1() -> Result<PostWithAuthor> {
         Ok(PostWithAuthor {
             id: 24,
             author_id: Some(255),
@@ -90,7 +90,7 @@ pub mod post_with_author {
         })
     }
 
-    pub fn number2() -> Result<PostWithAuthor> {
+    pub(crate) fn number2() -> Result<PostWithAuthor> {
         Ok(PostWithAuthor {
             id: 999,
             author_id: Some(2431),
@@ -111,7 +111,7 @@ pub mod post_with_author {
         })
     }
 
-    pub fn number3() -> Result<PostWithAuthor> {
+    pub(crate) fn number3() -> Result<PostWithAuthor> {
         Ok(PostWithAuthor {
             id: 1324,
             author_id: Some(44),
@@ -136,5 +136,5 @@ pub mod post_with_author {
         })
     }
 
-    pub fn all3() -> Result<[PostWithAuthor; 3]> { Ok([number1()?, number2()?, number3()?]) }
+    pub(crate) fn all3() -> Result<[PostWithAuthor; 3]> { Ok([number1()?, number2()?, number3()?]) }
 }

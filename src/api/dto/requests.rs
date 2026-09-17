@@ -6,7 +6,7 @@ use {
 
 /// A request for logging in to an existing account.
 #[derive(Serialize, Deserialize, Validate, ToSchema)]
-pub struct LoginRequest {
+pub(in crate::api) struct LoginRequest {
     #[validate(email(message = "not a valid email address"))]
     pub email: String,
 
@@ -17,7 +17,7 @@ pub struct LoginRequest {
 /// A request for adding a friend by username.
 #[derive(Serialize, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct AddFriendRequest {
+pub(in crate::api) struct AddFriendRequest {
     #[validate(length(min = 1, message = "recipient username cannot be empty"))]
     pub recipient_username: String,
 }
@@ -25,7 +25,7 @@ pub struct AddFriendRequest {
 /// A request for creating a new post.
 #[derive(Serialize, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CreatePostRequest {
+pub(in crate::api) struct CreatePostRequest {
     /// The ID of the post that this post is in reply to.
     #[validate(range(min = 1, message = "parent ID must be positive"))]
     pub parent_id: i32,

@@ -16,7 +16,7 @@ use {
 
 /// Creates a fake `PgPool` for tests in which one is required but never used. Simpler than mocking
 /// a unit of work if transactions will not be used in the test.
-pub fn fake_pool() -> Result<PgPool> {
+pub(crate) fn fake_pool() -> Result<PgPool> {
     PgPoolOptions::new()
         // Fail fast if something attempts to actually hit the DB
         .acquire_timeout(Duration::from_millis(50))
@@ -27,13 +27,13 @@ pub fn fake_pool() -> Result<PgPool> {
 
 /// Probe for checking if a fake transaction was committed.
 #[derive(Clone)]
-pub struct CommitProbe(Arc<AtomicBool>);
+pub(crate) struct CommitProbe(Arc<AtomicBool>);
 impl CommitProbe {
-    pub fn commit_called(&self) -> bool { self.0.load(SeqCst) }
+    pub(crate) fn commit_called(&self) -> bool { self.0.load(SeqCst) }
 }
 
 #[derive(Clone)]
-pub struct FakeTx {
+pub(crate) struct FakeTx {
     pool: PgPool,
     probe: CommitProbe,
 }
@@ -41,12 +41,12 @@ pub struct FakeTx {
 /// A fake unit of work struct for testing purposes. Beginning and committing transactions will
 /// compile and run, but have no effect on any real or temporary database. However, attempting to
 /// read or write data will fail.
-pub struct FakeUow {
+pub(crate) struct FakeUow {
     fake_tx: FakeTx,
 }
 
 impl FakeUow {
-    pub fn with_probe() -> Result<(Self, CommitProbe)> {
+    pub(crate) fn with_probe() -> Result<(Self, CommitProbe)> {
         let probe = CommitProbe(Arc::new(AtomicBool::new(false)));
         let fake_tx = FakeTx { pool: fake_pool()?, probe: probe.clone() };
         Ok((Self { fake_tx }, probe))

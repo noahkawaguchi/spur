@@ -6,12 +6,12 @@ use {
     serde::{Deserialize, Serialize},
 };
 
-pub struct BcryptJwtAuthProvider {
+pub(crate) struct BcryptJwtAuthProvider {
     jwt_secret: String,
 }
 
 impl BcryptJwtAuthProvider {
-    pub const fn new(jwt_secret: String) -> Self { Self { jwt_secret } }
+    pub(crate) const fn new(jwt_secret: String) -> Self { Self { jwt_secret } }
 }
 
 impl AuthProvider for BcryptJwtAuthProvider {

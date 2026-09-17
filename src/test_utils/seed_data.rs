@@ -13,7 +13,7 @@ use {
 
 /// Inserts four new users into the test database and returns them as they were inserted.
 /// They will automatically be given IDs 1, 2, 3, and 4 if there are no other existing users.
-pub async fn seed_users(pool: &PgPool) -> Result<[NewUser; 4]> {
+pub(crate) async fn seed_users(pool: &PgPool) -> Result<[NewUser; 4]> {
     let user_repo = PgUserRepo;
 
     let drake = NewUser {
@@ -85,7 +85,7 @@ pub async fn seed_users(pool: &PgPool) -> Result<[NewUser; 4]> {
 /// - User 2 => friends with 3 and 4
 /// - User 3 => friends with 2
 /// - User 4 => friends with 2
-pub async fn seed_friends(pool: &PgPool) -> Result<()> {
+pub(crate) async fn seed_friends(pool: &PgPool) -> Result<()> {
     let two_and_three = UserIdPair::new(2, 3)?;
     let two_and_four = UserIdPair::new(4, 2)?;
 
@@ -109,7 +109,7 @@ pub async fn seed_friends(pool: &PgPool) -> Result<()> {
 /// inserted in the normal fashion where a non-NULL parent post ID is required.
 ///
 /// *Assumes a user with ID 1 already exists,* who will be the author of this post.
-pub async fn seed_root_post(pool: &PgPool) -> Result<()> {
+pub(crate) async fn seed_root_post(pool: &PgPool) -> Result<()> {
     sqlx::query!("INSERT INTO post (author_id, parent_id, body) VALUES (1, NULL, 'root post')")
         .execute(pool)
         .await
@@ -118,7 +118,7 @@ pub async fn seed_root_post(pool: &PgPool) -> Result<()> {
 }
 
 /// Seeds a test database with users (IDs 1, 2, 3, and 4) and the root post (by user 1).
-pub async fn seed_users_and_root_post(pool: &PgPool) -> Result<[NewUser; 4]> {
+pub(crate) async fn seed_users_and_root_post(pool: &PgPool) -> Result<[NewUser; 4]> {
     let new_users = seed_users(pool).await?;
     seed_root_post(pool).await?;
     Ok(new_users)

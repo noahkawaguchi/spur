@@ -3,9 +3,9 @@ use crate::{
     models::user::UserRegistration,
 };
 
-pub mod authenticator_svc;
-pub mod mutate_friendship_by_username_svc;
-pub mod uow;
+pub(crate) mod authenticator_svc;
+pub(crate) mod mutate_friendship_by_username_svc;
+pub(crate) mod uow;
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait]

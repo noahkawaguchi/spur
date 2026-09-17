@@ -1,10 +1,10 @@
 use {crate::domain::RepoError, sqlx::PgExecutor, user_id_pair::UserIdPair};
 
-pub mod error;
-pub mod user_id_pair;
+pub(crate) mod error;
+pub(crate) mod user_id_pair;
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum FriendshipStatus {
+pub(crate) enum FriendshipStatus {
     /// The two users are confirmed friends.
     Friends,
     /// There is a pending request from the user with the contained ID.
@@ -14,7 +14,7 @@ pub enum FriendshipStatus {
 }
 
 #[async_trait::async_trait]
-pub trait FriendshipRepo: Send + Sync {
+pub(crate) trait FriendshipRepo: Send + Sync {
     /// Creates a new friend request between the two users. `requester_id` must be equal to one of
     /// the IDs in the pair, indicating who initiated the request.
     async fn new_request(

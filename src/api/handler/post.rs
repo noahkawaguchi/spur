@@ -24,9 +24,9 @@ use {
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(create_new, by_post_id, child_posts, specific_user_posts, own_posts))]
-pub struct PostsDoc;
+pub(in crate::api) struct PostsDoc;
 
-pub fn routes() -> Router<AppState> {
+pub(in crate::api) fn routes() -> Router<AppState> {
     Router::new()
         .route("/", post(create_new))
         .route("/{post_id}", get(by_post_id))

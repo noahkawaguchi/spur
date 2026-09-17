@@ -7,21 +7,21 @@ use {
 /// A general-purpose error response.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct ErrorResponse {
+pub(in crate::api) struct ErrorResponse {
     pub error: String,
 }
 
 /// A general-purpose success response.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct SuccessResponse {
+pub(in crate::api) struct SuccessResponse {
     pub message: String,
 }
 
 /// A response for sending an auth token.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct TokenResponse {
+pub(in crate::api) struct TokenResponse {
     pub token: String,
 }
 
@@ -29,7 +29,7 @@ pub struct TokenResponse {
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct PostResponse {
+pub(in crate::api) struct PostResponse {
     /// The numeric ID of the post.
     pub id: i32,
     /// The username of the author of the post.

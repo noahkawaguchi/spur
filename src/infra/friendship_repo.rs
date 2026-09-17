@@ -6,7 +6,7 @@ use {
     sqlx::PgExecutor,
 };
 
-pub struct PgFriendshipRepo;
+pub(crate) struct PgFriendshipRepo;
 
 #[async_trait::async_trait]
 impl FriendshipRepo for PgFriendshipRepo {

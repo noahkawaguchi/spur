@@ -7,7 +7,7 @@ use {
 };
 
 #[async_trait::async_trait]
-pub trait UserRepo: Send + Sync {
+pub(crate) trait UserRepo: Send + Sync {
     async fn insert_new(
         &self,
         exec: impl PgExecutor<'_>,

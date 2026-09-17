@@ -14,7 +14,7 @@ use {
 
 /// Middleware that confirms JWT validity and passes the requester's user ID to the handler via a
 /// request extension.
-pub async fn validate_jwt(
+pub(super) async fn validate_jwt(
     auth: State<Arc<dyn Authenticator>>,
     bearer: TypedHeader<Authorization<Bearer>>,
     mut request: Request,

@@ -33,7 +33,7 @@ pub struct NewUser {
         reason = "It's simpler to keep this struct directly reflecting the DB entity"
     )
 )]
-pub struct User {
+pub(crate) struct User {
     pub id: i32,
     pub name: String,
     pub email: String,

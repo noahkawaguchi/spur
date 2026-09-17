@@ -1,6 +1,6 @@
-pub mod auth;
-pub mod friendship;
-pub mod post;
+pub(super) mod auth;
+pub(super) mod friendship;
+pub(super) mod post;
 
 /// Expands to a handler function return type.
 ///

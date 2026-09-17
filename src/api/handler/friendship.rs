@@ -24,9 +24,9 @@ use {
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(add_friend, list_friends, list_requests, friend_posts))]
-pub struct FriendsDoc;
+pub(in crate::api) struct FriendsDoc;
 
-pub fn routes() -> Router<AppState> {
+pub(in crate::api) fn routes() -> Router<AppState> {
     Router::new()
         .route("/", post(add_friend).get(list_friends))
         .route("/requests", get(list_requests))

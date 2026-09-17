@@ -13,7 +13,7 @@ use {
 };
 
 #[derive(Debug, Error)]
-pub enum ApiError {
+pub(super) enum ApiError {
     #[error(transparent)]
     Request(#[from] validator::ValidationErrors),
 

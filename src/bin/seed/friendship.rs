@@ -26,7 +26,7 @@ struct SeedFriendship {
 /// - User 6: No relation.
 ///
 /// Also creates an accepted friendship requested from 6 to 3.
-pub async fn seed(pool: &PgPool) -> Result<()> {
+pub(crate) async fn seed(pool: &PgPool) -> Result<()> {
     // Regular human relationships
     let mut friendships = vec![
         SeedFriendship {

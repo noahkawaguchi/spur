@@ -1,5 +1,5 @@
-pub mod error;
-pub mod service;
+pub(crate) mod error;
+pub(crate) mod service;
 
 use {
     crate::{
@@ -18,7 +18,7 @@ pub trait PostSvc: Send + Sync {
 }
 
 #[async_trait::async_trait]
-pub trait PostRepo: Send + Sync {
+pub(crate) trait PostRepo: Send + Sync {
     async fn insert_new(
         &self,
         exec: impl PgExecutor<'_>,

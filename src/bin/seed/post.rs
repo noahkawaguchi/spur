@@ -20,7 +20,7 @@ struct SeedPost {
 /// User 1 (Spurt) will be the author of the initial root post inserted. Users 2 through 6 each
 /// have a post in response to the root post. 3 then responds to 2's post, and then 2 responds back
 /// to that response.
-pub async fn seed(pool: &PgPool) -> Result<()> {
+pub(crate) async fn seed(pool: &PgPool) -> Result<()> {
     let posts = [
         // Post 1
         SeedPost {
