@@ -7,14 +7,14 @@ use crate::{
     models::user::UserRegistration,
 };
 
-pub struct AuthenticatorSvc<U, R, P> {
+pub(crate) struct AuthenticatorSvc<U, R, P> {
     uow: U,
     repo: R,
     provider: P,
 }
 
 impl<U, R, P> AuthenticatorSvc<U, R, P> {
-    pub const fn new(uow: U, repo: R, provider: P) -> Self { Self { uow, repo, provider } }
+    pub(crate) const fn new(uow: U, repo: R, provider: P) -> Self { Self { uow, repo, provider } }
 }
 
 #[async_trait::async_trait]

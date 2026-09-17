@@ -6,12 +6,12 @@ use {
     sqlx::PgPool,
 };
 
-pub struct PgSocialRead {
+pub(crate) struct PgSocialRead {
     pool: PgPool,
 }
 
 impl PgSocialRead {
-    pub const fn new(pool: PgPool) -> Self { Self { pool } }
+    pub(crate) const fn new(pool: PgPool) -> Self { Self { pool } }
 }
 
 #[async_trait::async_trait]

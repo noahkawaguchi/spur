@@ -1,7 +1,7 @@
-pub mod auth;
-pub mod friendship;
-pub mod post;
-pub mod user;
+pub(crate) mod auth;
+pub(crate) mod friendship;
+pub(crate) mod post;
+pub(crate) mod user;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RepoError {

@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
         reason = "It's simpler to keep this struct directly reflecting the DB entity"
     )
 )]
-pub struct Post {
+pub(crate) struct Post {
     pub id: i32,
     pub author_id: Option<i32>,
     pub parent_id: Option<i32>,

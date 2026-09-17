@@ -63,7 +63,7 @@ The docs are also served on GitHub Pages so that they can be viewed even when th
 The project is tested with Rust's native test framework and Mockall in the Tokio runtime. Some tests use ephemeral PostgreSQL containers, so a running Docker daemon is required.
 
 - Run tests: `just test`
-- Show coverage: `just coverage`
+- Show a coverage report: `just cov` for terminal summary or `just cov-open` for HTML in browser (generates in `target/llvm-cov/html`)
 
 Due to the decoupled design, the testing strategy focuses on dependency injection using a combination of automatic mocks from the `mockall` crate and manual mocks.
 

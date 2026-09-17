@@ -19,9 +19,9 @@ use {
 
 #[derive(utoipa::OpenApi)]
 #[openapi(paths(signup, login))]
-pub struct AuthDoc;
+pub(in super::super) struct AuthDoc;
 
-pub fn routes() -> Router<AppState> {
+pub(in super::super) fn routes() -> Router<AppState> {
     Router::new()
         .route("/signup", post(signup))
         .route("/login", post(login))

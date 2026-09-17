@@ -13,7 +13,7 @@ bcrypt            = "0.19.0"
 chrono            = "0.4.41"
 dotenvy           = "0.15.7"
 env_logger        = "0.11.8"
-jsonwebtoken      = { version = "10.3.0", default-features = false, features = ["rust_crypto"] }
+jsonwebtoken      = { version = "11.1.0", default-features = false, features = ["rust_crypto"] }
 lazy-regex        = "3.4.1"
 log               = "0.4.28"
 serde             = { version = "1.0.219", features = ["derive"] }
@@ -23,7 +23,7 @@ tokio             = { version = "1.45.0", features = ["rt-multi-thread", "signal
 tower-http        = { version = "0.7.0", features = ["cors"] }
 utoipa            = { version = "5.4.0", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
-validator         = { version = "0.20.0", features = ["derive"] }
+validator         = { version = "0.21.0", features = ["derive"] }
 
 [dev-dependencies]
 mockall    = "0.15.0"
@@ -31,7 +31,7 @@ serde_json = "1.0.143"
 tower      = { version = "0.5.2", features = ["util"] }
 
 [lints.clippy]
-# All lint groups except restriction and cargo
+# All lints from groups other than restriction and cargo
 nursery  = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 
@@ -65,14 +65,21 @@ shadow_reuse     = "forbid"
 shadow_same      = "deny"   # async_trait inserts `#[allow(clippy::shadow_same)]`
 shadow_unrelated = "forbid"
 
-# Superfluous naming
+# Misleading constructs
+infinite_loop                   = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+unused_trait_names              = "warn"
+
+# Redundant constructs
+redundant_pub_crate      = "allow" # Conflicts with `unreachable_pub`
 redundant_test_prefix    = "deny"
 unnecessary_self_imports = "warn"
-unused_trait_names       = "warn"
 
 [lints.rust]
 unsafe_code = "forbid"
 
 closure_returning_async_block = "warn"
 redundant_imports             = "warn"
+unreachable_pub               = "warn"
+unused_macro_rules            = "warn"
 unused_qualifications         = "warn"

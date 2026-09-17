@@ -1,13 +1,13 @@
 use chrono::{DateTime, Utc};
 
 /// Finds whether two `DateTime<Utc>`s are within 5000ms of each other.
-pub fn within_five_seconds(dt1: DateTime<Utc>, dt2: DateTime<Utc>) -> bool {
+pub(crate) fn within_five_seconds(dt1: DateTime<Utc>, dt2: DateTime<Utc>) -> bool {
     dt1.signed_duration_since(dt2).num_milliseconds().abs() < 5000
 }
 
 /// Finds whether two `Option<DateTime<Utc>>`s are either both `None` or within 5000ms of each
 /// other.
-pub fn both_none_or_within_five_seconds(
+pub(crate) fn both_none_or_within_five_seconds(
     maybe_dt1: Option<DateTime<Utc>>,
     maybe_dt2: Option<DateTime<Utc>>,
 ) -> bool {

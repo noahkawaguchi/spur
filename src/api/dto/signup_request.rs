@@ -14,7 +14,7 @@ const CHARS_CODE: &str = "character_classes";
 /// A request for creating a new account.
 #[cfg_attr(test, derive(Debug, PartialEq, Eq, Clone))]
 #[derive(Serialize, Deserialize, Validate, ToSchema)]
-pub struct SignupRequest {
+pub(in crate::api) struct SignupRequest {
     #[validate(length(min = 1, message = "name cannot be empty"))]
     pub name: String,
 

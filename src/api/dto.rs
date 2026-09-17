@@ -1,12 +1,12 @@
-pub mod requests;
-pub mod responses;
-pub mod signup_request;
+pub(super) mod requests;
+pub(super) mod responses;
+pub(super) mod signup_request;
 
 #[cfg(test)]
-pub mod dummy_data {
+pub(super) mod dummy_data {
     use super::{requests::LoginRequest, signup_request::SignupRequest};
 
-    pub fn dummy_signup_request() -> SignupRequest {
+    pub(in super::super) fn dummy_signup_request() -> SignupRequest {
         SignupRequest {
             name: String::from("Christina Ani-T-Sir-HC"),
             email: String::from("name@backwards.moc"),
@@ -15,7 +15,7 @@ pub mod dummy_data {
         }
     }
 
-    pub fn dummy_login_request() -> LoginRequest {
+    pub(in super::super) fn dummy_login_request() -> LoginRequest {
         LoginRequest {
             email: String::from("name@backwards.moc"),
             password: String::from("2shh!5hh#H"),

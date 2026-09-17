@@ -4,13 +4,13 @@ use {
 };
 
 #[async_trait::async_trait]
-pub trait Tx: Send {
+pub(crate) trait Tx: Send {
     fn exec(&mut self) -> impl PgExecutor<'_>;
     async fn commit_uow(self) -> Result<(), RepoError>;
 }
 
 #[async_trait::async_trait]
-pub trait UnitOfWork: Send + Sync {
+pub(crate) trait UnitOfWork: Send + Sync {
     type Tx<'c>: Tx;
     async fn begin_uow<'c>(&self) -> Result<Self::Tx<'c>, RepoError>;
     fn single_exec(&self) -> impl PgExecutor<'_>;

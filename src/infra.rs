@@ -1,11 +1,11 @@
 use crate::{domain::RepoError, read_models::ReadError};
 
-pub mod auth_provider;
-pub mod friendship_repo;
-pub mod post_repo;
-pub mod post_with_author_read;
-pub mod social_read;
-pub mod user_repo;
+pub(crate) mod auth_provider;
+pub(crate) mod friendship_repo;
+pub(crate) mod post_repo;
+pub(crate) mod post_with_author_read;
+pub(crate) mod social_read;
+pub(crate) mod user_repo;
 
 impl From<sqlx::Error> for ReadError {
     fn from(e: sqlx::Error) -> Self {

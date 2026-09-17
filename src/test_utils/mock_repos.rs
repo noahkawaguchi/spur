@@ -17,7 +17,7 @@ use {
 
 #[expect(clippy::type_complexity, reason = "Hand-rolled mock")]
 #[derive(Default)]
-pub struct MockUserRepo {
+pub(crate) struct MockUserRepo {
     pub insert_new: Option<Box<dyn Fn(&NewUser) -> Result<User, RepoError> + Send + Sync>>,
     pub get_by_id: Option<Box<dyn Fn(i32) -> Result<Option<User>, RepoError> + Send + Sync>>,
     pub get_by_email: Option<Box<dyn Fn(&str) -> Result<Option<User>, RepoError> + Send + Sync>>,
@@ -71,7 +71,7 @@ impl UserRepo for MockUserRepo {
 
 #[expect(clippy::type_complexity, reason = "Hand-rolled mock")]
 #[derive(Default)]
-pub struct MockFriendshipRepo {
+pub(crate) struct MockFriendshipRepo {
     pub new_request: Option<Box<dyn Fn(&UserIdPair, i32) -> Result<(), RepoError> + Send + Sync>>,
     pub accept_request: Option<Box<dyn Fn(&UserIdPair) -> Result<(), RepoError> + Send + Sync>>,
     pub get_status:
@@ -117,7 +117,7 @@ impl FriendshipRepo for MockFriendshipRepo {
 
 #[expect(clippy::type_complexity, reason = "Hand-rolled mock")]
 #[derive(Default)]
-pub struct MockPostRepo {
+pub(crate) struct MockPostRepo {
     pub insert_new: Option<Box<dyn Fn(i32, i32, &str) -> Result<(), RepoError> + Send + Sync>>,
     pub get_by_id_exclusive:
         Option<Box<dyn Fn(i32) -> Result<Option<Post>, RepoError> + Send + Sync>>,

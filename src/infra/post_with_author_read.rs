@@ -6,12 +6,12 @@ use {
     sqlx::PgPool,
 };
 
-pub struct PgPostWithAuthorRead {
+pub(crate) struct PgPostWithAuthorRead {
     pool: PgPool,
 }
 
 impl PgPostWithAuthorRead {
-    pub const fn new(pool: PgPool) -> Self { Self { pool } }
+    pub(crate) const fn new(pool: PgPool) -> Self { Self { pool } }
 }
 
 #[async_trait::async_trait]

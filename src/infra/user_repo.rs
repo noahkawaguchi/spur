@@ -6,7 +6,7 @@ use {
     sqlx::PgExecutor,
 };
 
-pub struct PgUserRepo;
+pub(crate) struct PgUserRepo;
 
 #[async_trait::async_trait]
 impl UserRepo for PgUserRepo {

@@ -3,13 +3,13 @@ use crate::{
     domain::post::{PostError, PostRepo, PostSvc},
 };
 
-pub struct PostDomainSvc<U, R> {
+pub(crate) struct PostDomainSvc<U, R> {
     uow: U,
     repo: R,
 }
 
 impl<U, R> PostDomainSvc<U, R> {
-    pub const fn new(uow: U, repo: R) -> Self { Self { uow, repo } }
+    pub(crate) const fn new(uow: U, repo: R) -> Self { Self { uow, repo } }
 }
 
 #[async_trait::async_trait]
