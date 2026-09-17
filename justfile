@@ -112,9 +112,13 @@ test *ARGS: temp-db-start
 test-only *ARGS:
     cargo test --workspace --all-targets {{ ARGS }}
 
-# Generate and display test coverage (requires `cargo install cargo-llvm-cov`)
-coverage: temp-db-start && temp-db-stop
-    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo llvm-cov --open --workspace --all-targets
+# Generate test coverage report and print summary (requires `cargo install cargo-llvm-cov`)
+cov *ARGS: temp-db-start && temp-db-stop
+    DATABASE_URL={{temp-db-url}} SQLX_OFFLINE=true cargo llvm-cov {{ ARGS }} \
+        --workspace --all-targets
+
+# Generate HTML test coverage report (in `target/llvm-cov/html`) and open in browser
+cov-open: (cov '--open')
 
 # Lint with Clippy, denying warnings
 lint:
