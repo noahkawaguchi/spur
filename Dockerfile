@@ -5,7 +5,9 @@
 # This base image's default target triple for Rust, {architecture here}-unknown-linux-musl, is
 # already the one desired in the runtime stage, so there's no need to specify a different target
 # when compiling
-FROM rust:1.98.1-alpine3.24 AS builder
+#
+# Should match the Rust version in `flake.nix`
+FROM rust:1.99.0-alpine3.24 AS builder
 
 # Install musl-dev for C headers and static libraries needed by dependencies in the builder stage
 # and curl because utoipa-swagger-ui uses it
