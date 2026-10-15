@@ -1,5 +1,7 @@
 # Spur
 
+[![CI/CD](https://github.com/noahkawaguchi/spur/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/noahkawaguchi/spur/actions/workflows/ci-cd.yml)
+
 ### 🔗 Live link: [spur.noahkawaguchi.com](https://spur.noahkawaguchi.com/)
 
 > [!NOTE]

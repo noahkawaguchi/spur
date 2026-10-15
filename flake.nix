@@ -24,12 +24,14 @@
             packages = with pkgs; [
               # Use nightly for formatting only
               rust-bin.nightly.latest.rustfmt
-              (rust-bin.stable."1.98.1".minimal.override {
+
+              # Should match the Rust version in the `Dockerfile`
+              (rust-bin.stable."1.99.0".minimal.override {
                 extensions = [
                   "rust-src"
                   "rust-analyzer"
                   "clippy"
-                  "llvm-tools-preview"
+                  "llvm-tools"
                 ];
               })
 
