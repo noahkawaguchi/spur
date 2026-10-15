@@ -130,12 +130,12 @@ mod tests {
             .pending_requests(3)
             .await
             .context("failed to get empty requests")?;
-        assert!(requests1.is_empty());
+        assert_eq!(requests1, [] as [String; 0]);
         let friends1 = read
             .friend_usernames(3)
             .await
             .context("failed to get empty friends")?;
-        assert!(friends1.is_empty());
+        assert_eq!(friends1, [] as [String; 0]);
 
         // Two requests, no friends
         repo.new_request(&pool, &ids1, 1)
@@ -154,7 +154,7 @@ mod tests {
             .friend_usernames(3)
             .await
             .context("failed to get empty friends")?;
-        assert!(friends2.is_empty());
+        assert_eq!(friends2, [] as [String; 0]);
 
         // One request, one friend
         repo.accept_request(&pool, &ids1)
@@ -179,7 +179,7 @@ mod tests {
             .pending_requests(3)
             .await
             .context("failed to get empty requests")?;
-        assert!(requests4.is_empty());
+        assert_eq!(requests4, [] as [String; 0]);
         let friends4 = read
             .friend_usernames(3)
             .await
@@ -231,7 +231,7 @@ mod tests {
         let u4_friend_posts = read.friend_posts(4).await?;
 
         // 1 has no friends
-        assert!(u1_friend_posts.is_empty());
+        assert_eq!(u1_friend_posts, [] as [PostWithAuthor; 0]);
         // 2 is friends with both 3 and 4
         assert_eq!(u2_friend_posts, vec![u3p2, u4p2, u3p1, u4p1,]);
         // 3 and 4 are each only friends with 2
