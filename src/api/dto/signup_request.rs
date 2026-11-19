@@ -39,47 +39,36 @@ impl From<SignupRequest> for UserRegistration {
 
 /// # Errors
 ///
-/// Will return `Err` if `password` does not meet the following requirements:
+/// Returns `Err` if `password` does not meet the following requirements:
 ///
 /// - At least 10 characters
 /// - At most 72 bytes
 /// - At least one lowercase letter, uppercase letter, digit, and special character
 fn validate_password(password: &str) -> Result<(), ValidationError> {
-    if password.chars().count() < 10 {
-        return Err(ValidationError::new(LENGTH_CODE)
-            .with_message("password must be at least 10 characters".into()));
+    fn len_check(cond: bool, msg: &'static str) -> Result<(), ValidationError> {
+        cond.ok_or_else(|| ValidationError::new(LENGTH_CODE).with_message(msg.into()))
     }
 
-    // Because 72 bytes is the max length for bcrypt
-    if password.len() > 72 {
-        return Err(ValidationError::new(LENGTH_CODE).with_message(
-            "password must be at most 72 bytes (72 English letters/digits/symbols, fewer for \
-             other kinds of characters)"
-                .into(),
-        ));
-    }
+    len_check(password.chars().count() >= 10, "password must be at least 10 characters")?;
 
-    if !password.chars().any(char::is_lowercase) {
-        return Err(ValidationError::new(CHARS_CODE)
-            .with_message("password must contain at least one lowercase letter".into()));
-    }
+    // 72 bytes is the max length for bcrypt
+    len_check(
+        password.len() <= 72,
+        "password must be at most 72 bytes (72 English letters/digits/symbols, fewer for other \
+         kinds of characters)",
+    )?;
 
-    if !password.chars().any(char::is_uppercase) {
-        return Err(ValidationError::new(CHARS_CODE)
-            .with_message("password must contain at least one uppercase letter".into()));
-    }
+    let char_check = |check: fn(char) -> bool, msg: &'static str| {
+        password
+            .chars()
+            .any(check)
+            .ok_or_else(|| ValidationError::new(CHARS_CODE).with_message(msg.into()))
+    };
 
-    if !password.chars().any(|c| c.is_ascii_digit()) {
-        return Err(ValidationError::new(CHARS_CODE)
-            .with_message("password must contain at least one digit (0-9)".into()));
-    }
-
-    if !password.chars().any(|c| !c.is_alphanumeric()) {
-        return Err(ValidationError::new(CHARS_CODE)
-            .with_message("password must contain at least one special character".into()));
-    }
-
-    Ok(())
+    char_check(char::is_lowercase, "password must contain at least one lowercase letter")?;
+    char_check(char::is_uppercase, "password must contain at least one uppercase letter")?;
+    char_check(|c| c.is_ascii_digit(), "password must contain at least one digit (0-9)")?;
+    char_check(|c| !c.is_alphanumeric(), "password must contain at least one special character")
 }
 
 #[cfg(test)]
