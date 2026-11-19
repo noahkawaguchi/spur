@@ -1,13 +1,13 @@
 use {
     crate::models::user::UserRegistration,
-    lazy_regex::{Regex, lazy_regex},
+    lazy_regex::{Lazy, Regex, lazy_regex},
     serde::{Deserialize, Serialize},
-    std::sync::LazyLock,
     utoipa::ToSchema,
     validator::{Validate, ValidationError},
 };
 
-static USERNAME_RE: LazyLock<Regex> = LazyLock::new(|| lazy_regex!("^[A-Za-z0-9_-]+$").clone());
+#[expect(clippy::non_std_lazy_statics, reason = "returned by `lazy_regex!` macro")]
+static USERNAME_RE: Lazy<Regex> = lazy_regex!("^[A-Za-z0-9_-]+$");
 const LENGTH_CODE: &str = "length";
 const CHARS_CODE: &str = "character_classes";
 
