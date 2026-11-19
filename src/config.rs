@@ -24,10 +24,6 @@ impl AppConfig {
     ///
     /// Returns `Err` if the environment variables cannot be successfully read.
     pub fn load() -> Result<Self> {
-        // Expect a .env file in development only
-        #[cfg(debug_assertions)]
-        dotenvy::dotenv().context("failed to load .env file")?;
-
         Ok(Self {
             // Definitely different in dev and prod?
             // -> No defaults, must be set as environment variables

@@ -2130,7 +2130,6 @@ dependencies = [
  "axum-extra",
  "bcrypt",
  "chrono",
- "dotenvy",
  "env_logger",
  "jsonwebtoken",
  "lazy-regex",
