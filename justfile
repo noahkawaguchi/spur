@@ -14,16 +14,15 @@
 set dotenv-load
 
 # The tag to use for the Postgres Docker image.
-# Should match the one in `docker-compose.yml` and CI/CD.
-pg-tag := '18.6-alpine3.24'
+# Should match the one in `compose.yaml` and CI/CD.
+pg-tag := '18.7-alpine3.24'
 
 ####################################################################################################
 # Main Docker Compose stack
 ####################################################################################################
 
 spur-img-tag := env('SPUR_IMG_TAG', 'latest')
-dc-project := 'docker compose -p spur -f docker-compose.yml -f docker-compose.dev.yml' \
-              + ' --profile init'
+dc-project := 'docker compose --profile init'
 
 # Build/start the Compose stack with migrations and seed data if necessary (the default recipe)
 dc-up:
@@ -122,11 +121,15 @@ cov-open: (cov '--open')
 
 # Lint with Clippy, denying warnings
 lint:
-    cargo clippy --workspace --all-targets -- --deny warnings
+    CARGO_BUILD_WARNINGS=deny cargo clippy --workspace --all-targets
 
 # Check formatting
 fmt-check:
-    cargo fmt --all --check && echo 'Formatting check passed'
+    RUSTUP_TOOLCHAIN=nightly cargo fmt --all --check && echo 'Formatting check passed'
+
+# Apply formatting changes
+fmt:
+    RUSTUP_TOOLCHAIN=nightly cargo fmt --all
 
 # Check spelling with Codebook (https://github.com/blopker/codebook)
 spell-check:

@@ -24,9 +24,11 @@ where
         parent_id: i32,
         body: &str,
     ) -> Result<(), PostError> {
-        // Disallow writing posts in response to nonexistent, deleted, archived, or one's own posts
+        fn ensure(cond: bool, e: PostError) -> Result<(), PostError> { cond.ok_or(e) }
 
         let mut tx = self.uow.begin_uow().await?;
+
+        // Disallow writing posts in response to nonexistent, deleted, archived, or one's own posts
 
         let parent = self
             .repo
@@ -34,18 +36,14 @@ where
             .await?
             .ok_or(PostError::NotFound)?;
 
-        if parent.deleted_at.is_some() {
-            return Err(PostError::DeletedParent);
-        }
-        if parent.archived_at.is_some() {
-            return Err(PostError::ArchivedParent);
-        }
-        if parent
-            .author_id
-            .is_some_and(|parent_author_id| parent_author_id == author_id)
-        {
-            return Err(PostError::SelfReply);
-        }
+        ensure(parent.deleted_at.is_none(), PostError::DeletedParent)?;
+        ensure(parent.archived_at.is_none(), PostError::ArchivedParent)?;
+        ensure(
+            parent
+                .author_id
+                .is_none_or(|parent_author_id| parent_author_id != author_id),
+            PostError::SelfReply,
+        )?;
 
         self.repo
             .insert_new(tx.exec(), author_id, parent_id, body)

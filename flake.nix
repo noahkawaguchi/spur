@@ -26,7 +26,7 @@
               rust-bin.nightly.latest.rustfmt
 
               # Should match the Rust version in the `Dockerfile`
-              (rust-bin.stable."1.99.0".minimal.override {
+              (rust-bin.stable."1.100.0".minimal.override {
                 extensions = [
                   "rust-src"
                   "rust-analyzer"

@@ -1,14 +1,17 @@
+name: spur
+
 # Shared config for all three containers that use the main Spur Docker image
 x-spur-image-shared: &spur_image
   image: ghcr.io/noahkawaguchi/spur:${SPUR_IMG_TAG:-latest}
   env_file: .env
   environment:
-    DATABASE_URL: >-
-      postgres://${POSTGRES_USER:?error}:${POSTGRES_PASSWORD:?error}@db:5432/${POSTGRES_DB:?error}
+    DATABASE_URL: "postgres://${POSTGRES_USER:?error}:\
+      ${POSTGRES_PASSWORD:?error}@db:5432/${POSTGRES_DB:?error}"
 
 services:
   db:
-    image: postgres:18.6-alpine3.24 # Should match the version in the `justfile` and CI/CD
+    # Should match the version in the `justfile` and CI/CD
+    image: postgres:18.7-alpine3.24
     restart: unless-stopped
     expose: ["5432"]
     env_file: .env
@@ -47,7 +50,7 @@ services:
       migrate: { condition: service_completed_successfully }
 
   caddy:
-    image: caddy:2.11.7-alpine
+    image: caddy:2.11.9-alpine
     restart: unless-stopped
     ports: [80:80, 443:443]
     env_file: .env

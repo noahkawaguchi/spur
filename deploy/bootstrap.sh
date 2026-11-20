@@ -45,7 +45,7 @@ download_file() {
 # the `init` profile.
 pull_and_start() {
   docker pull "$spur_img"
-  docker compose -p spur --profile init up -d
+  docker compose --profile init up -d
 }
 
 # Parse the command
@@ -53,10 +53,10 @@ case "$1" in
 
 # Download only the required files
 files)
-  download_file docker-compose.yml
+  download_file compose.yaml
 
   download_file .env.example
-  if [ ! -e .env ]; then cp .env.example .env; fi
+  cp --update=none .env.example .env
 
   mkdir -p caddy_conf
   download_file caddy_conf/Caddyfile -O caddy_conf/Caddyfile
@@ -71,8 +71,8 @@ run) pull_and_start ;;
 # Destroy and remake the database
 reset)
   confirm "destroy and remake the database"
-  docker compose -p spur stop
-  docker compose -p spur rm -sf db
+  docker compose --profile init stop
+  docker compose rm -sf db
   docker volume rm spur_pg_data
   pull_and_start
   ;;

@@ -7,7 +7,7 @@
 # when compiling
 #
 # Should match the Rust version in `flake.nix`
-FROM rust:1.99.0-alpine3.24 AS builder
+FROM rust:1.100.0-alpine3.24 AS builder
 
 # Install musl-dev for C headers and static libraries needed by dependencies in the builder stage
 # and curl because utoipa-swagger-ui uses it
