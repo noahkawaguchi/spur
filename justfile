@@ -14,7 +14,7 @@
 set dotenv-load
 
 # The tag to use for the Postgres Docker image.
-# Should match the one in `docker-compose.yml` and CI/CD.
+# Should match the one in `compose.yaml` and CI/CD.
 pg-tag := '18.6-alpine3.24'
 
 ####################################################################################################
@@ -22,8 +22,7 @@ pg-tag := '18.6-alpine3.24'
 ####################################################################################################
 
 spur-img-tag := env('SPUR_IMG_TAG', 'latest')
-dc-project := 'docker compose -p spur -f docker-compose.yml -f docker-compose.dev.yml' \
-              + ' --profile init'
+dc-project := 'docker compose -p spur --profile init'
 
 # Build/start the Compose stack with migrations and seed data if necessary (the default recipe)
 dc-up:

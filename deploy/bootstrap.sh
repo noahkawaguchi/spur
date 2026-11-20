@@ -53,7 +53,7 @@ case "$1" in
 
 # Download only the required files
 files)
-  download_file docker-compose.yml
+  download_file compose.yaml
 
   download_file .env.example
   if [ ! -e .env ]; then cp .env.example .env; fi
