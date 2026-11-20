@@ -15,7 +15,7 @@ set dotenv-load
 
 # The tag to use for the Postgres Docker image.
 # Should match the one in `compose.yaml` and CI/CD.
-pg-tag := '18.6-alpine3.24'
+pg-tag := '18.7-alpine3.24'
 
 ####################################################################################################
 # Main Docker Compose stack
