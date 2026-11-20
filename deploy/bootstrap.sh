@@ -45,7 +45,7 @@ download_file() {
 # the `init` profile.
 pull_and_start() {
   docker pull "$spur_img"
-  docker compose -p spur --profile init up -d
+  docker compose --profile init up -d
 }
 
 # Parse the command
@@ -71,8 +71,8 @@ run) pull_and_start ;;
 # Destroy and remake the database
 reset)
   confirm "destroy and remake the database"
-  docker compose -p spur stop
-  docker compose -p spur rm -sf db
+  docker compose stop
+  docker compose rm -sf db
   docker volume rm spur_pg_data
   pull_and_start
   ;;

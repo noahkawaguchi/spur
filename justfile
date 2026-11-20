@@ -22,7 +22,7 @@ pg-tag := '18.6-alpine3.24'
 ####################################################################################################
 
 spur-img-tag := env('SPUR_IMG_TAG', 'latest')
-dc-project := 'docker compose -p spur --profile init'
+dc-project := 'docker compose --profile init'
 
 # Build/start the Compose stack with migrations and seed data if necessary (the default recipe)
 dc-up:
