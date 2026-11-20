@@ -121,11 +121,15 @@ cov-open: (cov '--open')
 
 # Lint with Clippy, denying warnings
 lint:
-    cargo clippy --workspace --all-targets -- --deny warnings
+    CARGO_BUILD_WARNINGS=deny cargo clippy --workspace --all-targets
 
 # Check formatting
 fmt-check:
-    cargo fmt --all --check && echo 'Formatting check passed'
+    RUSTUP_TOOLCHAIN=nightly cargo fmt --all --check && echo 'Formatting check passed'
+
+# Apply formatting changes
+fmt:
+    RUSTUP_TOOLCHAIN=nightly cargo fmt --all
 
 # Check spelling with Codebook (https://github.com/blopker/codebook)
 spell-check:
