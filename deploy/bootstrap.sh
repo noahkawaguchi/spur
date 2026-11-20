@@ -56,7 +56,7 @@ files)
   download_file compose.yaml
 
   download_file .env.example
-  if [ ! -e .env ]; then cp .env.example .env; fi
+  cp --update=none .env.example .env
 
   mkdir -p caddy_conf
   download_file caddy_conf/Caddyfile -O caddy_conf/Caddyfile
@@ -71,7 +71,7 @@ run) pull_and_start ;;
 # Destroy and remake the database
 reset)
   confirm "destroy and remake the database"
-  docker compose stop
+  docker compose --profile init stop
   docker compose rm -sf db
   docker volume rm spur_pg_data
   pull_and_start
