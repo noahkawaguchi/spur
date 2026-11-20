@@ -40,10 +40,12 @@ jobs:
         uses: nix-community/cache-nix-action@v7
         with:
           primary-key: >-
-            nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
+            nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/*.nix',
+            '**/flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
 
-      # Load the flake's devShell environment so rust-cache finds the correct rustc version
+      # Load the flake's devShell environment so rust-cache finds the correct
+      # rustc version
       - &nix-develop
         name: Load flake devShell
         uses: nicknovitski/nix-develop@v1
@@ -59,8 +61,9 @@ jobs:
           SQLX_OFFLINE: true
 
   lint:
-    # Run this job on all three systems that the flake declares so linting doubles as verification
-    # that the devShell builds and its toolchain works on each one
+    # Run this job on all three systems that the flake declares so linting
+    # doubles as verification that the devShell builds and its toolchain works
+    # on each one
     strategy:
       fail-fast: false
       matrix: { os: [ubuntu-26.04-arm, ubuntu-26.04, macos-26] }
@@ -93,15 +96,17 @@ jobs:
       - name: Check spelling
         run: nix develop --command just spell-check
 
-  # Always builds the Docker image (with caching), but only pushes it to GHCR if the workflow was
-  # triggered by a push to main. Publishes both a commit hash tag and a latest tag.
+  # Always builds the Docker image (with caching), but only pushes it to GHCR if
+  # the workflow was triggered by a push to main. Publishes both a commit hash
+  # tag and a latest tag.
   container-image:
     runs-on: ubuntu-26.04-arm
     permissions: { packages: write }
     needs: [test, lint, fmt-check, spell-check]
 
     steps:
-      - uses: docker/setup-buildx-action@v4 # Necessary for caching in build-push-action
+      # Necessary for caching in build-push-action
+      - uses: docker/setup-buildx-action@v4
 
       - uses: docker/login-action@v4
         with:
@@ -120,7 +125,9 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           # Only push the image when pushing to main
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          push: >-
+            ${{ github.event_name == 'push'
+            && github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
